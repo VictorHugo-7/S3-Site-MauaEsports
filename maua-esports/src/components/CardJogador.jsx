@@ -113,7 +113,9 @@ const CardJogador = ({
               )}
             </div>
 
-            <div className="flex space-x-2">
+            <div className={`flex space-x-2 ${
+              hasSocialMedia ? "mr-5" : "mr-0"
+            }`}>
               <EditarBtn onClick={() => setIsModalOpen(true)} />
               <DeletarBtn
                 jogadorId={jogadorId}
