@@ -14,7 +14,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/times" element={<Times />} />
-          <Route path="/times/:timeId/membros" element={<Membros />} />         
+          <Route path="/times/:rota" element={<Membros />} />         
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>

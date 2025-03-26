@@ -4,7 +4,7 @@ import EditarBtn from "./EditarBtn";
 import DeletarBtn from "./DeletarBtn";
 import PropTypes from "prop-types";
 
-const CardTime = ({ timeId, nome, foto, jogo, onDelete, onEditClick }) => {
+const CardTime = ({ timeId, nome, foto, jogo, rota, onDelete, onEditClick }) => {
   const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
   const [jogoError, setJogoError] = useState(false);
@@ -22,7 +22,11 @@ const CardTime = ({ timeId, nome, foto, jogo, onDelete, onEditClick }) => {
   };
 
   const handleCardClick = () => {
-    navigate(`/times/${timeId}/membros`);
+    // Usa a rota que vem do banco de dados
+    navigate(`/times/${rota}`);
+    
+    // Alternativa segura caso a rota possa vir undefined/null
+    // navigate(`/times/${rota || 'sem-rota'}`);
   };
 
   return (
@@ -56,7 +60,7 @@ const CardTime = ({ timeId, nome, foto, jogo, onDelete, onEditClick }) => {
               </div>
             ) : (
               <img
-                src={foto}
+                src={foto || '/placeholder-time.jpg'} // Fallback caso foto seja null/undefined
                 alt={`Imagem do time ${nome}`}
                 className="w-full h-full object-cover absolute top-0 left-0 transition-transform duration-800 ease-in-out hover:scale-112"
                 onError={() => setImgError(true)}
@@ -72,7 +76,7 @@ const CardTime = ({ timeId, nome, foto, jogo, onDelete, onEditClick }) => {
                 <div className="w-6 h-6 bg-cinza-escuro"></div>
               ) : (
                 <img
-                  src={jogo}
+                  src={jogo || '/placeholder-jogo.png'} // Fallback caso jogo seja null/undefined
                   alt="Logo do jogo"
                   className="w-6 h-6"
                   onError={() => setJogoError(true)}
@@ -92,12 +96,18 @@ const CardTime = ({ timeId, nome, foto, jogo, onDelete, onEditClick }) => {
 };
 
 CardTime.propTypes = {
-  timeId: PropTypes.number.isRequired,
+  rota: PropTypes.string.isRequired, // A rota deve vir do banco de dados
+  timeId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   nome: PropTypes.string.isRequired,
-  foto: PropTypes.string.isRequired,
-  jogo: PropTypes.string.isRequired,
+  foto: PropTypes.string, // Não é mais required para lidar com casos null
+  jogo: PropTypes.string, // Não é mais required para lidar com casos null
   onDelete: PropTypes.func.isRequired,
   onEditClick: PropTypes.func.isRequired,
+};
+
+CardTime.defaultProps = {
+  foto: '/placeholder-time.jpg',
+  jogo: '/placeholder-jogo.png'
 };
 
 export default CardTime;

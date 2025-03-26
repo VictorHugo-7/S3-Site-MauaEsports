@@ -224,6 +224,7 @@ const Times = () => {
                 timeId={time.id}
                 nome={time.nome}
                 foto={`${API_BASE_URL}/times/${time.id}/foto`}
+                rota={time.rota} 
                 jogo={`${API_BASE_URL}/times/${time.id}/jogo`}
                 onDelete={handleDeleteTime}
                 onEditClick={handleEditClick}
