@@ -1,30 +1,36 @@
-import { useState, useEffect } from 'react';
-import PageBannner from "../components/PageBanner"
-import Menu from '../components/politicas&termos/Menu';
-import ContentSection from '../components/politicas&termos/ContentSection';
+import { useState, useEffect } from "react";
+import PageBannner from "../components/PageBanner";
+import Menu from "../components/PoliticasTermos/Menu";
+import ContentSection from "../components/PoliticasTermos/ContentSection";
 
 const Politicas = () => {
-  const [activeSection, setActiveSection] = useState('');
+  const [activeSection, setActiveSection] = useState("");
   const [sections, setSections] = useState([]);
   const [isAddingSection, setIsAddingSection] = useState(false);
-  const [newSectionTitle, setNewSectionTitle] = useState('');
+  const [newSectionTitle, setNewSectionTitle] = useState("");
 
   // Função para gerar ID a partir do título
   const generateId = (title) => {
-    return title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    return title
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
   };
 
   // Carregar seções e seção ativa do localStorage
   useEffect(() => {
-    const savedSections = localStorage.getItem('policy-sections');
-    const savedActiveSection = localStorage.getItem('active-policy-section');
+    const savedSections = localStorage.getItem("policy-sections");
+    const savedActiveSection = localStorage.getItem("active-policy-section");
 
     if (savedSections) {
       const parsedSections = JSON.parse(savedSections);
       setSections(parsedSections);
 
       // Se temos uma seção ativa salva, usamos ela
-      if (savedActiveSection && parsedSections.some(section => section.id === savedActiveSection)) {
+      if (
+        savedActiveSection &&
+        parsedSections.some((section) => section.id === savedActiveSection)
+      ) {
         setActiveSection(savedActiveSection);
       } else if (parsedSections.length > 0) {
         // Caso contrário, use a primeira seção
@@ -33,28 +39,28 @@ const Politicas = () => {
     } else {
       // Seções padrão
       const defaultSections = [
-        { id: 'privacidade', title: 'Política de Privacidade' },
-        { id: 'cookies', title: 'Política de Cookies' },
-        { id: 'termos', title: 'Termos de Serviço' }
+        { id: "privacidade", title: "Política de Privacidade" },
+        { id: "cookies", title: "Política de Cookies" },
+        { id: "termos", title: "Termos de Serviço" },
       ];
       setSections(defaultSections);
       setActiveSection(defaultSections[0].id);
-      localStorage.setItem('policy-sections', JSON.stringify(defaultSections));
-      localStorage.setItem('active-policy-section', defaultSections[0].id);
+      localStorage.setItem("policy-sections", JSON.stringify(defaultSections));
+      localStorage.setItem("active-policy-section", defaultSections[0].id);
     }
   }, []);
 
   // Salvar seções no localStorage quando houver mudanças
   useEffect(() => {
     if (sections.length > 0) {
-      localStorage.setItem('policy-sections', JSON.stringify(sections));
+      localStorage.setItem("policy-sections", JSON.stringify(sections));
     }
   }, [sections]);
 
   // Salvar seção ativa quando ela for alterada
   useEffect(() => {
     if (activeSection) {
-      localStorage.setItem('active-policy-section', activeSection);
+      localStorage.setItem("active-policy-section", activeSection);
     }
   }, [activeSection]);
 
@@ -63,29 +69,31 @@ const Politicas = () => {
   };
 
   const handleSaveNewSection = () => {
-    if (newSectionTitle.trim() === '') {
-      alert('Digite um título para a seção');
+    if (newSectionTitle.trim() === "") {
+      alert("Digite um título para a seção");
       return;
     }
 
     const newId = generateId(newSectionTitle);
 
     // Verificar se ID já existe
-    if (sections.some(section => section.id === newId)) {
-      alert('Já existe uma seção com título similar. Escolha outro título.');
+    if (sections.some((section) => section.id === newId)) {
+      alert("Já existe uma seção com título similar. Escolha outro título.");
       return;
     }
 
     const newSection = { id: newId, title: newSectionTitle };
     setSections([...sections, newSection]);
     setIsAddingSection(false);
-    setNewSectionTitle('');
+    setNewSectionTitle("");
     setActiveSection(newId);
   };
 
   const handleDeleteSection = (idToDelete) => {
-    if (confirm('Tem certeza que deseja excluir esta seção?')) {
-      const updatedSections = sections.filter(section => section.id !== idToDelete);
+    if (confirm("Tem certeza que deseja excluir esta seção?")) {
+      const updatedSections = sections.filter(
+        (section) => section.id !== idToDelete
+      );
       setSections(updatedSections);
 
       // Remover conteúdo do localStorage
@@ -100,7 +108,7 @@ const Politicas = () => {
 
   const handleEditSection = (id, newTitle) => {
     // Se o título não mudou, não faz nada
-    const currentSection = sections.find(s => s.id === id);
+    const currentSection = sections.find((s) => s.id === id);
     if (currentSection.title === newTitle) {
       return;
     }
@@ -109,8 +117,8 @@ const Politicas = () => {
     const newId = generateId(newTitle);
 
     // Verifique se o novo ID já existe (exceto para a própria seção)
-    if (sections.some(section => section.id === newId && section.id !== id)) {
-      alert('Já existe uma seção com título similar. Escolha outro título.');
+    if (sections.some((section) => section.id === newId && section.id !== id)) {
+      alert("Já existe uma seção com título similar. Escolha outro título.");
       return;
     }
 
@@ -118,7 +126,7 @@ const Politicas = () => {
     const oldContent = localStorage.getItem(`termos-politicas-${id}`);
 
     // Atualize a seção com novo título e ID
-    const updatedSections = sections.map(section => {
+    const updatedSections = sections.map((section) => {
       if (section.id === id) {
         return { ...section, id: newId, title: newTitle };
       }
@@ -142,7 +150,7 @@ const Politicas = () => {
 
   const handleCancelAdd = () => {
     setIsAddingSection(false);
-    setNewSectionTitle('');
+    setNewSectionTitle("");
   };
 
   return (
@@ -170,7 +178,7 @@ const Politicas = () => {
           </div>
 
           <div className="md:w-3/4">
-            {sections.map(section => (
+            {sections.map((section) => (
               <ContentSection
                 key={section.id}
                 id={section.id}
