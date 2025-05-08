@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 const BtnApresentacao = ({ btnName, to = "/sobre" }) => {
     return (
         <Link to={to}>
-            <button className="bg-azul-escuro hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition duration-300 flex items-center">
+            <button className="bg-azul-escuro hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition duration-300 flex items-center cursor-pointer">
                 {btnName}
                 <svg 
                     className="ml-2 w-4 h-4" 
