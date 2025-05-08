@@ -15,6 +15,7 @@ import Campeonatos from "./pages/Campeonatos";
 import AdminUsuarios from './pages/AdminUsuarios';
 import NaoAutorizado from './components/NaoAutorizado';
 import ProtectedRoute from './components/ProtectedRoute';
+import Novidades from "./pages/Novidades";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
           <Route path="/politicas" element={<Politicas />} />
           <Route path="/campeonatos" element={<Campeonatos />} />
           <Route path="/nao-autorizado" element={<NaoAutorizado />} />
+          <Route path ="/novidades" element={<Novidades/>} />
           
           {/* Rotas protegidas */}
           <Route element={<ProtectedRoute allowedRoles={['Jogador', 'Capitão de time', 'Administrador', 'Administrador Geral']} />}>
