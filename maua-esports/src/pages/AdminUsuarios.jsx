@@ -64,67 +64,66 @@ const AdminUsuarios = () => {
   };
 
   // Função para verificar se o usuário pode gerenciar outro usuário
-const podeGerenciarUsuario = (usuarioAlvo) => {
-  const usuarioAtual = usuarios.find(u => u.email === currentUser?.username);
-  
-  if (!usuarioAtual) return false;
-  
-  // Se for o próprio usuário, pode editar/excluir a si mesmo
-  if (usuarioAlvo.email === currentUser?.username) {
-    return true;
-  }
-  
-  // Administrador Geral não pode ser gerenciado por ninguém
-  if (usuarioAlvo.tipoUsuario === 'Administrador Geral') {
-    return false;
-  }
-  
-  // Administrador Geral pode gerenciar todos abaixo dele
-  if (usuarioAtual.tipoUsuario === 'Administrador Geral') {
-    return true;
-  }
-  
-  // Administrador pode gerenciar outros admins e abaixo
-  if (usuarioAtual.tipoUsuario === 'Administrador') {
-    return usuarioAlvo.tipoUsuario !== 'Administrador Geral';
-  }
-  
-  // Capitão pode gerenciar outros capitães e jogadores
-  if (usuarioAtual.tipoUsuario === 'Capitão de time') {
-    return ['Capitão de time', 'Jogador'].includes(usuarioAlvo.tipoUsuario);
-  }
-  
-  // Jogador não pode gerenciar ninguém (exceto a si mesmo, já tratado acima)
-  return false;
-};
-
-  // Função para verificar se pode adicionar um tipo específico de usuário
-  const podeAdicionarTipo = (tipo) => {
+  const podeGerenciarUsuario = (usuarioAlvo) => {
     const usuarioAtual = usuarios.find(u => u.email === currentUser?.username);
-    
+
     if (!usuarioAtual) return false;
-    
-    // Administrador Geral não pode adicionar outros Administradores Gerais
-    if (tipo === 'Administrador Geral') {
-      return false;
-    }
-    
-    // Administrador pode adicionar Admins, Capitães e Jogadores
-    if (usuarioAtual.tipoUsuario === 'Administrador') {
+
+    // Se for o próprio usuário, pode editar/excluir a si mesmo
+    if (usuarioAlvo.email === currentUser?.username) {
       return true;
     }
-    
-    // Capitão pode adicionar Capitães e Jogadores
+
+    // Administrador Geral não pode ser gerenciado por ninguém
+    if (usuarioAlvo.tipoUsuario === 'Administrador Geral') {
+      return false;
+    }
+
+    // Administrador Geral pode gerenciar todos abaixo dele
+    if (usuarioAtual.tipoUsuario === 'Administrador Geral') {
+      return true;
+    }
+
+    // Administrador pode gerenciar outros admins e abaixo
+    if (usuarioAtual.tipoUsuario === 'Administrador') {
+      return usuarioAlvo.tipoUsuario !== 'Administrador Geral';
+    }
+
+    // Capitão pode gerenciar outros capitães e jogadores
+    if (usuarioAtual.tipoUsuario === 'Capitão de time') {
+      return ['Capitão de time', 'Jogador'].includes(usuarioAlvo.tipoUsuario);
+    }
+
+    // Jogador não pode gerenciar ninguém (exceto a si mesmo, já tratado acima)
+    return false;
+  };
+
+  const podeAdicionarTipo = (tipo) => {
+    const usuarioAtual = usuarios.find(u => u.email === currentUser?.username);
+
+    if (!usuarioAtual) return false;
+
+    // Administrador Geral pode adicionar todos, exceto outro Administrador Geral
+    if (usuarioAtual.tipoUsuario === 'Administrador Geral') {
+      return tipo !== 'Administrador Geral';
+    }
+
+    // Administrador pode adicionar Admins, Capitães e Jogadores
+    if (usuarioAtual.tipoUsuario === 'Administrador') {
+      return ['Administrador', 'Capitão de time', 'Jogador'].includes(tipo);
+    }
+
+    // Capitão pode adicionar APENAS Capitães e Jogadores
     if (usuarioAtual.tipoUsuario === 'Capitão de time') {
       return ['Capitão de time', 'Jogador'].includes(tipo);
     }
-    
+
     return false;
   };
 
   const handleDelete = async (id) => {
     const usuario = usuarios.find(u => u._id === id);
-    
+
     if (!usuario || !podeGerenciarUsuario(usuario)) {
       alert('Você não tem permissão para esta ação!');
       return;
@@ -138,9 +137,9 @@ const podeGerenciarUsuario = (usuarioAlvo) => {
       const response = await fetch(`${API_BASE_URL}/usuarios/${id}`, {
         method: 'DELETE'
       });
-      if(response.ok){
+      if (response.ok) {
         setSuccess(`Usuário ${usuario.email} excluído com sucesso!`);
-setError(null);
+        setError(null);
 
       }
       if (!response.ok) {
@@ -160,7 +159,7 @@ setError(null);
       alert('Você não tem permissão para editar este usuário!');
       return;
     }
-    
+
     setUsuarioSelecionado(usuario);
     setModoEdicao(true);
     setMostrarModal(true);
@@ -184,15 +183,27 @@ setError(null);
         return;
       }
 
-      const url = modoEdicao 
+      // Validação extra para edição
+      if (modoEdicao) {
+        const usuarioOriginal = usuarios.find(u => u._id === usuarioSelecionado._id);
+        if (usuarioOriginal && formData.tipoUsuario !== usuarioOriginal.tipoUsuario) {
+          // Se está tentando mudar o tipo, verifica se tem permissão
+          if (!podeAdicionarTipo(formData.tipoUsuario)) {
+            alert('Você não tem permissão para alterar para este tipo de usuário!');
+            return;
+          }
+        }
+      }
+
+      const url = modoEdicao
         ? `${API_BASE_URL}/usuarios/${usuarioSelecionado._id}`
         : `${API_BASE_URL}/usuarios`;
-      
+
       const method = modoEdicao ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
         method,
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
@@ -205,7 +216,7 @@ setError(null);
       }
 
       const result = await response.json();
-      
+
       if (result.success) {
         fetchUsuarios();
         fecharModal();
@@ -260,7 +271,7 @@ setError(null);
   );
 
   const usuarioAtual = usuarios.find(u => u.email === currentUser?.username);
-  
+
   // Jogadores não devem ter acesso a esta tela (deveria ser tratado na navbar)
   if (!usuarioAtual || usuarioAtual.tipoUsuario === 'Jogador') {
     return (
@@ -308,10 +319,11 @@ setError(null);
             />
           </div>
 
-          {usuarioAtual.tipoUsuario !== 'Administrador Geral' && (
+          {['Administrador Geral', 'Administrador', 'Capitão de time'].includes(usuarioAtual.tipoUsuario) && (
             <button
               onClick={abrirModalCriacao}
               className="bg-azul-claro hover:bg-azul-escuro text-white px-4 py-2 rounded flex items-center gap-2 transition-colors w-full sm:w-auto justify-center"
+              disabled={!['Administrador Geral', 'Administrador', 'Capitão de time'].some(tipo => podeAdicionarTipo(tipo))}
             >
               <FaUserPlus /> Adicionar Usuário
             </button>
@@ -335,7 +347,7 @@ setError(null);
                 usuariosFiltrados.map((usuario) => {
                   const podeGerenciar = podeGerenciarUsuario(usuario);
                   const eUsuarioAtual = usuario.email === currentUser?.username;
-                  
+
                   return (
                     <tr key={usuario._id} className="hover:bg-fundo/50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-white">{usuario.email}</td>
@@ -349,12 +361,12 @@ setError(null);
                           <span className="text-branco">Sem permissão</span>
                         ) : (
                           <>
-                            <EditarBtn 
-                              onClick={() => abrirModalEdicao(usuario)} 
+                            <EditarBtn
+                              onClick={() => abrirModalEdicao(usuario)}
                               disabled={eUsuarioAtual}
                             />
-                            <DeletarBtn 
-                              onDelete={() => handleDelete(usuario._id)} 
+                            <DeletarBtn
+                              onDelete={() => handleDelete(usuario._id)}
                               disabled={eUsuarioAtual}
                             />
                           </>
