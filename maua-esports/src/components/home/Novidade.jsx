@@ -58,7 +58,7 @@ const Novidade = () => {
               </a>
 
               <button 
-                className="bg-[#284880] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#162b50]"
+                className="bg-[#284880] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#162b50] cursor-pointer"
                 onClick={() => setModalOpen(true)}
               >
                 Editar
