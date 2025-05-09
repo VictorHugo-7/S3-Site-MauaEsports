@@ -480,26 +480,12 @@ function HorasPaePage() {
     <div className="min-h-screen bg-[#0D1117] text-white">
       <div className="bg-[#010409] h-[104px]"></div>
       <PageBanner pageName={`Horas PAEs - ${currentModality.Name || ""}`} />
-      <div className="flex justify-end gap-4 mb-6">
-        <button
-          onClick={generateExcel}
-          disabled={generatingReport}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <FaFileExcel /> Exportar Excel
-        </button>
-        <button
-          onClick={generatePDF}
-          disabled={generatingReport}
-          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <FaFilePdf /> Exportar PDF
-        </button>
-      </div>
-      <div className="flex flex-col md:flex-row gap-6 md:px-14 md:py-15">
-        {/* Seletor de modalidade */}
-        <div className="px-6 md:px-0">
-          <div className="relative w-full md:w-64 mb-6">
+
+      <div className="flex flex-col gap-6 px-6 pb-8 md:px-14 md:py-15">
+        {/* Container para seletor e botões alinhados */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          {/* Seletor de modalidade */}
+          <div className="md:w-[30%]">
             <label
               htmlFor="modality-select"
               className="block text-sm font-medium text-gray-300 mb-2"
@@ -529,21 +515,41 @@ function HorasPaePage() {
               />
             )}
           </div>
-        </div>
 
+          {/* Botões de exportação */}
+          <div className="flex gap-4">
+            <button
+              onClick={generateExcel}
+              disabled={generatingReport}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
+            >
+              <FaFileExcel /> Exportar Excel
+            </button>
+            <button
+              onClick={generatePDF}
+              disabled={generatingReport}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-900 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
+            >
+              <FaFilePdf /> Exportar PDF
+            </button>
+          </div>
+        </div>
         {/* Conteúdo principal */}
-        <main className="flex-1">
-          <div className="bg-gray-800 border-2 border-gray-700 rounded-[30px] shadow-lg p-6">
+        <main className="xl:col-span-9">
+          <div className="w-full bg-gray-800 border-2 border-gray-700 rounded-[30px] shadow-lg p-6 overflow-x-auto">
             {/* Cabeçalho com ranks */}
-            <div className="flex mb-4">
+            <div className="flex mb-4 min-w-[800px]">
+              {/* Espaço para o nome do jogador (mesma largura que na lista) */}
               <div className="w-24 md:w-32"></div>
+
+              {/* Grid dos ranks - mesma estrutura que as barras */}
               <div className="flex-1 grid grid-cols-8 gap-1">
                 {ranks.map((rank) => (
                   <div key={rank.id} className="flex flex-col items-center">
                     <img
                       src={rank.image}
                       alt={rank.name}
-                      className="w-20 h-20 object-contain mb-1"
+                      className="w-16 h-16 md:w-20 md:h-20 object-contain mb-1"
                     />
                   </div>
                 ))}
@@ -558,7 +564,10 @@ function HorasPaePage() {
                 const roundedHours = Math.round(player.totalHours * 10) / 10;
 
                 return (
-                  <div key={index} className="flex items-center mb-4">
+                  <div
+                    key={index}
+                    className="flex items-center mb-4 min-w-[800px]"
+                  >
                     <div className="w-24 md:w-32 font-semibold truncate">
                       {player.name}
                       <div className="text-xs text-gray-400 mt-1">
@@ -648,7 +657,11 @@ function HorasPaePage() {
                   name: "Intermediário",
                 },
                 { range: "25-34h", color: "bg-[#FCA610]", name: "Avançado" },
-                { range: "35-49h", color: "bg-[#39A0B1]", name: "Experiente" },
+                {
+                  range: "35-49h",
+                  color: "bg-[#39A0B1]",
+                  name: "Experiente",
+                },
                 { range: "50-59h", color: "bg-[#047C21]", name: "Veterano" },
                 { range: "60-69h", color: "bg-[#60409E]", name: "Elite" },
                 { range: "70-79h", color: "bg-[#C10146]", name: "Mestre" },

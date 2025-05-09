@@ -45,10 +45,8 @@ const CardJogador = ({
 
   return (
     <>
-      <div
-        className="border-2 border-borda relative w-[300px] h-[450px] bg-fundo shadow-lg flex flex-col items-center hover:scale-110 transition-transform duration-300 cursor-pointer animate-fadeInUp rounded-md"
-      >
-        <h1 className="text-xl font-bold font-blinker bg-azul-claro rounded-bl-md px-2 py-1 inline-block absolute top-0 right-0 z-10 opacity-70">
+      <div className="border-2 border-borda relative w-[300px] h-[450px] bg-fundo shadow-lg flex flex-col items-center hover:scale-110 transition-transform duration-300 cursor-pointer animate-fadeInUp rounded-md">
+        <h1 className="text-xl font-bold font-blinker bg-azul-claro rounded-tr-md rounded-bl-md px-2 py-1 inline-block absolute top-0.1 right-0 z-10 opacity-70">
           {titulo}
         </h1>
 
