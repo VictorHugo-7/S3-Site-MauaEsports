@@ -1,5 +1,5 @@
 import Espaco from '../components/padrao/Espaco';
-import Apresentacao from '../components/home/Apresentacao';
+import Apresentacao from '../components/home/s1Apresentacao/Apresentacao';
 import Twitch from '../components/home/Twitch';
 import InfoLayout from '../components/home/InfoLayout';
 import Novidade from '../components/home/Novidade';
