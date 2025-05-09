@@ -38,6 +38,8 @@ const NavBar = () => {
   const location = useLocation();
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isAdminHovered, setIsAdminHovered] = useState(false);
+  const [isEditHovered, setIsEditHovered] = useState(false);
   // Estados para edição de perfil
   const [editFormData, setEditFormData] = useState({
     email: "",
@@ -627,10 +629,22 @@ const NavBar = () => {
                       </Link>
 
                       {userType !== "Jogador" && (
+                        // No seu componente:
                         <Link to="/admin-usuarios" className="w-full">
-                          <div className="w-full p-2 cursor-pointer flex items-center gap-3 hover:bg-hover group pr-10">
+                          <div
+                            className="w-full p-2 cursor-pointer flex items-center gap-3 hover:bg-hover group pr-10"
+                            onMouseEnter={() => setIsAdminHovered(true)}
+                            onMouseLeave={() => setIsAdminHovered(false)}
+                          >
                             <div className="w-10 h-10 flex items-center justify-center">
-                              <FaUserCog className="text-2xl text-azul-claro" />
+                              <FaUserCog
+                                className="text-2xl text-azul-claro"
+                                style={{
+                                  animation: isAdminHovered
+                                    ? "spinGear 0.6s ease-in-out forwards"
+                                    : "none",
+                                }}
+                              />
                             </div>
                             <div className="flex flex-col flex-grow items-start overflow-hidden">
                               <h1 className="font-bold">Área Administrativa</h1>
@@ -644,9 +658,18 @@ const NavBar = () => {
                       <div
                         className="w-full p-2 cursor-pointer flex items-center gap-3 hover:bg-hover group pr-10"
                         onClick={toggleEditModal}
+                        onMouseEnter={() => setIsEditHovered(true)}
+                        onMouseLeave={() => setIsEditHovered(false)}
                       >
                         <div className="w-10 h-10 flex items-center justify-center">
-                          <RiImageEditLine className="text-2xl text-azul-claro" />
+                          <RiImageEditLine
+                            className="text-2xl text-azul-claro"
+                            style={{
+                              animation: isEditHovered
+                                ? "pencilEdit 0.7s ease-in-out"
+                                : "none",
+                            }}
+                          />
                         </div>
                         <div className="flex flex-col flex-grow items-start overflow-hidden">
                           <h1 className="font-bold">Editar Perfil</h1>
