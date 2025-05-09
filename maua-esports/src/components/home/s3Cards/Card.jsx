@@ -3,25 +3,20 @@ import PropTypes from 'prop-types';
 import EditarBtn from '../../EditarBtn';
 import CardModal from './CardModal';
 
-const Card = ({ icon, texto, titulo = 'Título' }) => {
-    // Estado para controlar a abertura do modal
+const Card = ({ icon, texto, titulo = 'Título', ...aosProps }) => {
     const [modalAberto, setModalAberto] = useState(false);
-    // Estados para armazenar os valores atuais
     const [cardTexto, setCardTexto] = useState(texto);
     const [cardIcon, setCardIcon] = useState(icon);
     const [cardTitulo, setCardTitulo] = useState(titulo);
 
-    // Função para abrir o modal
     const abrirModal = () => {
         setModalAberto(true);
     };
 
-    // Função para fechar o modal
     const fecharModal = () => {
         setModalAberto(false);
     };
 
-    // Função para salvar as alterações
     const salvarAlteracoes = (dados) => {
         setCardTexto(dados.texto);
         setCardIcon(dados.icon);
@@ -29,19 +24,18 @@ const Card = ({ icon, texto, titulo = 'Título' }) => {
     };
 
     return (
-        <div className='text-center border-1 border-borda rounded-[12px] p-5 flex flex-col h-80 w-64'>
-            {/* Ícone */}
-            <div className="flex justify-center mb-2">
-                <img className='w-16 h-16 object-contain' src={cardIcon} alt="" />
+        <div
+            className='text-center border border-borda rounded-[12px] p-5 flex flex-col h-70 w-80 min-w-[20rem] max-w-[20rem] hover:scale-101 hover:border-azul-claro transition-all duration-300 ease-in-out'
+            {...aosProps} // Passa os atributos AOS (data-aos, data-aos-delay, etc.)
+        >
+            <div className="flex justify-center mb-1">
+                <img className='w-12 h-12 object-contain' src={cardIcon} alt={cardTitulo} />
             </div>
 
-            {/* Título */}
-            <h3 className='text-lg font-semibold text-fonte-escura mb-2'>{cardTitulo}</h3>
+            <hr className='text-borda w-full my-1' />
 
-            {/* Linha */}
-            <hr className='text-borda w-full' />
+            <h3 className='text-lg font-semibold text-fonte-escura mt-1'>{cardTitulo}</h3>
 
-            {/* Texto - usando flex-grow para ocupar espaço disponível com scrollbar personalizada */}
             <div className='flex-grow overflow-auto my-4 scrollbar-custom pr-4 text-sm'>
                 <style>{`
                     .scrollbar-custom::-webkit-scrollbar {
@@ -62,12 +56,10 @@ const Card = ({ icon, texto, titulo = 'Título' }) => {
                 <p className='text-fonte-escura'>{cardTexto}</p>
             </div>
 
-            {/* Botão Editar - usando mt-auto para fixar no final */}
             <div className='flex justify-end mt-auto'>
                 <EditarBtn onClick={abrirModal} />
             </div>
 
-            {/* Modal de Edição */}
             <CardModal
                 isOpen={modalAberto}
                 onClose={fecharModal}
@@ -83,7 +75,9 @@ const Card = ({ icon, texto, titulo = 'Título' }) => {
 Card.propTypes = {
     texto: PropTypes.string,
     icon: PropTypes.string,
-    titulo: PropTypes.string
+    titulo: PropTypes.string,
+    'data-aos': PropTypes.string, // Adiciona suporte para data-aos
+    'data-aos-delay': PropTypes.string // Adiciona suporte para data-aos-delay
 };
 
 export default Card;
