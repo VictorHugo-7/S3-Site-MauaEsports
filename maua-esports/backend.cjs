@@ -9,6 +9,10 @@ const bodyParser = require("body-parser");
 const multer = require("multer");
 const path = require("path");
 const axios = require("axios");
+const PDFDocument = require("pdfkit");
+const ExcelJS = require("exceljs");
+const router = express.Router();
+
 require("dotenv").config();
 app.use(express.json());
 // Configuração EXTENDIDA do CORS
@@ -97,10 +101,10 @@ const tournamentSchema = new mongoose.Schema({
   registrationLink: String,
   teamPosition: String,
   performanceDescription: String,
-  status: { 
-    type: String, 
-    enum: ['campeonatos', 'inscricoes', 'passados'], 
-    default: 'campeonatos' 
+  status: {
+    type: String,
+    enum: ["campeonatos", "inscricoes", "passados"],
+    default: "campeonatos",
   },
   // Imagens como buffers
   image: {
@@ -119,86 +123,92 @@ const tournamentSchema = new mongoose.Schema({
     nomeOriginal: String,
   },
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  updatedAt: { type: Date, default: Date.now },
 });
 
-const Tournament = mongoose.model('Tournament', tournamentSchema);
-
+const Tournament = mongoose.model("Tournament", tournamentSchema);
 
 ///////////////////////////////////////////////////////////////////////////////AREA DE USUÁRIOS ////////////////////////////////////////////////////////////////////
 const usuarioSchema = new mongoose.Schema({
-  email: { 
-    type: String, 
-    required: true, 
+  email: {
+    type: String,
+    required: true,
     unique: true,
     validate: {
-      validator: function(v) {
+      validator: function (v) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(v) && (v.endsWith('@maua.br'));
+        return emailRegex.test(v) && v.endsWith("@maua.br");
       },
-      message: props => `${props.value} não é um email válido!`
-    }
+      message: (props) => `${props.value} não é um email válido!`,
+    },
   },
   discordID: {
     type: String,
     required: false, // Tornando opcional
     validate: {
-      validator: function(v) {
+      validator: function (v) {
         // Só valida se o campo foi fornecido
         if (!v) return true;
         return /^\d{18}$/.test(v);
       },
-      message: props => `${props.value} não é um Discord ID válido! Deve ser exatamente 18 dígitos ou vazio.`
-    }
+      message: (props) =>
+        `${props.value} não é um Discord ID válido! Deve ser exatamente 18 dígitos ou vazio.`,
+    },
   },
   fotoPerfil: {
     data: { type: Buffer, required: false }, // Tornando opcional
     contentType: { type: String, required: false },
-    nomeOriginal: { type: String, required: false }
+    nomeOriginal: { type: String, required: false },
   },
   tipoUsuario: {
     type: String,
     required: true,
-    enum: ['Administrador Geral', 'Administrador', 'Capitão de time', 'Jogador'],
-    default: 'Jogador'
+    enum: [
+      "Administrador Geral",
+      "Administrador",
+      "Capitão de time",
+      "Jogador",
+    ],
+    default: "Jogador",
   },
   createdAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
-usuarioSchema.plugin(uniqueValidator, { message: 'O {PATH} {VALUE} já está em uso.' });
-const Usuario = mongoose.model('Usuario', usuarioSchema);
+usuarioSchema.plugin(uniqueValidator, {
+  message: "O {PATH} {VALUE} já está em uso.",
+});
+const Usuario = mongoose.model("Usuario", usuarioSchema);
 
-
-app.post('/usuarios', upload.single('fotoPerfil'), async (req, res) => {
+app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
   try {
     const { email, discordID, tipoUsuario } = req.body;
 
     if (!email) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email é obrigatório' 
+      return res.status(400).json({
+        success: false,
+        message: "Email é obrigatório",
       });
     }
 
     const usuarioData = {
       email,
       ...(discordID && { discordID }),
-      tipoUsuario: tipoUsuario?.trim() || 'Jogador', // Adicione trim() aqui
+      tipoUsuario: tipoUsuario?.trim() || "Jogador", // Adicione trim() aqui
       ...(req.file && {
         fotoPerfil: {
           data: req.file.buffer,
           contentType: req.file.mimetype,
-          nomeOriginal: req.file.originalname
-        }
-      })
+          nomeOriginal: req.file.originalname,
+        },
+      }),
     };
 
     const novoUsuario = new Usuario(usuarioData);
     await novoUsuario.save();
-    
+
     res.status(201).json({
       success: true,
       usuario: {
@@ -206,82 +216,83 @@ app.post('/usuarios', upload.single('fotoPerfil'), async (req, res) => {
         email: novoUsuario.email,
         ...(novoUsuario.discordID && { discordID: novoUsuario.discordID }), // Só retorna se existir
         tipoUsuario: novoUsuario.tipoUsuario,
-        createdAt: novoUsuario.createdAt
+        createdAt: novoUsuario.createdAt,
       },
-      message: 'Usuário criado com sucesso'
+      message: "Usuário criado com sucesso",
     });
   } catch (error) {
-    console.error('Erro ao criar usuário:', error);
-    
+    console.error("Erro ao criar usuário:", error);
+
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
-        message: 'Email já está em uso',
-        field: 'email'
+        message: "Email já está em uso",
+        field: "email",
       });
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       success: false,
-      message: 'Erro ao criar usuário',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Erro ao criar usuário",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
-app.get('/usuarios/verificar-email', async (req, res) => {
+app.get("/usuarios/verificar-email", async (req, res) => {
   try {
     const email = req.query.email;
 
     if (!email) {
       return res.status(400).json({
         success: false,
-        message: 'Email é obrigatório na query'
+        message: "Email é obrigatório na query",
       });
     }
 
     const usuarioExiste = await Usuario.exists({ email });
 
     if (!usuarioExiste) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'Usuário não encontrado' 
+        message: "Usuário não encontrado",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Usuário encontrado',
-      data: { _id: usuarioExiste._id }
+      message: "Usuário encontrado",
+      data: { _id: usuarioExiste._id },
     });
   } catch (error) {
-    console.error('Erro ao verificar email:', error);
-    res.status(500).json({ 
+    console.error("Erro ao verificar email:", error);
+    res.status(500).json({
       success: false,
-      message: 'Erro ao verificar email',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Erro ao verificar email",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
 
 // GET - Buscar usuário por email
-app.get('/usuarios/por-email', async (req, res) => {
+app.get("/usuarios/por-email", async (req, res) => {
   try {
     const { email } = req.query;
 
     if (!email) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: 'Email é obrigatório' 
+        message: "Email é obrigatório",
       });
     }
 
-    const usuario = await Usuario.findOne({ email })
-      .select('-fotoPerfil.data -__v');
+    const usuario = await Usuario.findOne({ email }).select(
+      "-fotoPerfil.data -__v"
+    );
 
     if (!usuario) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'Usuário não encontrado' 
+        message: "Usuário não encontrado",
       });
     }
 
@@ -290,186 +301,178 @@ app.get('/usuarios/por-email', async (req, res) => {
       usuario: {
         ...usuario._doc,
         // Garante que discordID está incluso
-        discordID: usuario.discordID || null
-      }
+        discordID: usuario.discordID || null,
+      },
     });
   } catch (error) {
-    console.error('Erro ao buscar usuário por email:', error);
-    res.status(500).json({ 
+    console.error("Erro ao buscar usuário por email:", error);
+    res.status(500).json({
       success: false,
-      message: 'Erro ao buscar usuário',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Erro ao buscar usuário",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
 
 // GET - Listar todos os usuários
-app.get('/usuarios', async (req, res) => {
+app.get("/usuarios", async (req, res) => {
   try {
     const usuarios = await Usuario.find()
-      .select('-fotoPerfil.data -__v')
+      .select("-fotoPerfil.data -__v")
       .sort({ createdAt: -1 })
       .lean();
 
     res.status(200).json({
       success: true,
       count: usuarios.length,
-      data: usuarios
+      data: usuarios,
     });
   } catch (error) {
-    console.error('Erro ao buscar usuários:', error);
-    res.status(500).json({ 
+    console.error("Erro ao buscar usuários:", error);
+    res.status(500).json({
       success: false,
-      message: 'Erro ao buscar usuários',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Erro ao buscar usuários",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
 
-
 // PUT - Atualizar usuário (com suporte para remoção de foto)
-app.put('/usuarios/:id', upload.single('fotoPerfil'), async (req, res) => {
+app.put("/usuarios/:id", upload.single("fotoPerfil"), async (req, res) => {
   try {
     const { removeFoto } = req.body;
     const updateData = { ...req.body };
 
     // Se foi solicitado para remover a foto
-    if (removeFoto === 'true') {
+    if (removeFoto === "true") {
       updateData.fotoPerfil = null;
-    } 
+    }
     // Se foi enviada uma nova foto
     else if (req.file) {
       updateData.fotoPerfil = {
         data: req.file.buffer,
         contentType: req.file.mimetype,
-        nomeOriginal: req.file.originalname
+        nomeOriginal: req.file.originalname,
       };
     }
     // Se não foi enviada nova foto nem solicitado remoção, mantém a foto existente
 
-    const usuario = await Usuario.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { 
-        new: true,
-        runValidators: true 
-      }
-    ).select('-fotoPerfil.data -__v');
+    const usuario = await Usuario.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+      runValidators: true,
+    }).select("-fotoPerfil.data -__v");
 
     if (!usuario) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'Usuário não encontrado' 
+        message: "Usuário não encontrado",
       });
     }
 
     res.status(200).json({
       success: true,
       data: usuario,
-      message: 'Usuário atualizado com sucesso'
+      message: "Usuário atualizado com sucesso",
     });
   } catch (error) {
-    console.error('Erro ao atualizar usuário:', error);
-    
-    if (error.name === 'ValidationError') {
+    console.error("Erro ao atualizar usuário:", error);
+
+    if (error.name === "ValidationError") {
       return res.status(400).json({
         success: false,
-        message: 'Erro de validação',
-        errors: Object.values(error.errors).map(e => e.message)
+        message: "Erro de validação",
+        errors: Object.values(error.errors).map((e) => e.message),
       });
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       success: false,
-      message: 'Erro ao atualizar usuário',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Erro ao atualizar usuário",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
 
-
-
 // DELETE - Remover usuário
-app.delete('/usuarios/:id', async (req, res) => {
+app.delete("/usuarios/:id", async (req, res) => {
   try {
     const usuario = await Usuario.findByIdAndDelete(req.params.id);
 
     if (!usuario) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'Usuário não encontrado' 
+        message: "Usuário não encontrado",
       });
     }
 
     res.status(200).json({
       success: true,
       data: { _id: usuario._id },
-      message: 'Usuário removido com sucesso'
+      message: "Usuário removido com sucesso",
     });
   } catch (error) {
-    console.error('Erro ao remover usuário:', error);
-    res.status(500).json({ 
+    console.error("Erro ao remover usuário:", error);
+    res.status(500).json({
       success: false,
-      message: 'Erro ao remover usuário',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Erro ao remover usuário",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
 
 // GET - Obter foto de perfil
-app.get('/usuarios/:id/foto', async (req, res) => {
+app.get("/usuarios/:id/foto", async (req, res) => {
   try {
     const usuario = await Usuario.findById(req.params.id);
 
     if (!usuario || !usuario.fotoPerfil || !usuario.fotoPerfil.data) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'Imagem não encontrada' 
+        message: "Imagem não encontrada",
       });
     }
 
-    res.set('Content-Type', usuario.fotoPerfil.contentType);
+    res.set("Content-Type", usuario.fotoPerfil.contentType);
     res.send(usuario.fotoPerfil.data);
   } catch (error) {
-    console.error('Erro ao buscar foto de perfil:', error);
-    res.status(500).json({ 
+    console.error("Erro ao buscar foto de perfil:", error);
+    res.status(500).json({
       success: false,
-      message: 'Erro ao carregar imagem',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Erro ao carregar imagem",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
 
 // GET - Buscar usuário por ID
-app.get('/usuarios/:id', async (req, res) => {
+app.get("/usuarios/:id", async (req, res) => {
   try {
-    const usuario = await Usuario.findById(req.params.id)
-      .select('-fotoPerfil.data -__v');
+    const usuario = await Usuario.findById(req.params.id).select(
+      "-fotoPerfil.data -__v"
+    );
 
     if (!usuario) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'Usuário não encontrado' 
+        message: "Usuário não encontrado",
       });
     }
 
     res.status(200).json({
       success: true,
-      data: usuario
+      data: usuario,
     });
   } catch (error) {
-    console.error('Erro ao buscar usuário:', error);
-    res.status(500).json({ 
+    console.error("Erro ao buscar usuário:", error);
+    res.status(500).json({
       success: false,
-      message: 'Erro ao buscar usuário',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Erro ao buscar usuário",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
 
-
 /////////////////////////////////////////////////////////////////////////// AREA DE JOGADORES ////////////////////////////////////////////////////////////////////////////////////
-
 
 app.post("/jogadores", upload.single("foto"), async (req, res) => {
   try {
@@ -992,21 +995,23 @@ const campUpload = multer({
   fileFilter: function (req, file, cb) {
     const filetypes = /jpeg|jpg|png|svg/;
     const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const extname = filetypes.test(
+      path.extname(file.originalname).toLowerCase()
+    );
 
     if (mimetype && extname) {
       return cb(null, true);
     }
-    cb(new Error('Apenas imagens são permitidas (jpeg, jpg, png, svg)'));
-  }
+    cb(new Error("Apenas imagens são permitidas (jpeg, jpg, png, svg)"));
+  },
 }).fields([
-  { name: 'image', maxCount: 1 },       // Imagem principal
-  { name: 'gameIcon', maxCount: 1 },    // Ícone do jogo
-  { name: 'organizerImage', maxCount: 1 } // Logo do organizador
+  { name: "image", maxCount: 1 }, // Imagem principal
+  { name: "gameIcon", maxCount: 1 }, // Ícone do jogo
+  { name: "organizerImage", maxCount: 1 }, // Logo do organizador
 ]);
 
 // Criar campeonato com upload de imagens
-app.post('/campeonatos', (req, res) => {
+app.post("/campeonatos", (req, res) => {
   campUpload(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ error: err.message });
@@ -1025,11 +1030,13 @@ app.post('/campeonatos', (req, res) => {
         registrationLink,
         teamPosition,
         performanceDescription,
-        status
+        status,
       } = req.body;
 
       if (!name) {
-        return res.status(400).json({ error: 'Nome do campeonato é obrigatório' });
+        return res
+          .status(400)
+          .json({ error: "Nome do campeonato é obrigatório" });
       }
 
       const tournamentData = {
@@ -1044,30 +1051,30 @@ app.post('/campeonatos', (req, res) => {
         registrationLink,
         teamPosition,
         performanceDescription,
-        status: status || 'campeonatos'
+        status: status || "campeonatos",
       };
 
       // Processar imagens
       if (req.files) {
-        if (req.files['image']) {
+        if (req.files["image"]) {
           tournamentData.image = {
-            data: req.files['image'][0].buffer,
-            contentType: req.files['image'][0].mimetype,
-            nomeOriginal: req.files['image'][0].originalname
+            data: req.files["image"][0].buffer,
+            contentType: req.files["image"][0].mimetype,
+            nomeOriginal: req.files["image"][0].originalname,
           };
         }
-        if (req.files['gameIcon']) {
+        if (req.files["gameIcon"]) {
           tournamentData.gameIcon = {
-            data: req.files['gameIcon'][0].buffer,
-            contentType: req.files['gameIcon'][0].mimetype,
-            nomeOriginal: req.files['gameIcon'][0].originalname
+            data: req.files["gameIcon"][0].buffer,
+            contentType: req.files["gameIcon"][0].mimetype,
+            nomeOriginal: req.files["gameIcon"][0].originalname,
           };
         }
-        if (req.files['organizerImage']) {
+        if (req.files["organizerImage"]) {
           tournamentData.organizerImage = {
-            data: req.files['organizerImage'][0].buffer,
-            contentType: req.files['organizerImage'][0].mimetype,
-            nomeOriginal: req.files['organizerImage'][0].originalname
+            data: req.files["organizerImage"][0].buffer,
+            contentType: req.files["organizerImage"][0].mimetype,
+            nomeOriginal: req.files["organizerImage"][0].originalname,
           };
         }
       }
@@ -1079,9 +1086,8 @@ app.post('/campeonatos', (req, res) => {
         ...newTournament.toObject(),
         image: undefined,
         gameIcon: undefined,
-        organizerImage: undefined
+        organizerImage: undefined,
       });
-
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
@@ -1089,7 +1095,7 @@ app.post('/campeonatos', (req, res) => {
 });
 
 // Atualizar campeonato com imagens
-app.put('/campeonatos/:id', (req, res) => {
+app.put("/campeonatos/:id", (req, res) => {
   campUpload(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ error: err.message });
@@ -1097,28 +1103,28 @@ app.put('/campeonatos/:id', (req, res) => {
 
     try {
       const updateData = { ...req.body };
-      
+
       // Processar imagens
       if (req.files) {
-        if (req.files['image']) {
+        if (req.files["image"]) {
           updateData.image = {
-            data: req.files['image'][0].buffer,
-            contentType: req.files['image'][0].mimetype,
-            nomeOriginal: req.files['image'][0].originalname
+            data: req.files["image"][0].buffer,
+            contentType: req.files["image"][0].mimetype,
+            nomeOriginal: req.files["image"][0].originalname,
           };
         }
-        if (req.files['gameIcon']) {
+        if (req.files["gameIcon"]) {
           updateData.gameIcon = {
-            data: req.files['gameIcon'][0].buffer,
-            contentType: req.files['gameIcon'][0].mimetype,
-            nomeOriginal: req.files['gameIcon'][0].originalname
+            data: req.files["gameIcon"][0].buffer,
+            contentType: req.files["gameIcon"][0].mimetype,
+            nomeOriginal: req.files["gameIcon"][0].originalname,
           };
         }
-        if (req.files['organizerImage']) {
+        if (req.files["organizerImage"]) {
           updateData.organizerImage = {
-            data: req.files['organizerImage'][0].buffer,
-            contentType: req.files['organizerImage'][0].mimetype,
-            nomeOriginal: req.files['organizerImage'][0].originalname
+            data: req.files["organizerImage"][0].buffer,
+            contentType: req.files["organizerImage"][0].mimetype,
+            nomeOriginal: req.files["organizerImage"][0].originalname,
           };
         }
       }
@@ -1127,10 +1133,10 @@ app.put('/campeonatos/:id', (req, res) => {
         req.params.id,
         updateData,
         { new: true }
-      ).select('-image.data -gameIcon.data -organizerImage.data');
+      ).select("-image.data -gameIcon.data -organizerImage.data");
 
       if (!tournament) {
-        return res.status(404).json({ error: 'Campeonato não encontrado' });
+        return res.status(404).json({ error: "Campeonato não encontrado" });
       }
 
       res.json(tournament);
@@ -1141,53 +1147,58 @@ app.put('/campeonatos/:id', (req, res) => {
 });
 
 // Rotas para servir imagens
-app.get('/campeonatos/:id/image', async (req, res) => {
+app.get("/campeonatos/:id/image", async (req, res) => {
   try {
     const tournament = await Tournament.findById(req.params.id);
     if (!tournament || !tournament.image || !tournament.image.data) {
-      return res.status(404).send('Imagem não encontrada');
+      return res.status(404).send("Imagem não encontrada");
     }
-    res.set('Content-Type', tournament.image.contentType);
+    res.set("Content-Type", tournament.image.contentType);
     res.send(tournament.image.data);
   } catch (error) {
-    res.status(500).send('Erro ao carregar imagem');
+    res.status(500).send("Erro ao carregar imagem");
   }
 });
 
-app.get('/campeonatos/:id/gameIcon', async (req, res) => {
+app.get("/campeonatos/:id/gameIcon", async (req, res) => {
   try {
     const tournament = await Tournament.findById(req.params.id);
     if (!tournament || !tournament.gameIcon || !tournament.gameIcon.data) {
-      return res.status(404).send('Ícone do jogo não encontrado');
+      return res.status(404).send("Ícone do jogo não encontrado");
     }
-    res.set('Content-Type', tournament.gameIcon.contentType);
+    res.set("Content-Type", tournament.gameIcon.contentType);
     res.send(tournament.gameIcon.data);
   } catch (error) {
-    res.status(500).send('Erro ao carregar ícone do jogo');
+    res.status(500).send("Erro ao carregar ícone do jogo");
   }
 });
 
-app.get('/campeonatos/:id/organizerImage', async (req, res) => {
+app.get("/campeonatos/:id/organizerImage", async (req, res) => {
   try {
     const tournament = await Tournament.findById(req.params.id);
-    if (!tournament || !tournament.organizerImage || !tournament.organizerImage.data) {
-      return res.status(404).send('Imagem do organizador não encontrada');
+    if (
+      !tournament ||
+      !tournament.organizerImage ||
+      !tournament.organizerImage.data
+    ) {
+      return res.status(404).send("Imagem do organizador não encontrada");
     }
-    res.set('Content-Type', tournament.organizerImage.contentType);
+    res.set("Content-Type", tournament.organizerImage.contentType);
     res.send(tournament.organizerImage.data);
   } catch (error) {
-    res.status(500).send('Erro ao carregar imagem do organizador');
+    res.status(500).send("Erro ao carregar imagem do organizador");
   }
 });
 
 // Obter campeonato sem dados binários das imagens
-app.get('/campeonatos/:id', async (req, res) => {
+app.get("/campeonatos/:id", async (req, res) => {
   try {
-    const tournament = await Tournament.findById(req.params.id)
-      .select('-image.data -gameIcon.data -organizerImage.data');
+    const tournament = await Tournament.findById(req.params.id).select(
+      "-image.data -gameIcon.data -organizerImage.data"
+    );
 
     if (!tournament) {
-      return res.status(404).json({ error: 'Campeonato não encontrado' });
+      return res.status(404).json({ error: "Campeonato não encontrado" });
     }
 
     // Adiciona URLs para as imagens
@@ -1203,14 +1214,14 @@ app.get('/campeonatos/:id', async (req, res) => {
 });
 
 // Obter todos os campeonatos (sem dados binários)
-app.get('/campeonatos', async (req, res) => {
+app.get("/campeonatos", async (req, res) => {
   try {
     const tournaments = await Tournament.find()
-      .select('-image.data -gameIcon.data -organizerImage.data')
+      .select("-image.data -gameIcon.data -organizerImage.data")
       .sort({ createdAt: -1 });
 
     // Adiciona URLs para as imagens
-    const tournamentsWithUrls = tournaments.map(tournament => {
+    const tournamentsWithUrls = tournaments.map((tournament) => {
       const result = tournament.toObject();
       result.imageUrl = `/campeonatos/${tournament._id}/image`;
       result.gameIconUrl = `/campeonatos/${tournament._id}/gameIcon`;
@@ -1220,9 +1231,11 @@ app.get('/campeonatos', async (req, res) => {
 
     // Organiza por status
     const boardData = {
-      campeonatos: tournamentsWithUrls.filter(t => t.status === 'campeonatos'),
-      inscricoes: tournamentsWithUrls.filter(t => t.status === 'inscricoes'),
-      passados: tournamentsWithUrls.filter(t => t.status === 'passados')
+      campeonatos: tournamentsWithUrls.filter(
+        (t) => t.status === "campeonatos"
+      ),
+      inscricoes: tournamentsWithUrls.filter((t) => t.status === "inscricoes"),
+      passados: tournamentsWithUrls.filter((t) => t.status === "passados"),
     };
 
     res.json(boardData);
@@ -1232,24 +1245,24 @@ app.get('/campeonatos', async (req, res) => {
 });
 
 // Mover campeonato entre colunas (atualizar status)
-app.patch('/campeonatos/:id/move', async (req, res) => {
+app.patch("/campeonatos/:id/move", async (req, res) => {
   try {
     const { status } = req.body;
-    
-    if (!['campeonatos', 'inscricoes', 'passados'].includes(status)) {
-      return res.status(400).json({ error: 'Status inválido' });
+
+    if (!["campeonatos", "inscricoes", "passados"].includes(status)) {
+      return res.status(400).json({ error: "Status inválido" });
     }
-    
+
     const tournament = await Tournament.findByIdAndUpdate(
       req.params.id,
       { status },
       { new: true }
     );
-    
+
     if (!tournament) {
-      return res.status(404).json({ error: 'Campeonato não encontrado' });
+      return res.status(404).json({ error: "Campeonato não encontrado" });
     }
-    
+
     res.json(tournament);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -1257,22 +1270,21 @@ app.patch('/campeonatos/:id/move', async (req, res) => {
 });
 
 // Deletar campeonato
-app.delete('/campeonatos/:id', async (req, res) => {
+app.delete("/campeonatos/:id", async (req, res) => {
   try {
     const tournament = await Tournament.findByIdAndDelete(req.params.id);
-    
+
     if (!tournament) {
-      return res.status(404).json({ error: 'Campeonato não encontrado' });
+      return res.status(404).json({ error: "Campeonato não encontrado" });
     }
-    
+
     // Aqui você pode adicionar lógica para remover imagens associadas se estiver armazenando localmente
-    
-    res.json({ message: 'Campeonato removido com sucesso' });
+
+    res.json({ message: "Campeonato removido com sucesso" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
-
 
 ////////////////////////////////////////////////////////////////////////////////AREA DE ADMINISTRADORES ////////////////////////////////////////////////////////////////////
 const adminSchema = new mongoose.Schema({
@@ -1517,69 +1529,102 @@ app.get("/trains/all", authenticate, (req, res) => {
   res.json(filteredTrains);
 });
 
-/////////////////////////////////////////////////////////////////////////  TWITCH  //////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////  RELATORIOS  //////////////////////////////////////////////////////////////////////////////////////////////////
 
-const client_id = process.env.TWITCH_CLIENT_ID;
-const client_secret = process.env.TWITCH_CLIENT_SECRET;
+// Função auxiliar para obter o semestre atual
+function getCurrentSemester() {
+  const now = new Date();
+  const year = now.getFullYear();
+  return now.getMonth() < 6 ? `${year}.1` : `${year}.2`;
+}
 
-let access_token = null;
-
-// Get access token
-const getToken = async () => {
-  const response = await axios.post("https://id.twitch.tv/oauth2/token", null, {
-    params: {
-      client_id,
-      client_secret,
-      grant_type: "client_credentials",
-    },
-  });
-  access_token = response.data.access_token;
-};
-
-// Middleware para garantir que o token esteja carregado
-app.use(async (req, res, next) => {
-  if (!access_token) {
-    await getToken();
-  }
-  next();
-});
-app.get("/twitch/live/:channel", async (req, res) => {
+// Rota para gerar PDF
+router.post("/api/generate-pdf-report", async (req, res) => {
   try {
-    const { channel } = req.params;
+    const { team } = req.body;
 
-    let response = await axios.get("https://api.twitch.tv/helix/streams", {
-      headers: {
-        "Client-ID": client_id,
-        Authorization: `Bearer ${access_token}`,
-      },
-      params: { user_login: channel },
+    // Crie o documento PDF
+    const doc = new PDFDocument();
+
+    // Configura o cabeçalho da resposta
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=relatorio_pae_${team}.pdf`
+    );
+
+    // Pipe do PDF para a resposta
+    doc.pipe(res);
+
+    // Adicione conteúdo ao PDF
+    doc.fontSize(25).text(`Relatório PAE - ${team}`, { align: "center" });
+    doc.moveDown();
+    doc
+      .fontSize(12)
+      .text(`Semestre: ${getCurrentSemester()}`, { align: "center" });
+    doc.moveDown(2);
+
+    // Adicione tabela de jogadores (exemplo)
+    doc.fontSize(14).text("Jogadores e Horas:", { underline: true });
+    doc.moveDown();
+
+    // Aqui você deve adicionar os dados reais dos jogadores
+    doc.fontSize(12).text("Jogador 1 - 45 horas (Experiente - Azul)");
+    doc.text("Jogador 2 - 30 horas (Avançado - Ouro)");
+    // ...
+
+    // Finalize o PDF
+    doc.end();
+  } catch (error) {
+    console.error("Erro ao gerar PDF:", error);
+    res.status(500).json({ error: "Erro ao gerar relatório PDF" });
+  }
+});
+
+// Rota para gerar Excel
+router.post("/api/generate-excel-report", async (req, res) => {
+  try {
+    const { team } = req.body;
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Relatório PAE");
+
+    // Adicione cabeçalhos
+    worksheet.columns = [
+      { header: "Jogador", key: "name", width: 30 },
+      { header: "Horas", key: "hours", width: 15 },
+      { header: "Rank", key: "rank", width: 25 },
+    ];
+
+    // Adicione dados (substitua pelos dados reais da sua aplicação)
+    worksheet.addRow({
+      name: "Jogador 1",
+      hours: 45,
+      rank: "Experiente (Azul)",
+    });
+    worksheet.addRow({
+      name: "Jogador 2",
+      hours: 28,
+      rank: "Avançado (Ouro)",
     });
 
-    // Se a resposta for 401, tenta renovar o token
-    if (response.status === 401 || response.data.status === 401) {
-      await getToken();
-      response = await axios.get("https://api.twitch.tv/helix/streams", {
-        headers: {
-          "Client-ID": client_id,
-          Authorization: `Bearer ${access_token}`,
-        },
-        params: { user_login: channel },
-      });
-    }
+    // Configura o cabeçalho da resposta
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=relatorio_pae_${team}.xlsx`
+    );
 
-    const isLive = response.data.data.length > 0;
-    res.json({ live: isLive });
+    // Envie o arquivo
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (error) {
-    console.error("Erro na Twitch API:", error.response?.data || error);
-    res.status(500).json({ error: "Erro ao verificar o status do canal." });
+    console.error("Erro ao gerar Excel:", error);
+    res.status(500).json({ error: "Erro ao gerar relatório Excel" });
   }
 });
-
-
-
-
-
-
 /////////////////////////////////////////////////////////////////////////  PORTA  //////////////////////////////////////////////////////////////////////////////////////////////////
 app.listen(3000, () => {
   try {
@@ -1589,9 +1634,3 @@ app.listen(3000, () => {
     console.log("Erro", e);
   }
 });
-
-
-
-
-
-
