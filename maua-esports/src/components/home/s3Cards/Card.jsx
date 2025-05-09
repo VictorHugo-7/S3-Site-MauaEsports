@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import EditarBtn from '../EditarBtn';
-import InfoModal from './InfoModal';
+import EditarBtn from '../../EditarBtn';
+import CardModal from './CardModal';
 
-const InfoCard = ({ icon, texto }) => {
+const Card = ({ icon, texto, titulo = 'Título' }) => {
     // Estado para controlar a abertura do modal
     const [modalAberto, setModalAberto] = useState(false);
     // Estados para armazenar os valores atuais
     const [cardTexto, setCardTexto] = useState(texto);
     const [cardIcon, setCardIcon] = useState(icon);
+    const [cardTitulo, setCardTitulo] = useState(titulo);
 
     // Função para abrir o modal
     const abrirModal = () => {
@@ -24,6 +25,7 @@ const InfoCard = ({ icon, texto }) => {
     const salvarAlteracoes = (dados) => {
         setCardTexto(dados.texto);
         setCardIcon(dados.icon);
+        setCardTitulo(dados.titulo);
     };
 
     return (
@@ -32,6 +34,9 @@ const InfoCard = ({ icon, texto }) => {
             <div className="flex justify-center mb-2">
                 <img className='w-16 h-16 object-contain' src={cardIcon} alt="" />
             </div>
+
+            {/* Título */}
+            <h3 className='text-lg font-semibold text-fonte-escura mb-2'>{cardTitulo}</h3>
 
             {/* Linha */}
             <hr className='text-borda w-full' />
@@ -63,10 +68,11 @@ const InfoCard = ({ icon, texto }) => {
             </div>
 
             {/* Modal de Edição */}
-            <InfoModal
+            <CardModal
                 isOpen={modalAberto}
                 onClose={fecharModal}
                 textoAtual={cardTexto}
+                tituloAtual={cardTitulo}
                 iconAtual={cardIcon}
                 onSave={salvarAlteracoes}
             />
@@ -74,9 +80,10 @@ const InfoCard = ({ icon, texto }) => {
     );
 };
 
-InfoCard.propTypes = {
+Card.propTypes = {
     texto: PropTypes.string,
-    icon: PropTypes.string
+    icon: PropTypes.string,
+    titulo: PropTypes.string
 };
 
-export default InfoCard;
+export default Card;
