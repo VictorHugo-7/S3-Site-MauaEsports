@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { RiImageAddLine, RiCloseFill } from "react-icons/ri";
+import SalvarBtn from "../../SalvarBtn";
+import CancelarBtn from "../../CancelarBtn";
 
 const ApresentacaoModal = ({ 
     isOpen = false, 
@@ -7,7 +10,6 @@ const ApresentacaoModal = ({
     onSave = () => {}, 
     dadosIniciais = {} 
 }) => {
-    // Estados para os dados do modal com valores padrão caso dadosIniciais seja undefined ou não tenha as propriedades
     const [titulo1, setTitulo1] = useState(dadosIniciais?.titulo1 || 'Título 1');
     const [titulo2, setTitulo2] = useState(dadosIniciais?.titulo2 || 'Título 2');
     const [descricao1, setDescricao1] = useState(dadosIniciais?.descricao1 || 'Descrição 1 do componente');
@@ -20,14 +22,12 @@ const ApresentacaoModal = ({
     const [icones, setIcones] = useState(dadosIniciais?.icones || [
         { id: 1, imagem: '/api/placeholder/40/40', link: '#' }
     ]);
+    const [erroLocal, setErroLocal] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
     
-    // Referência para o input de arquivo da imagem principal
     const fileInputRef = useRef(null);
-    
-    // Objeto para armazenar referências para os inputs de arquivo de cada ícone
     const iconeFileInputRefs = useRef({});
     
-    // Atualizar estados quando as props mudam
     useEffect(() => {
         if (dadosIniciais) {
             setTitulo1(dadosIniciais.titulo1 || 'Título 1');
@@ -43,314 +43,366 @@ const ApresentacaoModal = ({
         }
     }, [dadosIniciais]);
     
-    // Função para adicionar novo ícone
     const adicionarIcone = () => {
         const novoIcone = {
-            id: Date.now(), // Usar timestamp para garantir IDs únicos
+            id: Date.now(),
             imagem: '/api/placeholder/40/40',
             link: '#'
         };
         setIcones([...icones, novoIcone]);
     };
     
-    // Função para remover ícone
     const removerIcone = (id) => {
         setIcones(icones.filter(icone => icone.id !== id));
     };
     
-    // Função para atualizar link de um ícone
     const atualizarLinkIcone = (id, novoLink) => {
         setIcones(icones.map(icone => 
             icone.id === id ? { ...icone, link: novoLink } : icone
         ));
     };
     
-    // Função para atualizar imagem de um ícone
     const atualizarImagemIcone = (id, novaImagem) => {
         setIcones(icones.map(icone => 
             icone.id === id ? { ...icone, imagem: novaImagem } : icone
         ));
     };
     
-    // Função para lidar com upload de imagem principal
     const handleImagemUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
-            // Em um ambiente real, você faria upload para um servidor
-            // Por enquanto, apenas simularemos com uma URL local ou blob URL
+            const tiposPermitidos = ["image/jpeg", "image/jpg", "image/png"];
+            if (!tiposPermitidos.includes(file.type)) {
+                setErroLocal("Formato de imagem inválido. Use apenas JPG, JPEG ou PNG.");
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                setErroLocal("A imagem deve ter no máximo 5MB");
+                return;
+            }
+            setErroLocal("");
             const imageUrl = URL.createObjectURL(file);
             setImagemUrl(imageUrl);
-            // alert('Em um ambiente real, a imagem seria carregada para o servidor.');
         }
     };
     
-    // Função para lidar com upload de imagem de ícone
     const handleIconeImagemUpload = (e, id) => {
         const file = e.target.files[0];
         if (file) {
-            // Em um ambiente real, você faria upload para um servidor
-            // Por enquanto, apenas simularemos com uma URL local ou blob URL
+            const tiposPermitidos = ["image/jpeg", "image/jpg", "image/png"];
+            if (!tiposPermitidos.includes(file.type)) {
+                setErroLocal("Formato de imagem inválido. Use apenas JPG, JPEG ou PNG.");
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                setErroLocal("A imagem deve ter no máximo 5MB");
+                return;
+            }
+            setErroLocal("");
             const imageUrl = URL.createObjectURL(file);
             atualizarImagemIcone(id, imageUrl);
-            // alert('Em um ambiente real, a imagem do ícone seria carregada para o servidor.');
         }
     };
     
-    // Função para simular escolha de imagem principal
-    const selecionarImagem = () => {
-        fileInputRef.current.click();
-    };
-    
-    // Função para simular escolha de imagem de ícone
-    const selecionarImagemIcone = (id) => {
-        // Verificar se a referência para o input de arquivo existe
-        if (iconeFileInputRefs.current[id]) {
-            iconeFileInputRefs.current[id].click();
+    const validarLinks = () => {
+        const links = [botao1Link, botao2Link, ...icones.map(icone => icone.link)];
+        for (const link of links) {
+            if (link && !link.startsWith("https://")) {
+                setErroLocal("Todos os links devem começar com https://");
+                return false;
+            }
         }
+        return true;
     };
     
-    // Função para salvar alterações e enviar para o componente pai
-    const salvarAlteracoes = () => {
-        onSave({
-            titulo1,
-            titulo2,
-            descricao1,
-            descricao2,
-            botao1Nome,
-            botao1Link,
-            botao2Nome,
-            botao2Link,
-            imagemUrl,
-            icones
-        });
+    const salvarAlteracoes = async () => {
+        setIsSubmitting(true);
+        setErroLocal("");
+        
+        if (!titulo1 || !titulo2 || !descricao1 || !descricao2 || !botao1Nome || !botao2Nome) {
+            setErroLocal("Preencha todos os campos obrigatórios!");
+            setIsSubmitting(false);
+            return;
+        }
+        
+        if (!validarLinks()) {
+            setIsSubmitting(false);
+            return;
+        }
+        
+        try {
+            await onSave({
+                titulo1: titulo1.trim(),
+                titulo2: titulo2.trim(),
+                descricao1: descricao1.trim(),
+                descricao2: descricao2.trim(),
+                botao1Nome: botao1Nome.trim(),
+                botao1Link: botao1Link.trim(),
+                botao2Nome: botao2Nome.trim(),
+                botao2Link: botao2Link.trim(),
+                imagemUrl,
+                icones
+            });
+        } catch (error) {
+            setErroLocal(error.message || "Erro ao salvar alterações");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-screen overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-fundo/80">
+            <div className="bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-full max-w-4xl max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-2xl font-bold text-gray-800">Editar Seção</h2>
+                    <h2 className="text-xl font-bold text-branco">Editar Seção Apresentação</h2>
                     <button 
                         onClick={onClose}
-                        className="text-gray-500 hover:text-gray-700"
+                        className="text-fonte-escura hover:text-vermelho-claro hover:cursor-pointer"
                     >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
+                        <RiCloseFill size={24} />
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Seção de Títulos */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-700">Títulos</h3>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Título 1 (Cor Branca)
-                            </label>
-                            <input
-                                type="text"
-                                value={titulo1}
-                                onChange={(e) => setTitulo1(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Título 2 (Cor Azul)
-                            </label>
-                            <input
-                                type="text"
-                                value={titulo2}
-                                onChange={(e) => setTitulo2(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                            />
-                        </div>
+                {erroLocal && (
+                    <div className="mb-4 p-2 bg-vermelho-claro/20 text-vermelho-claro rounded">
+                        {erroLocal}
                     </div>
+                )}
 
-                    {/* Seção de Descrições */}
+                <div className="space-y-6">
+                    {/* Seção de Títulos e Descrições */}
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-700">Descrições</h3>
+                        <h3 className="text-sm text-fonte-escura font-semibold">Títulos e Descrições</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm text-fonte-escura font-semibold mb-2">
+                                    Título 1 <span className="text-vermelho-claro">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={titulo1}
+                                    onChange={(e) => setTitulo1(e.target.value)}
+                                    className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-fonte-escura font-semibold mb-2">
+                                    Título 2 <span className="text-vermelho-claro">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={titulo2}
+                                    onChange={(e) => setTitulo2(e.target.value)}
+                                    className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
+                                    required
+                                />
+                            </div>
+                        </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Descrição 1
+                            <label className="block text-sm text-fonte-escura font-semibold mb-2">
+                                Descrição 1 <span className="text-vermelho-claro">*</span>
                             </label>
                             <textarea
                                 value={descricao1}
                                 onChange={(e) => setDescricao1(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                                rows="2"
+                                className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
+                                rows="3"
+                                required
                             ></textarea>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Descrição 2
+                            <label className="block text-sm text-fonte-escura font-semibold mb-2">
+                                Descrição 2 <span className="text-vermelho-claro">*</span>
                             </label>
                             <textarea
                                 value={descricao2}
                                 onChange={(e) => setDescricao2(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                                rows="2"
+                                className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
+                                rows="3"
+                                required
                             ></textarea>
                         </div>
                     </div>
 
                     {/* Seção de Botões */}
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-700">Botões</h3>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Botão 1 - Nome
-                            </label>
-                            <input
-                                type="text"
-                                value={botao1Nome}
-                                onChange={(e) => setBotao1Nome(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Botão 1 - Link
-                            </label>
-                            <input
-                                type="text"
-                                value={botao1Link}
-                                onChange={(e) => setBotao1Link(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Botão 2 - Nome
-                            </label>
-                            <input
-                                type="text"
-                                value={botao2Nome}
-                                onChange={(e) => setBotao2Nome(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Botão 2 - Link
-                            </label>
-                            <input
-                                type="text"
-                                value={botao2Link}
-                                onChange={(e) => setBotao2Link(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                            />
+                        <h3 className="text-sm text-fonte-escura font-semibold">Botões</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm text-fonte-escura font-semibold mb-2">
+                                    Botão 1 - Nome <span className="text-vermelho-claro">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={botao1Nome}
+                                    onChange={(e) => setBotao1Nome(e.target.value)}
+                                    className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-fonte-escura font-semibold mb-2">
+                                    Botão 1 - Link
+                                </label>
+                                <input
+                                    type="text"
+                                    value={botao1Link}
+                                    onChange={(e) => setBotao1Link(e.target.value)}
+                                    className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-fonte-escura font-semibold mb-2">
+                                    Botão 2 - Nome <span className="text-vermelho-claro">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={botao2Nome}
+                                    onChange={(e) => setBotao2Nome(e.target.value)}
+                                    className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-fonte-escura font-semibold mb-2">
+                                    Botão 2 - Link
+                                </label>
+                                <input
+                                    type="text"
+                                    value={botao2Link}
+                                    onChange={(e) => setBotao2Link(e.target.value)}
+                                    className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
+                                />
+                            </div>
                         </div>
                     </div>
 
                     {/* Seção de Imagem */}
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-700">Imagem</h3>
+                        <h3 className="text-sm text-fonte-escura font-semibold">Imagem</h3>
                         <div className="flex flex-col items-center">
-                            <img 
-                                src={imagemUrl} 
-                                alt="Imagem selecionada" 
-                                className="w-40 h-40 object-cover mb-4"
-                            />
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleImagemUpload}
-                                accept="image/*"
-                                className="hidden"
-                            />
+                            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-azul-claro rounded-lg cursor-pointer hover:bg-cinza-escuro/50 transition-colors">
+                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <RiImageAddLine className="w-8 h-8 text-azul-claro mb-2" />
+                                    <p className="text-sm text-fonte-escura">Clique para enviar</p>
+                                    <p className="text-xs text-fonte-escura/50 mt-1">
+                                        PNG, JPG ou JPEG (Max. 5MB)
+                                    </p>
+                                </div>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleImagemUpload}
+                                    accept="image/*"
+                                    className="hidden"
+                                />
+                            </label>
+                            {imagemUrl !== '/api/placeholder/400/320' && (
+                                <div className="mt-4 flex justify-center">
+                                    <div className="relative w-24 h-24">
+                                        <img 
+                                            src={imagemUrl} 
+                                            alt="Imagem selecionada" 
+                                            className="w-full h-full rounded object-cover border border-cinza-escuro"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setImagemUrl('/api/placeholder/400/320')}
+                                            className="absolute -top-2 -right-2 bg-vermelho-claro text-branco rounded-full w-6 h-6 flex items-center justify-center hover:bg-vermelho-escuro transition-colors"
+                                            title="Remover imagem"
+                                        >
+                                            <RiCloseFill className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Seção de Ícones */}
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-sm text-fonte-escura font-semibold">Ícones de Jogos</h3>
                             <button
-                                onClick={selecionarImagem}
-                                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md"
+                                onClick={adicionarIcone}
+                                className="bg-azul-claro hover:bg-azul-escuro text-branco font-semibold py-1 px-3 rounded text-sm"
                             >
-                                Escolher Imagem
+                                Adicionar Ícone
                             </button>
-                            <p className="text-xs text-gray-500 mt-2">Recomendado: 400px</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {icones.map(icone => (
+                                <div key={icone.id} className="border border-borda p-4 rounded">
+                                    <div className="flex flex-col items-center mb-3">
+                                        <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-azul-claro rounded-lg cursor-pointer hover:bg-cinza-escuro/50 transition-colors">
+                                            <div className="flex flex-col items-center justify-center pt-2 pb-3">
+                                                <RiImageAddLine className="w-6 h-6 text-azul-claro mb-1" />
+                                                <p className="text-xs text-fonte-escura">Clique para enviar</p>
+                                            </div>
+                                            <input
+                                                type="file"
+                                                ref={el => iconeFileInputRefs.current[icone.id] = el}
+                                                onChange={(e) => handleIconeImagemUpload(e, icone.id)}
+                                                accept="image/*"
+                                                className="hidden"
+                                            />
+                                        </label>
+                                        {icone.imagem !== '/api/placeholder/40/40' && (
+                                            <div className="mt-2 flex justify-center">
+                                                <div className="relative w-10 h-10">
+                                                    <img 
+                                                        src={icone.imagem} 
+                                                        alt={`Ícone ${icone.id}`} 
+                                                        className="w-full h-full rounded object-cover border border-cinza-escuro"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => atualizarImagemIcone(icone.id, '/api/placeholder/40/40')}
+                                                        className="absolute -top-2 -right-2 bg-vermelho-claro text-branco rounded-full w-5 h-5 flex items-center justify-center hover:bg-vermelho-escuro transition-colors"
+                                                        title="Remover ícone"
+                                                    >
+                                                        <RiCloseFill className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="mb-2">
+                                        <label className="block text-sm text-fonte-escura font-semibold mb-2">
+                                            Link
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={icone.link}
+                                            onChange={(e) => atualizarLinkIcone(icone.id, e.target.value)}
+                                            className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none text-sm"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={() => removerIcone(icone.id)}
+                                        className="bg-vermelho-claro hover:bg-vermelho-escuro text-branco font-semibold py-1 px-3 rounded w-full text-sm"
+                                    >
+                                        Remover
+                                    </button>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
 
-                {/* Seção de Ícones */}
-                <div className="mt-8">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-gray-700">Ícones de Jogos</h3>
-                        <button
-                            onClick={adicionarIcone}
-                            className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded-md text-sm"
-                        >
-                            Adicionar Ícone
-                        </button>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {icones.map(icone => (
-                            <div key={icone.id} className="border p-4 rounded-md">
-                                <div className="flex flex-col items-center mb-3">
-                                    <img 
-                                        src={icone.imagem} 
-                                        alt={`Ícone ${icone.id}`} 
-                                        className="w-10 h-10 mb-2"
-                                    />
-                                    <input
-                                        type="file"
-                                        ref={el => iconeFileInputRefs.current[icone.id] = el}
-                                        onChange={(e) => handleIconeImagemUpload(e, icone.id)}
-                                        accept="image/*"
-                                        className="hidden"
-                                    />
-                                    <button
-                                        onClick={() => selecionarImagemIcone(icone.id)}
-                                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-1 px-3 rounded-md"
-                                    >
-                                        Escolher Ícone
-                                    </button>
-                                </div>
-                                <div className="mb-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Link
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={icone.link}
-                                        onChange={(e) => atualizarLinkIcone(icone.id, e.target.value)}
-                                        className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                                    />
-                                </div>
-                                <button
-                                    onClick={() => removerIcone(icone.id)}
-                                    className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md text-sm w-full"
-                                >
-                                    Remover
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
                 {/* Botões de Ação */}
-                <div className="flex justify-end mt-8 space-x-4">
-                    <button
-                        onClick={onClose}
-                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-6 rounded-md"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        onClick={salvarAlteracoes}
-                        className="bg-[#284880] hover:bg-[#162b50] text-white font-medium py-2 px-6 rounded-md"
-                    >
-                        Salvar Alterações
-                    </button>
+                <div className="flex justify-end mt-6 space-x-2">
+                    <SalvarBtn onClick={salvarAlteracoes} disabled={isSubmitting} />
+                    <CancelarBtn onClick={onClose} disabled={isSubmitting} />
                 </div>
             </div>
         </div>
     );
 };
 
-// Definição dos PropTypes para validação
 ApresentacaoModal.propTypes = {
     isOpen: PropTypes.bool,
     onClose: PropTypes.func,
@@ -375,7 +427,6 @@ ApresentacaoModal.propTypes = {
     })
 };
 
-// Valores padrão para as props
 ApresentacaoModal.defaultProps = {
     isOpen: false,
     onClose: () => {},

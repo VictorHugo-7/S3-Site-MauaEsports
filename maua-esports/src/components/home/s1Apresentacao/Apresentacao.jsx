@@ -26,10 +26,10 @@ const Apresentacao = () => {
     "Além das equipes competitivas em diversos jogos, a Mauá Esports promove eventos regulares, como campeonatos internos, palestras e workshops, aberto a toda a comunidade acadêmica. Essas iniciativas visam não apenas entreter, mas também conectar jogadores, fomentar habilidades estratégicas e criar uma rede de networking entre alunos, ex-alunos e parceiros."
   );
   const [botao1Nome, setBotao1Nome] = useState("Times");
-  const [botao1Link, setBotao1Link] = useState("http://localhost:5173/times");
+  const [botao1Link, setBotao1Link] = useState("https://localhost:5173/times");
   const [botao2Nome, setBotao2Nome] = useState("Campeonatos");
   const [botao2Link, setBotao2Link] = useState(
-    "http://localhost:5173/campeonatos"
+    "https://localhost:5173/campeonatos"
   );
   const [imagemUrl, setImagemUrl] = useState(
     "http://localhost:5173/src/assets/images/LogoHome.png"
@@ -76,14 +76,13 @@ const Apresentacao = () => {
     <Margin horizontal="60px">
       {/* Divisão Conteúdo e Imagem */}
       <div
-        data-aos="fade-up"
         className="bg-fundo flex flex-col lg:flex-row items-stretch lg:items-center justify-between"
       >
         {/* Conteúdo - Esquerda */}
-        <div className="w-full lg:w-1/1 space-y-6 text-left lg:pr-8 py-8 lg:py-0">
+        <div data-aos="fade-up" className="w-full lg:w-1/1 space-y-6 text-left lg:pr-8 py-8 lg:py-0">
           {/* Título */}
           <h4 className="text-3xl font-bold mt-2">
-            <span className="text-white block md:inline">{titulo1} </span>
+            <span className="text-white block md:inline pb-[15px]">{titulo1} </span>
             <span className="text-azul-escuro block md:inline">{titulo2}</span>
           </h4>
 
@@ -92,50 +91,58 @@ const Apresentacao = () => {
           <p className="text-fonte-escura mb-7">{descricao2}</p>
 
           {/* Botões */}
-          <div className="flex gap-5">
-            {/* Botão 1 */}
-            <Link to={botao1Link}>
-              <button className="bg-azul-escuro hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition duration-300 flex items-center cursor-pointer">
-                {botao1Nome}
-                <svg
-                  className="ml-2 w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  {" "}
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </button>
-            </Link>
+          <div className="flex flex-col lg:flex-row lg:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row gap-5">
+              {/* Botão 1 */}
+              <Link to={botao1Link}>
+                <button className="bg-azul-escuro hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition duration-300 flex items-center cursor-pointer">
+                  {botao1Nome}
+                  <svg
+                    className="ml-2 w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </Link>
 
-            {/* Botão 2 */}
-            <Link to={botao2Link}>
-              <button className="bg-azul-escuro hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition duration-300 flex items-center cursor-pointer">
-                {botao2Nome}
-                <svg
-                  className="ml-2 w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  {" "}
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </button>
-            </Link>
+              {/* Botão 2 */}
+              <Link to={botao2Link}>
+                <button className="bg-azul-escuro hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition duration-300 flex items-center cursor-pointer">
+                  {botao2Nome}
+                  <svg
+                    className="ml-2 w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </Link>
+            </div>
+
+            {/* Adm - Botão Editar */}
+            <button
+              onClick={abrirModal}
+              className="bg-[#284880] font-bold text-white border-0 py-2 px-4 rounded text-center transition-colors hover:bg-[#162b50] cursor-pointer w-[80px]"
+            >
+              Editar
+            </button>
           </div>
 
           {/* Divisão */}
@@ -158,20 +165,10 @@ const Apresentacao = () => {
               </a>
             ))}
           </div>
-
-          {/* Adm - Botão Editar */}
-          <div className="flex justify-end t-5">
-            <button
-              onClick={abrirModal}
-              className="bg-[#284880] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#162b50] cursor-pointer"
-            >
-              Editar
-            </button>
-          </div>
         </div>
 
         {/* Imagem - Direita */}
-        <div className="w-full lg:w-1/2 flex justify-center lg:justify-end items-center">
+        <div data-aos="fade-up" className="w-full lg:w-1/2 flex justify-center lg:justify-end items-center">
           <img
             src={imagemUrl}
             alt="Logo Mauá Esports"
