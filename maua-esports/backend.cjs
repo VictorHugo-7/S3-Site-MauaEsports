@@ -128,7 +128,19 @@ const tournamentSchema = new mongoose.Schema({
 
 const Tournament = mongoose.model("Tournament", tournamentSchema);
 
-///////////////////////////////////////////////////////////////////////////////AREA DE USUÁRIOS ////////////////////////////////////////////////////////////////////
+const rankingSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  // Imagens como buffers
+  image: {
+    data: Buffer,
+    contentType: String,
+    nomeOriginal: String,
+  }
+});
+
+const Ranking = mongoose.model("Ranking", rankingSchema);
+
+
 const usuarioSchema = new mongoose.Schema({
   email: {
     type: String,
@@ -182,10 +194,11 @@ usuarioSchema.plugin(uniqueValidator, {
 });
 const Usuario = mongoose.model("Usuario", usuarioSchema);
 
+///////////////////////////////////////////////////////////////////////////////AREA DE USUÁRIOS ////////////////////////////////////////////////////////////////////
 app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
   try {
     const { email, discordID, tipoUsuario } = req.body;
-
+    
     if (!email) {
       return res.status(400).json({
         success: false,
@@ -469,6 +482,68 @@ app.get("/usuarios/:id", async (req, res) => {
       message: "Erro ao buscar usuário",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
+  }
+});
+///////////////////////////////////////////////AREA DE RAANKING/////////////////////////////////////////////////////////////////
+// POST - Criar novo ranking com upload de imagem
+app.post('/rankings', upload.single('image'), async (req, res) => {
+  try {
+    const { name } = req.body;
+    
+    if (!req.file) {
+      return res.status(400).json({ message: "A imagem é obrigatória" });
+    }
+
+    const newRanking = new Ranking({
+      name,
+      image: {
+        data: req.file.buffer,
+        contentType: req.file.mimetype,
+        nomeOriginal: req.file.originalname,
+      }
+    });
+
+    const savedRanking = await newRanking.save();
+    
+    // Retorna o ranking sem os dados binários da imagem
+    res.status(201).json({
+      _id: savedRanking._id,
+      name: savedRanking.name,
+      imageUrl: `/rankings/${savedRanking._id}/image`
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao criar ranking", error });
+  }
+});
+
+app.get("/rankings/:id/image", async (req, res) => {
+  try {
+    const ranking = await Ranking.findById(req.params.id);
+    if (!ranking || !ranking.image || !ranking.image.data) {
+      return res.status(404).json({ message: "Imagem não encontrada" });
+    }
+    res.set("Content-Type", ranking.image.contentType);
+    res.set("Cache-Control", "public, max-age=31536000"); // Cache por 1 ano
+    res.send(ranking.image.data);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+app.get('/rankings', async (req, res) => {
+  try {
+    const rankings = await Ranking.find();
+    
+    const rankingsWithBase64 = rankings.map(ranking => ({
+      ...ranking._doc,
+      imageData: ranking.image.data.toString('base64'),
+      imageType: ranking.image.contentType
+    }));
+
+    res.status(200).json(rankingsWithBase64);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao buscar rankings", error });
   }
 });
 
