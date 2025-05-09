@@ -4,6 +4,9 @@ import { MdChevronRight, MdChevronLeft, MdClear, MdEdit, MdSave, MdClose } from 
 import Rodape from "../components/Rodape";
 import PageBanner from "../components/PageBanner";
 import { useNavigate } from "react-router-dom";
+import { useMsal } from '@azure/msal-react';
+import AlertaErro from "../components/AlertaErro";
+import AlertaOk from "../components/AlertaOk";
 
 const Agendamento = ({
   inicio,
@@ -40,14 +43,13 @@ const Agendamento = ({
         className="text-azul-claro text-2xl cursor-pointer mt-2 sm:mt-0"
       >
         <MdEdit 
-          className="w-6 h-6" // Ajuste o tamanho conforme necessário
+          className="w-6 h-6"
           style={{
             animation: isHovered ? "shake 0.7s ease-in-out" : "none",
-            transformOrigin: 'center center' // Importante para a animação de rotação
+            transformOrigin: 'center center'
           }}
         />
       </button>
-
     </div>
   );
 };
@@ -68,6 +70,12 @@ function calcularDuracao(inicio, fim) {
 }
 
 const TreinosAdmin = () => {
+  const { instance } = useMsal();
+  const navigate = useNavigate();
+  const [userData, setUserData] = useState(null);
+  const [userRole, setUserRole] = useState('');
+  const [discordId, setDiscordId] = useState('');
+  const [isCaptain, setIsCaptain] = useState(false);
   const [dataSelecionada, setDataSelecionada] = useState(new Date());
   const [modalidades, setModalidades] = useState({});
   const [modalidadeSelecionada, setModalidadeSelecionada] = useState("");
@@ -81,6 +89,9 @@ const TreinosAdmin = () => {
     fim: "",
     diaSemana: 0
   });
+  const [alertaErro, setAlertaErro] = useState('');
+  const [alertaOk, setAlertaOk] = useState('');
+  const [userModality, setUserModality] = useState(null);
 
   const diasDaSemana = [
     { value: 0, label: "Domingo" },
@@ -91,6 +102,31 @@ const TreinosAdmin = () => {
     { value: 5, label: "Sexta" },
     { value: 6, label: "Sábado" }
   ];
+
+  // Verifica autenticação e carrega dados do usuário
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const account = instance.getActiveAccount();
+        if (!account) {
+          navigate('/');
+          return;
+        }
+
+        const response = await axios.get(`http://localhost:3000/usuarios/por-email?email=${encodeURIComponent(account.username)}`);
+        const userData = response.data.usuario;
+
+        setUserData(userData);
+        setUserRole(userData.tipoUsuario);
+        setDiscordId(userData.discordID || '');
+      } catch (error) {
+        console.error("Erro ao carregar dados do usuário:", error);
+        navigate('/nao-autorizado');
+      }
+    };
+
+    loadUserData();
+  }, [instance, navigate]);
 
   const parseCron = (cron) => {
     const parts = cron.split(' ');
@@ -104,19 +140,71 @@ const TreinosAdmin = () => {
     };
   };
 
+  // Função para determinar a modalidade do usuário
+  const determineUserModality = (mods, trainsData) => {
+    if (userRole === 'Administrador' || userRole === 'Administrador Geral') {
+      return null; // Admins podem ver tudo
+    }
+
+    let userModalityId = null;
+    let captainModalityId = null;
+
+    Object.keys(mods).forEach(modId => {
+      const modalityTrains = trainsData.filter(t => t.ModalityId === modId);
+
+      // Verifica se é capitão (pelo nome no título da modalidade)
+      if (userData?.nome && mods[modId].Name.includes(userData.nome)) {
+        captainModalityId = modId;
+      }
+
+      // Verifica se participou de algum treino
+      for (const train of modalityTrains) {
+        if (train.AttendedPlayers?.some(p => p.PlayerId === discordId)) {
+          userModalityId = modId;
+          break;
+        }
+      }
+    });
+
+    setIsCaptain(!!captainModalityId);
+    return captainModalityId || userModalityId;
+  };
+
   useEffect(() => {
+    if (!userRole) return; // Espera até ter os dados do usuário
+
     const fetchData = async () => {
       try {
-        const responseModalidades = await axios.get('/api/modality/all', {
-          headers: { "Authorization": "Bearer frontendmauaesports" }
-        });
+        const [trainsResponse, modResponse] = await Promise.all([
+          axios.get('/api/trains/all', {
+            headers: { "Authorization": "Bearer frontendmauaesports" }
+          }),
+          axios.get('/api/modality/all', {
+            headers: { "Authorization": "Bearer frontendmauaesports" }
+          })
+        ]);
 
-        const mods = responseModalidades.data;
+        const mods = modResponse.data;
+        const userModalityId = determineUserModality(mods, trainsResponse.data);
+
+        // Se não for admin e não tiver modalidade, não mostra nada
+        if (!(userRole === 'Administrador' || userRole === 'Administrador Geral') && !userModalityId) {
+          setModalidades({});
+          setCarregando(false);
+          return;
+        }
+
         setModalidades(mods);
+        setUserModality(userModalityId);
 
         const todosAgendamentos = [];
 
         for (const modId in mods) {
+          // Se não for admin, filtra apenas a modalidade do usuário
+          if (!(userRole === 'Administrador' || userRole === 'Administrador Geral') && modId !== userModalityId) {
+            continue;
+          }
+
           const mod = mods[modId];
           if (mod.ScheduledTrainings && mod.ScheduledTrainings.length > 0) {
             mod.ScheduledTrainings.forEach(treino => {
@@ -139,15 +227,24 @@ const TreinosAdmin = () => {
 
         setAgendamentosOriginais(todosAgendamentos);
         setAgendamentosFiltrados(todosAgendamentos);
+
+        // Define a modalidade inicial para admins
+        if (userRole === 'Administrador' || userRole === 'Administrador Geral') {
+          setModalidadeSelecionada(Object.keys(mods)[0] || "");
+        } else if (userModalityId) {
+          setModalidadeSelecionada(userModalityId);
+        }
+
       } catch (error) {
         console.error("Erro ao buscar dados:", error);
+        setAlertaErro('Erro ao carregar dados dos treinos');
       } finally {
         setCarregando(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [userRole, discordId, userData]);
 
   useEffect(() => {
     let treinosFiltrados = [...agendamentosOriginais];
@@ -174,6 +271,13 @@ const TreinosAdmin = () => {
   };
 
   const iniciarEdicao = (treino) => {
+    // Verifica se o usuário pode editar este treino
+    if (userRole !== 'Administrador' && userRole !== 'Administrador Geral' && 
+        treino.ModalityId !== userModality) {
+      setAlertaErro('Você não tem permissão para editar este treino');
+      return;
+    }
+
     setEditandoTreino(treino);
     setFormEdicao({
       inicio: treino.inicio,
@@ -198,14 +302,20 @@ const TreinosAdmin = () => {
   };
 
   const salvarEdicao = async () => {
-    if (!editandoTreino || !formEdicao.inicio || !formEdicao.fim) return;
+    if (!editandoTreino || !formEdicao.inicio || !formEdicao.fim) {
+      setAlertaErro('Preencha todos os campos obrigatórios');
+      return;
+    }
 
     try {
       const novaCronInicio = gerarCron(formEdicao.inicio, formEdicao.diaSemana);
       const novaCronFim = gerarCron(formEdicao.fim, formEdicao.diaSemana);
 
       const modalidade = modalidades[editandoTreino.ModalityId];
-      if (!modalidade) throw new Error("Modalidade não encontrada");
+      if (!modalidade) {
+        setAlertaErro('Modalidade não encontrada');
+        throw new Error("Modalidade não encontrada");
+      }
 
       const updatedTrainings = modalidade.ScheduledTrainings.map(t =>
         t.Start === editandoTreino.cronInicio ?
@@ -238,10 +348,10 @@ const TreinosAdmin = () => {
       setEditandoTreino(null);
       setFormEdicao({ inicio: "", fim: "", diaSemana: 0 });
 
-      alert('Treino atualizado com sucesso!');
+      setAlertaOk('Treino atualizado com sucesso!');
     } catch (error) {
       console.error("Erro ao atualizar treino:", error);
-      alert('Erro ao atualizar treino');
+      setAlertaErro('Erro ao atualizar treino');
     }
   };
 
@@ -328,8 +438,47 @@ const TreinosAdmin = () => {
     return <div className="text-white text-center py-8">Carregando dados...</div>;
   }
 
+  // Verificação de permissão
+  if (userRole === 'Jogador') {
+    return (
+      <div className="min-h-screen bg-[#0D1117] text-white flex items-center justify-center">
+        <div className="text-center p-6 max-w-md bg-gray-800 rounded-lg border border-gray-700">
+          <h2 className="text-2xl font-bold mb-4">Acesso restrito</h2>
+          <p className="mb-6">Esta página é apenas para capitães e administradores.</p>
+          <Link 
+            to="/" 
+            className="px-6 py-3 bg-azul-claro rounded-lg hover:bg-azul-escuro transition-colors inline-block"
+          >
+            Voltar para a página inicial
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (Object.keys(modalidades).length === 0 && !(userRole === 'Administrador' || userRole === 'Administrador Geral')) {
+    return (
+      <div className="min-h-screen bg-[#0D1117] text-white flex items-center justify-center">
+        <div className="text-center p-6 max-w-md bg-gray-800 rounded-lg border border-gray-700">
+          <h2 className="text-2xl font-bold mb-4">Nenhum time encontrado</h2>
+          <p className="mb-6">Você não está registrado em nenhum time ou não tem treinos agendados.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-azul-claro rounded-lg hover:bg-azul-escuro transition-colors"
+          >
+            Recarregar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full min-h-screen bg-fundo flex flex-col items-center">
+      {/* Alertas de sucesso/erro */}
+      <AlertaErro mensagem={alertaErro} />
+      <AlertaOk mensagem={alertaOk} />
+
       {/* Container unificado para NavBar e PageBanner */}
       <div className="w-full bg-navbar mb-10">
         <div className="h-[104px]"> {/* Espaço para a NavBar */} </div>
@@ -362,11 +511,17 @@ const TreinosAdmin = () => {
             className="p-2 rounded-md bg-preto text-white w-full sm:w-[30%]"
           >
             <option value="">Todos os times</option>
-            {Object.entries(modalidades).map(([id, mod]) => (
-              <option key={id} value={id}>
-                {mod.Name} ({mod.Tag})
-              </option>
-            ))}
+            {Object.entries(modalidades).map(([id, mod]) => {
+              // Se não for admin, mostra apenas o time do usuário
+              if (!(userRole === 'Administrador' || userRole === 'Administrador Geral') && id !== userModality) {
+                return null;
+              }
+              return (
+                <option key={id} value={id}>
+                  {mod.Name} ({mod.Tag})
+                </option>
+              );
+            })}
           </select>
         </div>
 
