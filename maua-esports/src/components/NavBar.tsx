@@ -33,6 +33,7 @@ const NavBar = () => {
   const [isSwordHovered, setSwordHovered] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
+  const [isVisible, setIsVisible] = useState(false); // Estado para animação do modal
   const { instance } = useMsal();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const location = useLocation();
@@ -66,7 +67,12 @@ const NavBar = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
+  // Efeito para controlar animação do modal
+  useEffect(() => {
+    if (showEditModal) {
+      setIsVisible(true); // Inicia animação de entrada
+    }
+  }, [showEditModal]);
   // Efeitos para autenticação
   useEffect(() => {
     const checkAuth = async () => {
@@ -366,9 +372,17 @@ const NavBar = () => {
   const toggleProfileDropdown = () =>
     setIsProfileDropdownOpen(!isProfileDropdownOpen);
   const toggleHamburgerMenu = () => setIsHamburgerOpen(!isHamburgerOpen);
+  // Função para alternar o modal com animação
   const toggleEditModal = () => {
-    setShowEditModal(!showEditModal);
-    setEditError("");
+    if (showEditModal) {
+      setIsVisible(false); // Inicia animação de saída
+      setTimeout(() => {
+        setShowEditModal(false);
+        setEditError("");
+      }, 300); // Aguarda a animação (300ms)
+    } else {
+      setShowEditModal(true); // Mostra o modal e dispara animação via useEffect
+    }
   };
 
   const isActive = (path: string) => location.pathname === path;
@@ -726,8 +740,16 @@ const NavBar = () => {
 
       {/* Modal de Edição de Perfil */}
       {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-fundo/80">
-          <div className="bg-fundo p-6 rounded-lg max-w-md w-full border shadow-sm shadow-azul-claro max-h-[90vh] overflow-y-auto">
+        <div
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${
+            isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+        >
+          <div
+            className={`bg-fundo p-6 rounded-lg max-w-md w-full border shadow-sm shadow-azul-claro max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
+              isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+            }`}
+          >
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-branco">Editar Perfil</h2>
               <button

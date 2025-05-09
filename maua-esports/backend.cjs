@@ -435,19 +435,53 @@ app.delete("/usuarios/:id", async (req, res) => {
 // GET - Obter foto de perfil
 app.get("/usuarios/:id/foto", async (req, res) => {
   try {
-    const usuario = await Usuario.findById(req.params.id);
+    // Validar se o ID é um ObjectId válido
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      console.error(`ID inválido fornecido: ${req.params.id}`);
+      return res.status(400).json({
+        success: false,
+        message: "ID de usuário inválido",
+      });
+    }
 
-    if (!usuario || !usuario.fotoPerfil || !usuario.fotoPerfil.data) {
+    // Buscar o usuário
+    const usuario = await Usuario.findById(req.params.id);
+    if (!usuario) {
+      console.log(`Usuário não encontrado para ID: ${req.params.id}`);
+      return res.status(404).json({
+        success: false,
+        message: "Usuário não encontrado",
+      });
+    }
+
+    // Verificar se fotoPerfil e fotoPerfil.data existem
+    if (!usuario.fotoPerfil || !usuario.fotoPerfil.data) {
+      console.log(
+        `Foto de perfil não encontrada para usuário: ${usuario.email}`
+      );
       return res.status(404).json({
         success: false,
         message: "Imagem não encontrada",
       });
     }
 
+    // Verificar se contentType é válido
+    if (!usuario.fotoPerfil.contentType) {
+      console.error(`ContentType ausente para usuário: ${usuario.email}`);
+      return res.status(500).json({
+        success: false,
+        message: "Formato de imagem inválido",
+      });
+    }
+
+    // Enviar a imagem
     res.set("Content-Type", usuario.fotoPerfil.contentType);
     res.send(usuario.fotoPerfil.data);
   } catch (error) {
-    console.error("Erro ao buscar foto de perfil:", error);
+    console.error(
+      `Erro ao buscar foto de perfil para ID ${req.params.id}:`,
+      error.stack
+    );
     res.status(500).json({
       success: false,
       message: "Erro ao carregar imagem",
