@@ -66,6 +66,20 @@ const Card = ({ data, columnId, onEdit, onDelete, isAdminMode, isDraggable }) =>
                         e.target.src = "/placeholder-tournament.jpg";
                     }}
                 />
+                {/* Game icon as a page marker */}
+                {gameIconUrl && (
+                    <div className="absolute top-3 left-4 -translate-y-1/3 z-10 h-12 w-12">
+                        <img
+                            src={gameIconUrl}
+                            alt="Game Icon"
+                            className="w-14 h-16 object-contain rounded-md bg-gray-800 border-2 border-gray-700 shadow-md p-1"
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "/placeholder-game-icon.png";
+                            }}
+                        />
+                    </div>
+                )}
                 {/* Gradient overlay for better text readability */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                 <h3 className="absolute bottom-3 left-3 font-bold text-xl text-white">{name}</h3>
@@ -73,21 +87,6 @@ const Card = ({ data, columnId, onEdit, onDelete, isAdminMode, isDraggable }) =>
 
             {/* Body */}
             <div className="p-4 flex-grow border-b border-gray-700 space-y-4">
-                {/* Game info */}
-                {gameName && (
-                    <div className="flex items-center bg-gray-800/50 rounded-md p-2">
-                        <img
-                            src={gameIconUrl}
-                            alt="Game Icon"
-                            className="w-8 h-8 object-contain mr-2 rounded-md"
-                            onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = "/placeholder-game-icon.png";
-                            }}
-                        />
-                        <span className="font-medium text-gray-200">{gameName}</span>
-                    </div>
-                )}
 
                 {/* Tournament details */}
                 <div className="space-y-3">
@@ -118,7 +117,7 @@ const Card = ({ data, columnId, onEdit, onDelete, isAdminMode, isDraggable }) =>
                             <svg className="w-5 h-5 mr-2 text-purple-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z"></path>
                             </svg>
-                            <p className="text-gray-300 text-sm">{description}</p>
+                            <span className="text-gray-300">Descrição: <span className="text-white font-medium">{description}</span></span>
                         </div>
 
                     )}
@@ -167,8 +166,7 @@ const Card = ({ data, columnId, onEdit, onDelete, isAdminMode, isDraggable }) =>
                             {teamPosition && (
                                 <div className="flex items-center bg-blue-900/20 rounded px-3 py-1.5">
                                     <svg className="w-4 h-4 mr-2 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M6 3.75A2.75 2.75 0 018.75 1h2.5A2.75 2.75 0 0114 3.75v.443c.572.055 1.14.122 1.706.2C17.053 4.582 18 5.75 18 7.07v3.469c0 1.126-.694 2.191-1.83 2.54-1.952.599-4.024.921-6.17.921s-4.219-.322-6.17-.921C2.694 12.73 2 11.665 2 10.539V7.07c0-1.321.947-2.489 2.294-2.676A41.047 41.047 0 016 4.193V3.75zm6.5 0v.325a41.622 41.622 0 00-5 0V3.75c0-.69.56-1.25 1.25-1.25h2.5c.69 0 1.25.56 1.25 1.25zM10 10a1 1 0 00-1 1v.01a1 1 0 001 1h.01a1 1 0 001-1V11a1 1 0 00-1-1H10z" clipRule="evenodd" />
-                                        <path d="M3 15.055v-.684c.126.053.255.1.39.142 2.092.642 4.313.987 6.61.987 2.297 0 4.518-.345 6.61-.987.135-.041.264-.089.39-.142v.684c0 1.347-.985 2.53-2.363 2.686a41.454 41.454 0 01-9.274 0C3.985 17.585 3 16.402 3 15.055z" />
+                                        <path fillRule="evenodd" d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v3a2 2 0 002 2h10a2 2 0 002-2v-3a2 2 0 00-2-2V7a5 5 0 00-5-5zm0 2a3 3 0 00-3 3v2h6V7a3 3 0 00-3-3zm-3 7h6v3H7v-3z" clipRule="evenodd" />
                                     </svg>
                                     <span className="text-blue-400 font-medium text-sm">{teamPosition}</span>
                                 </div>
