@@ -43,7 +43,7 @@ const Card = ({ icon, texto, titulo = 'Título' }) => {
 
             {/* Texto - usando flex-grow para ocupar espaço disponível com scrollbar personalizada */}
             <div className='flex-grow overflow-auto my-4 scrollbar-custom pr-4 text-sm'>
-                <style jsx>{`
+                <style>{`
                     .scrollbar-custom::-webkit-scrollbar {
                         width: 2px;
                     }
