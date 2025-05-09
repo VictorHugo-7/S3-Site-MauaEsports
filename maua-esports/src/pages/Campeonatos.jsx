@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
+import { useMsal } from '@azure/msal-react';
 import Board from '../components/campeonatos/Board';
 import CardModal from '../components/campeonatos/CardModal';
 import PageBanner from '../components/PageBanner';
+import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = "http://localhost:3000";
 
 const Campeonatos = () => {
+    const { instance } = useMsal();
+    const navigate = useNavigate();
     const columns = ['campeonatos', 'inscricoes', 'passados'];
     const [currentColumn, setCurrentColumn] = useState(null);
     const [editingCard, setEditingCard] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isAdminMode, setIsAdminMode] = useState(false);
     const [boardData, setBoardData] = useState({
         campeonatos: [],
         inscricoes: [],
@@ -18,6 +21,38 @@ const Campeonatos = () => {
     });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [userRole, setUserRole] = useState('');
+    const [authChecked, setAuthChecked] = useState(false);
+
+    // Verifica autenticação e carrega dados do usuário
+    useEffect(() => {
+        const loadUserData = async () => {
+            try {
+                const account = instance.getActiveAccount();
+                if (!account) {
+                    navigate('/');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE_URL}/usuarios/por-email?email=${encodeURIComponent(account.username)}`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Erro ao carregar dados do usuário');
+                }
+
+                setUserRole(data.usuario.tipoUsuario);
+                setAuthChecked(true);
+                fetchTournaments();
+
+            } catch (err) {
+                console.error("Erro ao carregar dados do usuário:", err);
+                navigate('/nao-autorizado');
+            }
+        };
+
+        loadUserData();
+    }, [instance, navigate]);
 
     const fetchTournaments = async () => {
         try {
@@ -55,12 +90,10 @@ const Campeonatos = () => {
         }
     };
 
-    useEffect(() => {
-        fetchTournaments();
-    }, []);
-
     const openModal = (columnId, card = null) => {
-        if (!isAdminMode) return;
+        // Verifica se o usuário é admin antes de abrir o modal
+        if (userRole !== 'Administrador' && userRole !== 'Administrador Geral') return;
+        
         setCurrentColumn(columnId);
         setEditingCard(card);
         setIsModalOpen(true);
@@ -100,7 +133,8 @@ const Campeonatos = () => {
     };
 
     const handleCardDelete = async (columnId, cardIndex) => {
-        if (!isAdminMode) return;
+        // Verifica se o usuário é admin antes de deletar
+        if (userRole !== 'Administrador' && userRole !== 'Administrador Geral') return;
         
         const cardId = boardData[columnId][cardIndex]._id;
         if (!cardId) return;
@@ -124,7 +158,8 @@ const Campeonatos = () => {
     };
 
     const handleCardMove = async (cardData, sourceColumn, targetColumn) => {
-        if (!isAdminMode) return;
+        // Verifica se o usuário é admin antes de mover
+        if (userRole !== 'Administrador' && userRole !== 'Administrador Geral') return;
         
         try {
             const response = await fetch(`${API_BASE_URL}/campeonatos/${cardData._id}/move`, {
@@ -148,9 +183,13 @@ const Campeonatos = () => {
         }
     };
 
-    const toggleAdminMode = () => {
-        setIsAdminMode(!isAdminMode);
-    };
+    if (!authChecked) {
+        return (
+            <div className="min-h-screen bg-[#0D1117] text-white flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
+            </div>
+        );
+    }
 
     if (isLoading) {
         return (
@@ -189,27 +228,13 @@ const Campeonatos = () => {
             <PageBanner pageName="Campeonatos" />
 
             <div className="p-5 flex flex-col items-center">
-                {/* Botão de Admin */}
-                <div className="w-full max-w-7xl mb-4 flex justify-end">
-                    <button
-                        onClick={toggleAdminMode}
-                        className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                            isAdminMode
-                                ? 'bg-red-600 hover:bg-red-700 text-white'
-                                : 'bg-azul-claro hover:bg-blue-700 text-white'
-                        }`}
-                    >
-                        {isAdminMode ? 'Desativar Modo Admin' : 'Modo Admin'}
-                    </button>
-                </div>
-
                 <Board
                     columns={columns}
                     boardData={boardData}
                     onOpenModal={openModal}
                     onCardDelete={handleCardDelete}
                     onCardMove={handleCardMove}
-                    isAdminMode={isAdminMode}
+                    isAdminMode={userRole === 'Administrador' || userRole === 'Administrador Geral'}
                 />
 
                 {isModalOpen && (
