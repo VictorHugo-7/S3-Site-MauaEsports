@@ -135,11 +135,10 @@ const rankingSchema = new mongoose.Schema({
     data: Buffer,
     contentType: String,
     nomeOriginal: String,
-  }
+  },
 });
 
 const Ranking = mongoose.model("Ranking", rankingSchema);
-
 
 const usuarioSchema = new mongoose.Schema({
   email: {
@@ -198,7 +197,7 @@ const Usuario = mongoose.model("Usuario", usuarioSchema);
 app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
   try {
     const { email, discordID, tipoUsuario } = req.body;
-    
+
     if (!email) {
       return res.status(400).json({
         success: false,
@@ -486,10 +485,10 @@ app.get("/usuarios/:id", async (req, res) => {
 });
 ///////////////////////////////////////////////AREA DE RAANKING/////////////////////////////////////////////////////////////////
 // POST - Criar novo ranking com upload de imagem
-app.post('/rankings', upload.single('image'), async (req, res) => {
+app.post("/rankings", upload.single("image"), async (req, res) => {
   try {
     const { name } = req.body;
-    
+
     if (!req.file) {
       return res.status(400).json({ message: "A imagem é obrigatória" });
     }
@@ -500,16 +499,16 @@ app.post('/rankings', upload.single('image'), async (req, res) => {
         data: req.file.buffer,
         contentType: req.file.mimetype,
         nomeOriginal: req.file.originalname,
-      }
+      },
     });
 
     const savedRanking = await newRanking.save();
-    
+
     // Retorna o ranking sem os dados binários da imagem
     res.status(201).json({
       _id: savedRanking._id,
       name: savedRanking.name,
-      imageUrl: `/rankings/${savedRanking._id}/image`
+      imageUrl: `/rankings/${savedRanking._id}/image`,
     });
   } catch (error) {
     res.status(500).json({ message: "Erro ao criar ranking", error });
@@ -530,15 +529,14 @@ app.get("/rankings/:id/image", async (req, res) => {
   }
 });
 
-
-app.get('/rankings', async (req, res) => {
+app.get("/rankings", async (req, res) => {
   try {
     const rankings = await Ranking.find();
-    
-    const rankingsWithBase64 = rankings.map(ranking => ({
+
+    const rankingsWithBase64 = rankings.map((ranking) => ({
       ...ranking._doc,
-      imageData: ranking.image.data.toString('base64'),
-      imageType: ranking.image.contentType
+      imageData: ranking.image.data.toString("base64"),
+      imageType: ranking.image.contentType,
     }));
 
     res.status(200).json(rankingsWithBase64);
@@ -1699,6 +1697,96 @@ router.post("/api/generate-excel-report", async (req, res) => {
     console.error("Erro ao gerar Excel:", error);
     res.status(500).json({ error: "Erro ao gerar relatório Excel" });
   }
+});
+/////////////////////////////////////////////////////////////////////////DISCORD API //////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Função para obter o discordID
+async function getUserId(accessToken) {
+  try {
+    const response = await axios.get("https://discord.com/api/users/@me", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    return response.data.id; // Retorna apenas o ID do usuário
+  } catch (error) {
+    console.error("Erro ao obter ID do usuário:", error.response?.data);
+    throw error;
+  }
+}
+
+// Endpoint para lidar com o callback do Discord
+app.get("/auth/discord/callback", async (req, res) => {
+  const { code, state } = req.query;
+
+  if (!code) {
+    return res.status(400).send("Código de autorização não fornecido");
+  }
+
+  if (!state) {
+    return res.status(400).send("State não fornecido");
+  }
+
+  let userId, returnUrl;
+  try {
+    // Decodificar e parsear o state
+    const stateObj = JSON.parse(decodeURIComponent(state));
+    userId = stateObj.userId;
+    returnUrl = stateObj.returnUrl || "/"; // Fallback para a página inicial
+  } catch (error) {
+    console.error("Erro ao parsear state:", error);
+    return res.status(400).send("State inválido");
+  }
+
+  if (!userId) {
+    return res.status(400).send("UserId não fornecido");
+  }
+
+  try {
+    // Trocar o code por access_token
+    const tokenResponse = await axios.post(
+      "https://discord.com/api/oauth2/token",
+      new URLSearchParams({
+        client_id: process.env.VITE_CLIENT_ID_DISCORD,
+        client_secret: process.env.CLIENT_SECRET_DISCORD,
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: "http://localhost:3005/auth/discord/callback",
+      }),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+
+    const { access_token } = tokenResponse.data;
+
+    // Obter o discordID
+    const discordID = await getUserId(access_token);
+
+    // Atualizar o documento do usuário
+    const usuario = await Usuario.findByIdAndUpdate(
+      userId,
+      { discordID },
+      { new: true, runValidators: true }
+    );
+
+    if (!usuario) {
+      return res.status(404).send("Usuário não encontrado");
+    }
+
+    // Redirecionar para a página original com discordLinked=true
+    const redirectUrl = `http://localhost:5173${returnUrl}?discordLinked=true`;
+    res.redirect(redirectUrl);
+  } catch (error) {
+    console.error("Erro no callback:", error.response?.data || error.message);
+    res.status(500).send("Erro ao vincular conta");
+  }
+});
+
+app.listen(3005, () => {
+  console.log("Discord API rodando na porta 3005");
 });
 /////////////////////////////////////////////////////////////////////////  PORTA  //////////////////////////////////////////////////////////////////////////////////////////////////
 app.listen(3000, () => {

@@ -344,6 +344,23 @@ const NavBar = () => {
     setEditError("");
   };
 
+  //Vincular conta do DISCORD
+  const VincularContaDiscord = () => {
+    // Criar um objeto com userId e a URL atual
+    const state = JSON.stringify({
+      userId: editFormData.userId || "",
+      returnUrl: location.pathname, // Armazena a página atual
+    });
+
+    const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${
+      import.meta.env.VITE_CLIENT_ID_DISCORD
+    }&response_type=code&redirect_uri=${encodeURIComponent(
+      "http://localhost:3005/auth/discord/callback"
+    )}&scope=identify&state=${encodeURIComponent(state)}`;
+
+    window.location.href = discordAuthUrl;
+  };
+
   // Funções auxiliares
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
   const toggleProfileDropdown = () =>
@@ -356,6 +373,17 @@ const NavBar = () => {
 
   const isActive = (path: string) => location.pathname === path;
   const activeAccount = instance.getActiveAccount();
+  // Adicionar um useEffect para detectar o redirecionamento e recarregar os dados
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const discordLinked = searchParams.get("discordLinked");
+    if (discordLinked === "true" && activeAccount?.username) {
+      loadUserData(activeAccount.username); // Recarrega os dados do usuário
+      setSuccessMessage("Conta do Discord vinculada com sucesso!");
+      // Limpar a query string
+      window.history.replaceState({}, document.title, location.pathname);
+    }
+  }, [location, activeAccount]);
 
   return (
     <>
@@ -805,6 +833,12 @@ const NavBar = () => {
                         <p className="text-xs text-fonte-escura/50 mt-1">
                           Deixe vazio para remover o Discord ID (deve ser um
                           número de 18 dígitos)
+                        </p>
+                        <p
+                          className="text-xs text-fonte-escura/50 mt-1 hover:cursor-pointer hover:text-azul-claro transform transition-all duration-200"
+                          onClick={VincularContaDiscord}
+                        >
+                          Deseja vincular sua conta?
                         </p>
                       </div>
 

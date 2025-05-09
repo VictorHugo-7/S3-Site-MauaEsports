@@ -5,8 +5,6 @@ import { Link, useNavigate } from "react-router-dom";
 import PageBanner from "../components/PageBanner";
 import { FaFileExcel, FaFilePdf } from "react-icons/fa";
 
-
-
 function HorasPaePage() {
   const [generatingReport, setGeneratingReport] = useState(false);
 
@@ -506,6 +504,7 @@ function HorasPaePage() {
                 value={selectedModalityId}
                 onChange={(e) => setSelectedModalityId(e.target.value)}
               >
+                <option value="all">Todos</option>
                 {Object.keys(modalidades).map((modId) => (
                   <option key={modId} value={modId}>
                     {modalidades[modId].Name}
