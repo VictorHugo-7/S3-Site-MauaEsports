@@ -5,15 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import PageBanner from "../components/PageBanner";
 import { FaFileExcel, FaFilePdf } from "react-icons/fa";
 
-// Importe as imagens dos ranks
-import rank1 from "../assets/images/rank1.png";
-import rank2 from "../assets/images/rank2.png";
-import rank3 from "../assets/images/rank3.png";
-import rank4 from "../assets/images/rank4.png";
-import rank5 from "../assets/images/rank5.png";
-import rank6 from "../assets/images/rank6.png";
-import rank7 from "../assets/images/rank7.png";
-import rank8 from "../assets/images/rank8.png";
+
 
 function HorasPaePage() {
   const [generatingReport, setGeneratingReport] = useState(false);
@@ -29,18 +21,32 @@ function HorasPaePage() {
   const [modalityPlayers, setModalityPlayers] = useState({});
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
+  const [ranks, setRanks] = useState([]);
 
-  // Dados dos ranks com imagens
-  const ranks = [
-    { id: 1, name: "Rank 1", image: rank1 },
-    { id: 2, name: "Rank 2", image: rank2 },
-    { id: 3, name: "Rank 3", image: rank3 },
-    { id: 4, name: "Rank 4", image: rank4 },
-    { id: 5, name: "Rank 5", image: rank5 },
-    { id: 6, name: "Rank 6", image: rank6 },
-    { id: 7, name: "Rank 7", image: rank7 },
-    { id: 8, name: "Rank 8", image: rank8 },
-  ];
+  const getRankings = async () => {
+    try {
+      const response = await axios.get(`http://localhost:3000/rankings`);
+      return response.data;
+    } catch (error) {
+      console.error("Erro ao buscar rankings:", error);
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    const fetchRanks = async () => {
+      try {
+        const ranksData = await getRankings();
+        setRanks(ranksData);
+      } catch (error) {
+        console.error("Erro ao carregar rankings:", error);
+        // Você pode definir ranks padrão aqui se a requisição falhar
+        setRanks([]);
+      }
+    };
+
+    fetchRanks();
+  }, []);
 
   // Função para obter o início do semestre atual
   const getCurrentSemesterStart = () => {
@@ -537,7 +543,6 @@ function HorasPaePage() {
         {/* Conteúdo principal */}
         <main className="xl:col-span-9">
           <div className="w-full bg-gray-800 border-2 border-gray-700 rounded-[30px] shadow-lg p-6 overflow-x-auto">
-            {/* Cabeçalho com ranks */}
             <div className="flex mb-4 min-w-[800px]">
               {/* Espaço para o nome do jogador (mesma largura que na lista) */}
               <div className="w-24 md:w-32"></div>
@@ -545,9 +550,9 @@ function HorasPaePage() {
               {/* Grid dos ranks - mesma estrutura que as barras */}
               <div className="flex-1 grid grid-cols-8 gap-1">
                 {ranks.map((rank) => (
-                  <div key={rank.id} className="flex flex-col items-center">
+                  <div key={rank._id} className="flex flex-col items-center">
                     <img
-                      src={rank.image}
+                      src={`data:${rank.imageType};base64,${rank.imageData}`}
                       alt={rank.name}
                       className="w-16 h-16 md:w-20 md:h-20 object-contain mb-1"
                     />
@@ -555,7 +560,6 @@ function HorasPaePage() {
                 ))}
               </div>
             </div>
-
             {/* Lista de jogadores */}
             {modalityPlayers[selectedModalityId]?.length > 0 ? (
               modalityPlayers[selectedModalityId].map((player, index) => {
@@ -645,7 +649,6 @@ function HorasPaePage() {
                   : "Nenhum dado de jogadores encontrado para esta modalidade."}
               </div>
             )}
-
             {/* Legenda */}
             <div className="mt-8 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {[
