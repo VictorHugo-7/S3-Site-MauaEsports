@@ -32,7 +32,7 @@ const Apresentacao = () => {
     "https://localhost:5173/campeonatos"
   );
   const [imagemUrl, setImagemUrl] = useState(
-    "http://localhost:5173/src/assets/images/LogoHome.png"
+    "http://localhost:5173/src/assets/images/LogoOficial.png"
   );
 
   // Estado para os ícones de jogos
