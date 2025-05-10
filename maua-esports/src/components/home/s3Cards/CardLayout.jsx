@@ -34,6 +34,7 @@ const CardLayout = () => {
                     data-aos="fade-up"
                     data-aos-delay="200"
                 />
+                
                 <Card 
                     icon={s3IconHoraPaes} 
                     texto="Facilitamos o registro e a consulta das horas PAE dos alunos, garantindo um acompanhamento transparente e integrado com as atividades esportivas."
