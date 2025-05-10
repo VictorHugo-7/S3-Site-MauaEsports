@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { RiImageAddLine, RiCloseFill } from 'react-icons/ri';
 import SalvarBtn from '../../SalvarBtn';
 import CancelarBtn from '../../CancelarBtn';
+import { createPortal } from 'react-dom';
 
 const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, onSave }) => {
     const [texto, setTexto] = useState('');
@@ -79,7 +80,8 @@ const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, onSave
     // Se o modal não estiver aberto, não renderiza nada
     if (!isOpen) return null;
 
-    return (
+    // Usa createPortal para renderizar o modal fora da hierarquia do Card
+    return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-fundo/80">
             <div className="bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-96 relative max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-4">
@@ -169,7 +171,8 @@ const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, onSave
                     <CancelarBtn onClick={onClose} />
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body // Renderiza o modal diretamente no body do documento
     );
 };
 

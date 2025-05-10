@@ -9,10 +9,10 @@ const Home = () => {
         <div className="bg-[#0D1117]">
             <div className="bg-[#010409] h-[104px]">.</div>
             <Espaco tamanho="80px" />
-            {/* <Apresentacao />
+            <Apresentacao />
+            {/* <Espaco tamanho="80px" />
+            <Twitch /> */}
             <Espaco tamanho="80px" />
-            <Twitch />
-            <Espaco tamanho="80px" /> */}
             <CardLayout />
             {/* <Espaco tamanho="80px" />
             <Novidade /> */}
