@@ -1,8 +1,8 @@
 import Espaco from '../components/padrao/Espaco';
 import Apresentacao from '../components/home/s1Apresentacao/Apresentacao';
-import Twitch from '../components/home/s4Twitch/Twitch';
+import Twitch from '../components/home/s2Twitch/Twitch';
 import CardLayout from '../components/home/s3Cards/CardLayout';
-import Novidade from '../components/home/Novidade';
+import Novidade from '../components/home/s4Novidade/Novidade';
 
 const Home = () => {
     return (
@@ -14,8 +14,8 @@ const Home = () => {
             <Twitch />
             <Espaco tamanho="80px" />
             <CardLayout />
-            {/* <Espaco tamanho="80px" />
-            <Novidade /> */}
+            <Espaco tamanho="80px" />
+            <Novidade />
             <Espaco tamanho="80px" />
         </div>
     );

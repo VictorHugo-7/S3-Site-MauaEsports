@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Margin from "../padrao/Margin";
+import Margin from "../../padrao/Margin";
 import NovidadeModal from "./NovidadeModal";
 
 const Novidade = () => {
@@ -26,9 +26,9 @@ const Novidade = () => {
   };
 
   return (
-    <>
+    <div>
       <Margin horizontal="60px">
-        <div className="flex text-white items-center">
+        <div data-aos="fade-up" className="flex text-white items-center">
           {/* Left section with champion image - 50% width */}
           <div className="rounded-[10px] w-1/2 flex items-center justify-center">
             <img className="w-100" src={novidadeData.imagem} alt="" />
@@ -74,7 +74,7 @@ const Novidade = () => {
         onSave={handleSave}
         initialData={novidadeData}
       />
-    </>
+    </div>
   );
 };
 
