@@ -12,13 +12,12 @@ const Rodape = () => {
     };
 
     return (
-
         <footer className="bg-navbar border-t border-borda mt-auto py-6 w-full">
             <Margin horizontal="60px">
-                <div className="flex flex-col md:flex-row justify-between items-center">
-                    <div className="flex flex-row items-center gap-5 mb-4 md:mb-0 text-fonte-escura">
-                        <p>© 2025 Todos Direitos Reservados Mauá Esports</p>
-                        <Link to="/politicas" className="hover:underline">Termos e Políticas</Link>
+                <div className="flex flex-col lg:flex-row justify-between items-center">
+                    <div className="flex flex-col lg:flex-row items-center lg:gap-5 mb-4 lg:mb-0 text-fonte-escura">
+                        <p className="text-center lg:text-left mb-2 lg:mb-0">© 2025 Todos Direitos Reservados Mauá Esports</p>
+                        <Link to="/politicas" className="hover:underline mb-4 lg:mb-0">Termos e Políticas</Link>
                     </div>
 
                     <div className="flex items-center space-x-4 text-fonte-escura">
@@ -38,7 +37,6 @@ const Rodape = () => {
                 </div>
             </Margin>
         </footer>
-
     );
 };
 
