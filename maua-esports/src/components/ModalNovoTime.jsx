@@ -11,12 +11,12 @@ const ModalNovoTime = ({ onSave, onClose }) => {
     id: "",
     nome: "",
     rota: "",
-    foto: null,
-    jogo: null,
   });
+  const [erro, setErro] = useState("");
   const [isVisible, setIsVisible] = useState(false);
+  const [jogoPreview, setJogoPreview] = useState(null);
 
-  // Controles para a foto do time
+  // Controles para a foto do time (mantém o ImageCropper)
   const {
     image: fotoImage,
     croppedImage: fotoCropped,
@@ -27,25 +27,14 @@ const ModalNovoTime = ({ onSave, onClose }) => {
     setCroppedImage: setFotoCropped,
   } = UseImageCrop(null);
 
-  // Controles para o logo do jogo
-  const {
-    image: jogoImage,
-    croppedImage: jogoCropped,
-    isCropping: isCroppingJogo,
-    handleFileChange: handleJogoFileChange,
-    handleCropComplete: handleJogoCropComplete,
-    handleCancelCrop: handleCancelJogoCrop,
-    setCroppedImage: setJogoCropped,
-  } = UseImageCrop(null);
-
   useEffect(() => {
-    setIsVisible(true); // Ativa a animação de entrada
+    setIsVisible(true);
   }, []);
 
   const handleClose = () => {
-    setIsVisible(false); // Inicia a animação de saída
+    setIsVisible(false);
     setTimeout(() => {
-      onClose(); // Chama onClose após a animação
+      onClose();
     }, 300);
   };
 
@@ -57,41 +46,40 @@ const ModalNovoTime = ({ onSave, onClose }) => {
     });
   };
 
+  // Função simplificada para o logo do jogo (sem ImageCropper)
+  const handleJogoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setJogoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
-      if (!formData.id || !formData.nome ) {
+      if (!formData.id || !formData.nome) {
         throw new Error("ID e Nome são obrigatórios!");
       }
-      if (!fotoCropped || !jogoCropped) {
+      if (!fotoCropped || !jogoPreview) {
         throw new Error("Foto do time e logo do jogo são obrigatórios!");
       }
       
       const dataToSave = {
         ...formData,
         foto: fotoCropped,
-        jogo: jogoCropped
+        jogo: jogoPreview
       };
       
-      const success = await onSave(dataToSave);
-      if (success) {
-        onClose();
-      }
+      await onSave(dataToSave);
+      handleClose();
     } catch (error) {
       console.error("Erro ao criar time:", error);
       setErro(error.message || "Ocorreu um erro ao criar o time");
-
     }
-
-    const dataToSave = {
-      ...formData,
-      foto: fotoCropped,
-      jogo: jogoCropped,
-    };
-
-    await onSave(dataToSave);
-    handleClose();
   };
 
   return (
@@ -100,22 +88,12 @@ const ModalNovoTime = ({ onSave, onClose }) => {
         isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >
+      {/* Modal de corte de imagem APENAS para foto do time */}
       {isCroppingFoto && (
         <ImageCropper
           initialImage={fotoImage}
           onCropComplete={handleFotoCropComplete}
           onCancel={handleCancelFotoCrop}
-          aspect={1}
-          cropShape="rect"
-          cropSize={{ width: 400, height: 400 }}
-        />
-      )}
-
-      {isCroppingJogo && (
-        <ImageCropper
-          initialImage={jogoImage}
-          onCropComplete={handleJogoCropComplete}
-          onCancel={handleCancelJogoCrop}
           aspect={1}
           cropShape="rect"
           cropSize={{ width: 400, height: 400 }}
@@ -136,6 +114,12 @@ const ModalNovoTime = ({ onSave, onClose }) => {
             <RiCloseFill size={24} />
           </button>
         </div>
+
+        {erro && (
+          <div className="mb-4 p-2 bg-vermelho-claro/20 text-vermelho-claro rounded">
+            {erro}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -166,6 +150,7 @@ const ModalNovoTime = ({ onSave, onClose }) => {
             />
           </div>
 
+          {/* Foto do Time (com ImageCropper) */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               Foto do Time <span className="text-vermelho-claro">*</span>
@@ -215,19 +200,20 @@ const ModalNovoTime = ({ onSave, onClose }) => {
             )}
           </div>
 
+          {/* Logo do Jogo (SEM ImageCropper) */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               Logo do Jogo <span className="text-vermelho-claro">*</span>
             </label>
             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-azul-claro rounded-lg cursor-pointer hover:bg-cinza-escuro/50 transition-colors">
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                {jogoCropped ? (
+                {jogoPreview ? (
                   <RiImageEditLine className="w-8 h-8 text-azul-claro mb-2" />
                 ) : (
                   <RiImageAddLine className="w-8 h-8 text-azul-claro mb-2" />
                 )}
                 <p className="text-sm text-fonte-escura">
-                  {jogoCropped ? "Alterar logo" : "Clique para enviar"}
+                  {jogoPreview ? "Alterar logo" : "Clique para enviar"}
                 </p>
                 <p className="text-xs text-fonte-escura/50 mt-1">
                   PNG, JPG ou JPEG (Max. 5MB)
@@ -236,24 +222,21 @@ const ModalNovoTime = ({ onSave, onClose }) => {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => {
-                  handleJogoFileChange(e);
-                  setJogoCropped(null);
-                }}
+                onChange={handleJogoChange}
                 className="hidden"
               />
             </label>
-            {jogoCropped && (
+            {jogoPreview && (
               <div className="mt-4 flex justify-center">
                 <div className="relative w-24 h-24">
                   <img
-                    src={jogoCropped}
+                    src={jogoPreview}
                     alt="Preview do logo"
                     className="w-full h-full rounded object-cover border border-cinza-escuro"
                   />
                   <button
                     type="button"
-                    onClick={() => setJogoCropped(null)}
+                    onClick={() => setJogoPreview(null)}
                     className="absolute -top-2 -right-2 bg-vermelho-claro text-branco rounded-full w-6 h-6 flex items-center justify-center hover:bg-vermelho-escuro transition-colors"
                     title="Remover imagem"
                   >
