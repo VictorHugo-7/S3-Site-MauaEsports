@@ -546,23 +546,26 @@ function HorasPaePage() {
               />
             )}
           </div>
-
-          <div className="flex gap-4">
-            <button
-              onClick={generateExcel}
-              disabled={generatingReport}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
-            >
-              <FaFileExcel /> Exportar Excel
-            </button>
-            <button
-              onClick={generatePDF}
-              disabled={generatingReport}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-900 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
-            >
-              <FaFilePdf /> Exportar PDF
-            </button>
-          </div>
+          {userRole === "Administrador" ||
+          userRole === "Administrador Geral" ||
+          userRole === "Capitão de Time" ? (
+            <div className="flex gap-4">
+              <button
+                onClick={generateExcel}
+                disabled={generatingReport}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
+              >
+                <FaFileExcel /> Exportar Excel
+              </button>
+              <button
+                onClick={generatePDF}
+                disabled={generatingReport}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-900 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
+              >
+                <FaFilePdf /> Exportar PDF
+              </button>
+            </div>
+          ) : null}
         </div>
 
         <main className="xl:col-span-9">

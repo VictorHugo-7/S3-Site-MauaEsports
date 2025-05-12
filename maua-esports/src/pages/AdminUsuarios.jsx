@@ -334,7 +334,7 @@ const AdminUsuarios = () => {
           ) && (
             <button
               onClick={abrirModalCriacao}
-              className="bg-azul-claro hover:bg-azul-escuro text-white px-4 py-2 rounded flex items-center gap-2 transition-colors w-full sm:w-auto justify-center"
+              className="bg-azul-claro hover:bg-azul-escuro text-white px-4 py-2 rounded flex items-center gap-2 transition-colors w-full sm:w-auto justify-center hover:cursor-pointer"
               disabled={
                 ![
                   "Administrador Geral",
