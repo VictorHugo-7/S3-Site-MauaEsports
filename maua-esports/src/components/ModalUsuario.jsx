@@ -183,14 +183,20 @@ const ModalUsuario = ({
                 name="discordID"
                 value={formData.discordID}
                 onChange={handleChange}
-                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
-                  errors.discordID
-                    ? "border-vermelho-claro focus:border-vermelho-claro"
-                    : "border-borda focus:border-azul-claro"
-                }`}
-                placeholder="Opcional"
+
+                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${errors.discordID
+                  ? "border-vermelho-claro focus:border-vermelho-claro"
+                  : "border-borda focus:border-azul-claro"
+                  }`}
+                placeholder="Exemplo: 123456789012345678"
+                pattern="\d{18}|^$"
+
               />
             </div>
+            <p className="text-xs text-fonte-escura mt-1">
+              Deixe vazio para remover o Discord ID (deve ser um
+              número de 18 dígitos)
+            </p>
             {errors.discordID && (
               <p className="text-vermelho-claro text-sm mt-1">
                 {errors.discordID}

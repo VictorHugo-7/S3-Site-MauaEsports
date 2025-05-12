@@ -59,11 +59,29 @@ const ModalNovoTime = ({ onSave, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.id || !formData.nome || !formData.rota) {
-      throw new Error("ID, Nome e Rota são obrigatórios!");
-    }
-    if (!fotoCropped || !jogoCropped) {
-      throw new Error("Foto do time e logo do jogo são obrigatórios!");
+
+    try {
+      if (!formData.id || !formData.nome ) {
+        throw new Error("ID e Nome são obrigatórios!");
+      }
+      if (!fotoCropped || !jogoCropped) {
+        throw new Error("Foto do time e logo do jogo são obrigatórios!");
+      }
+      
+      const dataToSave = {
+        ...formData,
+        foto: fotoCropped,
+        jogo: jogoCropped
+      };
+      
+      const success = await onSave(dataToSave);
+      if (success) {
+        onClose();
+      }
+    } catch (error) {
+      console.error("Erro ao criar time:", error);
+      setErro(error.message || "Ocorreu um erro ao criar o time");
+
     }
 
     const dataToSave = {
@@ -142,20 +160,6 @@ const ModalNovoTime = ({ onSave, onClose }) => {
               type="text"
               name="nome"
               value={formData.nome}
-              onChange={handleChange}
-              className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
-              required
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm text-fonte-escura font-semibold mb-2">
-              Rota <span className="text-vermelho-claro">*</span>
-            </label>
-            <input
-              type="text"
-              name="rota"
-              value={formData.rota}
               onChange={handleChange}
               className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
               required

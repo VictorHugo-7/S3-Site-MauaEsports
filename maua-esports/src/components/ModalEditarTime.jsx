@@ -73,8 +73,23 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.nome || !formData.rota) {
-      throw new Error("Nome e rota são obrigatórios!");
+
+    try {
+      if (!formData.nome) {
+        throw new Error("Nome é obrigatório!");
+      }
+      
+      const dataToSave = {
+        ...formData,
+        foto: fotoCropped,
+        jogo: jogoImage
+      };
+      
+      await onSave(dataToSave);
+    } catch (error) {
+      console.error("Erro ao editar time:", error);
+      setErro(error.message || "Ocorreu um erro ao editar o time");
+
     }
 
     const dataToSave = {
@@ -148,6 +163,7 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
             />
           </div>
 
+
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               Rota <span className="text-vermelho-claro">*</span>
@@ -161,6 +177,7 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
               required
             />
           </div>
+
 
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
