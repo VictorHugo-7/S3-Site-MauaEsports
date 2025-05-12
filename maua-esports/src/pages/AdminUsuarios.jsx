@@ -7,8 +7,8 @@ import ModalUsuario from "../components/ModalUsuario";
 import PageBanner from "../components/PageBanner";
 import AlertaErro from "../components/AlertaErro";
 import AlertaOk from "../components/AlertaOk";
-import { HiUserCircle } from "react-icons/hi2";
 import axios from "axios";
+import { HiUserCircle } from "react-icons/hi2";
 
 const API_BASE_URL = "http://localhost:3000";
 
