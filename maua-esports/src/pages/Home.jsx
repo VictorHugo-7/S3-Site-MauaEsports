@@ -1,7 +1,7 @@
 import Espaco from '../components/padrao/Espaco';
-import Apresentacao from '../components/home/Apresentacao';
+import Apresentacao from '../components/home/s1Apresentacao/Apresentacao';
 import Twitch from '../components/home/Twitch';
-import InfoLayout from '../components/home/InfoLayout';
+import CardLayout from '../components/home/s3Cards/CardLayout';
 import Novidade from '../components/home/Novidade';
 
 const Home = () => {
@@ -13,7 +13,7 @@ const Home = () => {
             <Espaco tamanho="80px" />
             <Twitch />
             <Espaco tamanho="80px" />
-            <InfoLayout />
+            <CardLayout />
             <Espaco tamanho="80px" />
             <Novidade />
             <Espaco tamanho="80px" />

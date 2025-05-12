@@ -74,3 +74,23 @@
 .absolute.top-0.right-0 {
   transform: translate(50%, -50%);
 }
+
+@keyframes spinGear {
+  0% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(-3px) rotate(-5deg); }
+  50% { transform: translateX(3px) rotate(5deg); }
+  75% { transform: translateX(-3px) rotate(0deg); }
+  100% { transform: translateX(0) rotate(0deg); }
+}
+
+@keyframes pencilEdit {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-3px) rotate(-5deg); }
+  50% { transform: translateY(0) rotate(5deg); }
+  75% { transform: translateY(-3px) rotate(0deg); }
+}
+
+@keyframes pulseEdit {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}

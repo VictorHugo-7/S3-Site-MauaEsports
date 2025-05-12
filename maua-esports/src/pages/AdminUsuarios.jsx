@@ -7,13 +7,13 @@ import ModalUsuario from '../components/ModalUsuario';
 import PageBanner from '../components/PageBanner';
 import AlertaErro from '../components/AlertaErro';
 import AlertaOk from '../components/AlertaOk';
+import axios from 'axios';
 
 const API_BASE_URL = "http://localhost:3000";
 
 const AdminUsuarios = () => {
   const { instance } = useMsal();
   const [success, setSuccess] = useState(null);
-
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -22,12 +22,32 @@ const AdminUsuarios = () => {
   const [modoEdicao, setModoEdicao] = useState(false);
   const [usuarioSelecionado, setUsuarioSelecionado] = useState(null);
   const [mostrarModal, setMostrarModal] = useState(false);
+  const [times, setTimes] = useState([]);
+  const [loadingTimes, setLoadingTimes] = useState(true);
+
+  const fetchTimes = async () => {
+    try {
+      const response = await axios.get('/api/modality/all', {
+        headers: { Authorization: "Bearer frontendmauaesports" }
+      });
+      
+      // A API retorna um objeto onde cada chave é um ID
+      setTimes(response.data); 
+      setLoadingTimes(false);
+    } catch (err) {
+      console.error("Erro ao carregar times:", err);
+      setError("Erro ao carregar lista de times");
+      setTimes({}); // Objeto vazio em caso de erro
+      setLoadingTimes(false);
+    }
+  };
 
   useEffect(() => {
     const account = instance.getActiveAccount();
     if (account) {
       setCurrentUser(account);
       fetchUsuarios();
+      fetchTimes();
     }
   }, [instance]);
 
@@ -66,7 +86,6 @@ const AdminUsuarios = () => {
   // Função para verificar se o usuário pode gerenciar outro usuário
   const podeGerenciarUsuario = (usuarioAlvo) => {
     const usuarioAtual = usuarios.find(u => u.email === currentUser?.username);
-
     if (!usuarioAtual) return false;
 
     // Se for o próprio usuário, pode editar/excluir a si mesmo
@@ -89,9 +108,10 @@ const AdminUsuarios = () => {
       return usuarioAlvo.tipoUsuario !== 'Administrador Geral';
     }
 
-    // Capitão pode gerenciar outros capitães e jogadores
+    // Capitão só pode gerenciar jogadores do seu time
     if (usuarioAtual.tipoUsuario === 'Capitão de time') {
-      return ['Capitão de time', 'Jogador'].includes(usuarioAlvo.tipoUsuario);
+      return usuarioAlvo.tipoUsuario === 'Jogador' && 
+             usuarioAlvo.time === usuarioAtual.time;
     }
 
     // Jogador não pode gerenciar ninguém (exceto a si mesmo, já tratado acima)
@@ -100,7 +120,6 @@ const AdminUsuarios = () => {
 
   const podeAdicionarTipo = (tipo) => {
     const usuarioAtual = usuarios.find(u => u.email === currentUser?.username);
-
     if (!usuarioAtual) return false;
 
     // Administrador Geral pode adicionar todos, exceto outro Administrador Geral
@@ -113,12 +132,20 @@ const AdminUsuarios = () => {
       return ['Administrador', 'Capitão de time', 'Jogador'].includes(tipo);
     }
 
-    // Capitão pode adicionar APENAS Capitães e Jogadores
+    // Capitão pode adicionar APENAS Jogadores
     if (usuarioAtual.tipoUsuario === 'Capitão de time') {
-      return ['Capitão de time', 'Jogador'].includes(tipo);
+      return tipo === 'Jogador';
     }
 
     return false;
+  };
+
+  // Verifica se o time é válido para o tipo de usuário
+  const timeValidoParaTipo = (tipoUsuario, time) => {
+    if (tipoUsuario === 'Administrador Geral' || tipoUsuario === 'Administrador') {
+      return true; // Admins não precisam de time
+    }
+    return !!time; // Capitães e jogadores precisam ter um time
   };
 
   const handleDelete = async (id) => {
@@ -137,17 +164,15 @@ const AdminUsuarios = () => {
       const response = await fetch(`${API_BASE_URL}/usuarios/${id}`, {
         method: 'DELETE'
       });
-      if (response.ok) {
-        setSuccess(`Usuário ${usuario.email} excluído com sucesso!`);
-        setError(null);
-
-      }
+      
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Erro ao excluir usuário');
       }
 
       setUsuarios(usuarios.filter(u => u._id !== id));
+      setSuccess(`Usuário ${usuario.email} excluído com sucesso!`);
+      setError(null);
     } catch (err) {
       console.error("Erro ao excluir usuário:", err);
       setError(err.message);
@@ -183,13 +208,28 @@ const AdminUsuarios = () => {
         return;
       }
 
+      // Verifica se o time é válido para o tipo de usuário
+      if (!timeValidoParaTipo(formData.tipoUsuario, formData.time)) {
+        alert('Este tipo de usuário precisa estar vinculado a um time!');
+        return;
+      }
+
       // Validação extra para edição
       if (modoEdicao) {
         const usuarioOriginal = usuarios.find(u => u._id === usuarioSelecionado._id);
-        if (usuarioOriginal && formData.tipoUsuario !== usuarioOriginal.tipoUsuario) {
+        if (usuarioOriginal) {
           // Se está tentando mudar o tipo, verifica se tem permissão
-          if (!podeAdicionarTipo(formData.tipoUsuario)) {
+          if (formData.tipoUsuario !== usuarioOriginal.tipoUsuario && 
+              !podeAdicionarTipo(formData.tipoUsuario)) {
             alert('Você não tem permissão para alterar para este tipo de usuário!');
+            return;
+          }
+
+          // Capitão não pode mudar seu próprio time
+          if (usuarioOriginal.email === currentUser?.username && 
+              usuarioOriginal.tipoUsuario === 'Capitão de time' &&
+              formData.time !== usuarioOriginal.time) {
+            alert('Você não pode alterar o time ao qual está vinculado!');
             return;
           }
         }
@@ -222,7 +262,6 @@ const AdminUsuarios = () => {
         fecharModal();
         setSuccess(modoEdicao ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!');
         setError(null);
-
       } else {
         throw new Error(result.message || 'Operação falhou');
       }
@@ -235,44 +274,52 @@ const AdminUsuarios = () => {
   const usuariosFiltrados = usuarios.filter(usuario =>
     usuario.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (usuario.discordID && usuario.discordID.includes(searchTerm)) ||
-    usuario.tipoUsuario.toLowerCase().includes(searchTerm.toLowerCase())
+    usuario.tipoUsuario.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (usuario.time && usuario.time.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  if (loading) return (
-    <div className="w-full min-h-screen bg-fundo flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
-      <p className="text-branco ml-4">Carregando usuários...</p>
-    </div>
-  );
+  if (loading || loadingTimes) {
+    return (
+      <div className="w-full min-h-screen bg-fundo flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
+        <p className="text-branco ml-4">Carregando dados...</p>
+      </div>
+    );
+  }
 
-  if (error) return (
-    <div className="w-full min-h-screen bg-fundo flex flex-col items-center justify-center p-4">
-      <div className="bg-preto p-6 rounded-lg max-w-md text-center border border-vermelho-claro">
-        <h2 className="text-xl font-bold text-vermelho-claro mb-2">
-          Erro ao carregar
-        </h2>
-        <p className="text-branco mb-4">{error}</p>
-        <div className="flex flex-col space-y-2">
-          <button
-            onClick={fetchUsuarios}
-            className="bg-azul-escuro text-branco px-4 py-2 rounded hover:bg-azul-escuro"
-          >
-            Tentar novamente
-          </button>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-cinza-escuro text-branco px-4 py-2 rounded hover:bg-cinza-claro"
-          >
-            Recarregar página
-          </button>
+  if (error) {
+    return (
+      <div className="w-full min-h-screen bg-fundo flex flex-col items-center justify-center p-4">
+        <div className="bg-preto p-6 rounded-lg max-w-md text-center border border-vermelho-claro">
+          <h2 className="text-xl font-bold text-vermelho-claro mb-2">
+            Erro ao carregar
+          </h2>
+          <p className="text-branco mb-4">{error}</p>
+          <div className="flex flex-col space-y-2">
+            <button
+              onClick={() => {
+                fetchUsuarios();
+                fetchTimes();
+              }}
+              className="bg-azul-escuro text-branco px-4 py-2 rounded hover:bg-azul-escuro"
+            >
+              Tentar novamente
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-cinza-escuro text-branco px-4 py-2 rounded hover:bg-cinza-claro"
+            >
+              Recarregar página
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   const usuarioAtual = usuarios.find(u => u.email === currentUser?.username);
 
-  // Jogadores não devem ter acesso a esta tela (deveria ser tratado na navbar)
+  // Jogadores não devem ter acesso a esta tela
   if (!usuarioAtual || usuarioAtual.tipoUsuario === 'Jogador') {
     return (
       <div className="text-center py-20">
@@ -290,7 +337,6 @@ const AdminUsuarios = () => {
         <PageBanner pageName="Gerenciamento de Usuários" className="bg-navbar" />
         <AlertaErro mensagem={error} />
         <AlertaOk mensagem={success} />
-
       </div>
 
       {/* Conteúdo principal */}
@@ -303,6 +349,8 @@ const AdminUsuarios = () => {
             modoEdicao={modoEdicao}
             currentUserEmail={currentUser?.username}
             podeAdicionarTipo={podeAdicionarTipo}
+            times={times}
+            usuarioAtual={usuarioAtual}
           />
         )}
 
@@ -312,7 +360,7 @@ const AdminUsuarios = () => {
             <FaSearch className="absolute left-3 top-3 text-cinza-escuro" />
             <input
               type="text"
-              placeholder="Buscar usuários por email, Discord ID ou tipo..."
+              placeholder="Buscar usuários por email, Discord ID, tipo ou time..."
               className="w-full pl-10 pr-4 py-2 border-2 border-borda rounded-lg focus:outline-none focus:border-azul-claro bg-navbar text-white"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -338,6 +386,7 @@ const AdminUsuarios = () => {
                 <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">Email</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">Discord ID</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">Tipo de Usuário</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">Time</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">Data de Criação</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">Ações</th>
               </tr>
@@ -353,6 +402,11 @@ const AdminUsuarios = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-white">{usuario.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-white">{usuario.discordID || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-white">{usuario.tipoUsuario}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-white">
+                        {usuario.time || 
+                          (['Administrador Geral', 'Administrador'].includes(usuario.tipoUsuario) ? 
+                          '-' : 'Não definido')}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-white">
                         {new Date(usuario.createdAt).toLocaleDateString()}
                       </td>
@@ -377,7 +431,7 @@ const AdminUsuarios = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-cinza-escuro">
+                  <td colSpan="6" className="px-6 py-4 text-center text-cinza-escuro">
                     Nenhum usuário encontrado
                   </td>
                 </tr>

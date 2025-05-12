@@ -1,9 +1,12 @@
-import React from 'react';
-import { FaTimes } from 'react-icons/fa';
-import SalvarBtn from './SalvarBtn';
-import CancelarBtn from './CancelarBtn';
-import { FaDiscord } from "react-icons/fa";
-import { IoMdClose } from 'react-icons/io';
+import React, { useState, useEffect } from "react";
+import {
+  FaUser,
+  FaDiscord,
+  FaUserShield,
+  FaUserTie,
+  FaUserAlt,
+  FaTimes,
+} from "react-icons/fa";
 
 const ModalUsuario = ({
   usuario,
@@ -11,138 +14,230 @@ const ModalUsuario = ({
   onClose,
   modoEdicao,
   currentUserEmail,
-  podeAdicionarTipo
+  podeAdicionarTipo,
+  times = {}, // Agora recebe um objeto, não array
+  usuarioAtual,
 }) => {
-  const [formData, setFormData] = React.useState({
-    email: usuario?.email || '',
-    discordID: usuario?.discordID || '',
-    tipoUsuario: usuario?.tipoUsuario || 'Jogador'
+  const [formData, setFormData] = useState({
+    email: "",
+    discordID: "",
+    tipoUsuario: "Jogador",
+    time: "",
   });
 
-  const [erro, setErro] = React.useState('');
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (modoEdicao && usuario) {
+      setFormData({
+        email: usuario.email,
+        discordID: usuario.discordID || "",
+        tipoUsuario: usuario.tipoUsuario,
+        time: usuario.time || "",
+      });
+    } else {
+      setFormData({
+        email: "",
+        discordID: "",
+        tipoUsuario: "Jogador",
+        time: "",
+      });
+    }
+  }, [modoEdicao, usuario]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
-  const validarFormulario = () => {
-    if (!formData.email.endsWith('@maua.br')) {
-      setErro('O email deve ser institucional (@maua.br)');
-      return false;
+  const validate = () => {
+    const newErrors = {};
+
+    if (!formData.email) {
+      newErrors.email = "Email é obrigatório";
+    } else if (!formData.email.endsWith("@maua.br")) {
+      newErrors.email = "Email deve ser @maua.br";
     }
 
     if (formData.discordID && !/^\d{18}$/.test(formData.discordID)) {
-      setErro('O Discord ID deve ter exatamente 18 dígitos');
-      return false;
+      newErrors.discordID = "Discord ID deve ter exatamente 18 dígitos";
     }
 
-    // Verifica permissão para o tipo selecionado
-    if (!modoEdicao && !podeAdicionarTipo(formData.tipoUsuario)) {
-      setErro('Você não tem permissão para criar este tipo de usuário');
-      return false;
+    if (
+      ["Capitão de time", "Jogador"].includes(formData.tipoUsuario) &&
+      !formData.time
+    ) {
+      newErrors.time = "Time é obrigatório para este tipo de usuário";
     }
 
-    setErro('');
-    return true;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (validate()) {
+      onSave(formData);
+    }
+  };
 
-    if (!validarFormulario()) return;
-
-    onSave(formData);
+  // Filtra os times disponíveis baseado no tipo de usuário
+  const getTimesDisponiveis = () => {
+    if (usuarioAtual?.tipoUsuario === "Capitão de time") {
+      // Capitão só pode ver o próprio time
+      return Object.values(times).filter((t) => t?.Name === usuarioAtual?.time);
+    }
+    return Object.values(times); // Converte o objeto em array de valores
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-fundo/80">
-      <div className="bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-full max-w-md relative max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-navbar rounded-lg p-6 w-full max-w-md border-2 border-borda">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-branco">
-            {modoEdicao ? 'Editar Usuário' : 'Adicionar Novo Usuário'}
+          <h2 className="text-xl font-bold text-white">
+            {modoEdicao ? "Editar Usuário" : "Adicionar Usuário"}
           </h2>
           <button
             onClick={onClose}
-            className="text-fonte-escura hover:text-vermelho-claro hover:cursor-pointer"
+            className="text-vermelho-claro hover:text-vermelho-escuro"
           >
-            <IoMdClose size={24} />
+            <FaTimes size={20} />
           </button>
         </div>
 
-        {erro && (
-          <div className="mb-4 p-2 bg-vermelho-claro/20 text-vermelho-claro rounded text-sm">
-            {erro}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm text-fonte-escura font-semibold mb-1">
-              Email Institucional <span className="text-vermelho-claro">*</span>
-            </label>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-white mb-2">Email</label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
               disabled={modoEdicao}
-              className="w-full border border-borda rounded p-2 text-branco bg-preto focus:border-azul-claro focus:outline-none"
-              placeholder="exemplo@maua.br"
-              required
+              className={`w-full p-2 rounded bg-fundo text-white border ${
+                errors.email ? "border-vermelho-claro" : "border-borda"
+              }`}
             />
+            {errors.email && (
+              <p className="text-vermelho-claro text-sm mt-1">{errors.email}</p>
+            )}
           </div>
 
-          <div>
-            <label className="block text-sm text-fonte-escura font-semibold mb-1">
-              Discord ID
-            </label>
-            <div className='flex items-center'>
-              <div className="bg-fonte-escura rounded-l-md px-2 py-2 flex items-center justify-center">
-                <FaDiscord className="text-2xl" />
-              </div>
-              <input
-                type="text"
-                name="discordID"
-                value={formData.discordID}
-                onChange={handleChange}
-                className="w-full border border-borda border-l-0 rounded-r-md p-2 focus:border-azul-claro text-branco bg-preto focus:outline-none"
-                placeholder="123456789012345678"
-                pattern="\d{18}|^$"
-              />
-            </div>
-            <p className="text-xs text-fonte-escura/50 mt-1">
-              Deixe vazio para remover o Discord ID(deve ter um número 18 dígitos)
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm text-fonte-escura font-semibold mb-1">
-              Tipo de Usuário <span className="text-vermelho-claro">*</span>
-            </label>
-            <select
-              name="tipoUsuario"
-              value={formData.tipoUsuario}
+          <div className="mb-4">
+            <label className="block text-white mb-2">Discord ID</label>
+            <input
+              type="text"
+              name="discordID"
+              value={formData.discordID}
               onChange={handleChange}
-              className="w-full border border-borda rounded p-2 text-branco bg-preto focus:border-azul-claro focus:outline-none"
-              disabled={modoEdicao && usuario?.tipoUsuario === 'Administrador Geral'}
-              required
-            >
-              <option value="Jogador">Jogador</option>
-              <option value="Capitão de time">Capitão de time</option>
-              <option value="Administrador">Administrador</option>
-              {!modoEdicao && podeAdicionarTipo('Administrador Geral') && (
-                <option value="Administrador Geral">Administrador Geral</option>
-              )}
-            </select>
+              className={`w-full p-2 rounded bg-fundo text-white border ${
+                errors.discordID ? "border-vermelho-claro" : "border-borda"
+              }`}
+              placeholder="Opcional"
+            />
+            {errors.discordID && (
+              <p className="text-vermelho-claro text-sm mt-1">
+                {errors.discordID}
+              </p>
+            )}
           </div>
 
-          <div className="flex justify-end space-x-3 mt-6">
-            <SalvarBtn type="submit" label={modoEdicao ? 'Salvar' : 'Adicionar'} />
-            <CancelarBtn onClick={onClose} />
+          <div className="mb-4">
+            <label className="block text-white mb-2">Tipo de Usuário</label>
+            <div className="relative">
+              <select
+                name="tipoUsuario"
+                value={formData.tipoUsuario}
+                onChange={handleChange}
+                disabled={modoEdicao && usuario?.email === currentUserEmail}
+                className={`w-full p-2 rounded bg-fundo text-white border ${
+                  errors.tipoUsuario ? "border-vermelho-claro" : "border-borda"
+                }`}
+              >
+                <option
+                  value="Jogador"
+                  disabled={!podeAdicionarTipo("Jogador")}
+                >
+                  Jogador
+                </option>
+                <option
+                  value="Capitão de time"
+                  disabled={!podeAdicionarTipo("Capitão de time")}
+                >
+                  Capitão de time
+                </option>
+                <option
+                  value="Administrador"
+                  disabled={!podeAdicionarTipo("Administrador")}
+                >
+                  Administrador
+                </option>
+                <option
+                  value="Administrador Geral"
+                  disabled={!podeAdicionarTipo("Administrador Geral")}
+                >
+                  Administrador Geral
+                </option>
+              </select>
+              <div className="absolute right-3 top-3 text-white">
+                {formData.tipoUsuario === "Administrador Geral" && (
+                  <FaUserShield />
+                )}
+                {formData.tipoUsuario === "Administrador" && <FaUserShield />}
+                {formData.tipoUsuario === "Capitão de time" && <FaUserTie />}
+                {formData.tipoUsuario === "Jogador" && <FaUserAlt />}
+              </div>
+            </div>
+          </div>
+
+          {["Capitão de time", "Jogador"].includes(formData.tipoUsuario) && (
+            <div className="mb-4">
+              <label className="block text-white mb-2">Time</label>
+              <select
+                name="time"
+                value={formData.time}
+                onChange={handleChange}
+                disabled={
+                  modoEdicao &&
+                  usuario?.tipoUsuario === "Capitão de time" &&
+                  usuario?.email === currentUserEmail
+                }
+                className={`w-full p-2 rounded bg-fundo text-white border ${
+                  errors.time ? "border-vermelho-claro" : "border-borda"
+                }`}
+              >
+                <option value="">Selecione um time</option>
+                {getTimesDisponiveis().map((time) => (
+                  <option key={time._id} value={time.Name}>
+                    {time.Name}
+                  </option>
+                ))}
+              </select>
+              {errors.time && (
+                <p className="text-vermelho-claro text-sm mt-1">
+                  {errors.time}
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-cinza-escuro text-white rounded hover:bg-cinza-claro"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-azul-claro text-white rounded hover:bg-azul-escuro"
+            >
+              {modoEdicao ? "Salvar Alterações" : "Adicionar Usuário"}
+            </button>
           </div>
         </form>
       </div>
