@@ -14,23 +14,34 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, children 
   const [isLoading, setIsLoading] = React.useState(true);
   const [userRole, setUserRole] = React.useState<string | null>(null);
 
+  console.log('ProtectedRoute - initial render');
+
   React.useEffect(() => {
+    console.log('ProtectedRoute - useEffect running');
     const checkAuthAndRole = async () => {
       const account = instance.getActiveAccount();
+      console.log('Active account:', account);
+      
       if (!account) {
+        console.log('No active account, will redirect');
         setIsLoading(false);
         return;
       }
 
       try {
+        console.log('Fetching user data for:', account.username);
         const response = await fetch(`http://localhost:3000/usuarios/por-email?email=${encodeURIComponent(account.username)}`);
         if (response.ok) {
           const userData = await response.json();
+          console.log('User data:', userData);
           setUserRole(userData.usuario?.tipoUsuario || null);
+        } else {
+          console.log('Failed to fetch user data');
         }
       } catch (error) {
         console.error("Erro ao verificar permissões:", error);
       } finally {
+        console.log('Finished checking auth and role');
         setIsLoading(false);
       }
     };

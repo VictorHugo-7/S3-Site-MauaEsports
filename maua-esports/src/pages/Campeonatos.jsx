@@ -24,16 +24,13 @@ const Campeonatos = () => {
     const [userRole, setUserRole] = useState('');
     const [authChecked, setAuthChecked] = useState(false);
 
-    // Verifica autenticação e carrega dados do usuário
     useEffect(() => {
-        const loadUserData = async () => {
-            try {
-                const account = instance.getActiveAccount();
-                if (!account) {
-                    navigate('/');
-                    return;
-                }
-
+    const loadUserData = async () => {
+        try {
+            const account = instance.getActiveAccount();
+            
+            // Se houver conta, carrega dados do usuário
+            if (account) {
                 const response = await fetch(`${API_BASE_URL}/usuarios/por-email?email=${encodeURIComponent(account.username)}`);
                 const data = await response.json();
                 
@@ -42,8 +39,10 @@ const Campeonatos = () => {
                 }
 
                 setUserRole(data.usuario.tipoUsuario);
-                setAuthChecked(true);
-                fetchTournaments();
+            }
+            
+            setAuthChecked(true);
+            fetchTournaments();
 
             } catch (err) {
                 console.error("Erro ao carregar dados do usuário:", err);
