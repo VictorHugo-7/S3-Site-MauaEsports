@@ -5,11 +5,8 @@ import { Link, useNavigate } from "react-router-dom";
 import PageBanner from "../components/PageBanner";
 import { FaFileExcel, FaFilePdf } from "react-icons/fa";
 
-
-
 function HorasPaePage() {
   const [generatingReport, setGeneratingReport] = useState(false);
-
   const { instance } = useMsal();
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
@@ -40,7 +37,6 @@ function HorasPaePage() {
         setRanks(ranksData);
       } catch (error) {
         console.error("Erro ao carregar rankings:", error);
-        // Você pode definir ranks padrão aqui se a requisição falhar
         setRanks([]);
       }
     };
@@ -48,36 +44,43 @@ function HorasPaePage() {
     fetchRanks();
   }, []);
 
-  // Função para obter o início do semestre atual
   const getCurrentSemesterStart = () => {
     const now = new Date();
     const year = now.getFullYear();
     const semesterStartMonth = now.getMonth() < 7 ? 1 : 7;
     return new Date(year, semesterStartMonth, 1).getTime();
   };
-  // Retorna o formato "YYYY.S" para nomear arquivos
+
   const getCurrentSemester = () => {
     const now = new Date();
     return `${now.getFullYear()}.${now.getMonth() < 6 ? 1 : 2}`;
   };
-  // Função para gerar PDF
+
   const generatePDF = async () => {
     setGeneratingReport(true);
     try {
-      // Verifique se currentModality existe e tem nome
-      if (!currentModality || !currentModality.Name) {
+      if (Object.keys(modalidades).length === 0) {
+        throw new Error("Nenhuma modalidade disponível para gerar o relatório");
+      }
+
+      let payload;
+      if (selectedModalityId === "all") {
+        const team = Object.values(modalidades).map((mod) => mod.Name);
+        if (team.length === 0) {
+          throw new Error("Nenhuma modalidade encontrada para a opção 'Todos'");
+        }
+        payload = { team };
+      } else if (currentModality?.Name) {
+        payload = { team: [currentModality.Name] }; // Send as array
+      } else {
         throw new Error("Modalidade não selecionada ou inválida");
       }
 
-      console.log("Enviando dados para o servidor:", {
-        team: currentModality.Name,
-      });
+      console.log("Enviando payload para PDF:", payload);
 
       const response = await axios.post(
         "http://localhost:5000/api/generate-pdf-report",
-        {
-          team: currentModality.Name,
-        },
+        payload,
         {
           headers: {
             Authorization: "Bearer frontendmauaesports",
@@ -87,16 +90,14 @@ function HorasPaePage() {
         }
       );
 
-      // Check if response is actually a PDF
       const contentType = response.headers["content-type"];
       if (contentType !== "application/pdf") {
-        // Try to read the error message if it's JSON
         const errorText = await response.data.text();
         try {
           const errorData = JSON.parse(errorText);
-          throw new Error(errorData.error || "Invalid response format");
+          throw new Error(errorData.error || "Formato de resposta inválido");
         } catch (e) {
-          throw new Error(errorText || "Unknown error occurred");
+          throw new Error(errorText || "Erro desconhecido ao gerar o PDF");
         }
       }
 
@@ -105,14 +106,18 @@ function HorasPaePage() {
       link.href = url;
       link.setAttribute(
         "download",
-        `relatorio_pae_${currentModality.Name}_${getCurrentSemester()}.pdf`
+        `relatorio_pae_${
+          selectedModalityId === "all"
+            ? "todas_modalidades"
+            : currentModality.Name
+        }_${getCurrentSemester()}.pdf`
       );
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (error) {
-      console.error("Detailed error:", error);
-      alert(`Error generating PDF: ${error.message}`);
+      console.error("Erro ao gerar PDF:", error);
+      alert(`Erro ao gerar PDF: ${error.message}`);
     } finally {
       setGeneratingReport(false);
     }
@@ -121,9 +126,28 @@ function HorasPaePage() {
   const generateExcel = async () => {
     setGeneratingReport(true);
     try {
+      if (Object.keys(modalidades).length === 0) {
+        throw new Error("Nenhuma modalidade disponível para gerar o relatório");
+      }
+
+      let payload;
+      if (selectedModalityId === "all") {
+        const team = Object.values(modalidades).map((mod) => mod.Name);
+        if (team.length === 0) {
+          throw new Error("Nenhuma modalidade encontrada para a opção 'Todos'");
+        }
+        payload = { team };
+      } else if (currentModality?.Name) {
+        payload = { team: [currentModality.Name] }; // Send as array
+      } else {
+        throw new Error("Modalidade não selecionada ou inválida");
+      }
+
+      console.log("Enviando payload para Excel:", payload);
+
       const response = await axios.post(
         "http://localhost:5000/api/generate-excel-report",
-        { team: currentModality.Name },
+        payload,
         {
           headers: {
             Authorization: "Bearer frontendmauaesports",
@@ -133,15 +157,14 @@ function HorasPaePage() {
         }
       );
 
-      // Check if response is actually an Excel file
       const contentType = response.headers["content-type"];
       if (!contentType.includes("spreadsheetml")) {
         const errorText = await response.data.text();
         try {
           const errorData = JSON.parse(errorText);
-          throw new Error(errorData.error || "Invalid response format");
+          throw new Error(errorData.error || "Formato de resposta inválido");
         } catch (e) {
-          throw new Error(errorText || "Unknown error occurred");
+          throw new Error(errorText || "Erro desconhecido ao gerar o Excel");
         }
       }
 
@@ -150,20 +173,23 @@ function HorasPaePage() {
       link.href = url;
       link.setAttribute(
         "download",
-        `relatorio_pae_${currentModality.Name}_${getCurrentSemester()}.xlsx`
+        `relatorio_pae_${
+          selectedModalityId === "all"
+            ? "todas_modalidades"
+            : currentModality.Name
+        }_${getCurrentSemester()}.xlsx`
       );
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (error) {
-      console.error("Detailed error:", error);
-      alert(`Error generating Excel: ${error.message}`);
+      console.error("Erro ao gerar Excel:", error);
+      alert(`Erro ao gerar Excel: ${error.message}`);
     } finally {
       setGeneratingReport(false);
     }
   };
 
-  // Verifica autenticação e carrega dados do usuário
   useEffect(() => {
     const loadUserData = async () => {
       try {
@@ -193,12 +219,10 @@ function HorasPaePage() {
     loadUserData();
   }, [instance, navigate]);
 
-  // Função para processar os dados dos jogadores
   const processPlayerHours = (trainsData, modalities) => {
     const playerHours = {};
     const semesterStart = getCurrentSemesterStart();
 
-    // Primeiro passamos por todos os treinos para calcular os totais
     trainsData.forEach((train) => {
       if (
         train.Status !== "ENDED" ||
@@ -230,7 +254,6 @@ function HorasPaePage() {
           };
         }
 
-        // Acumula horas por modalidade
         if (!playerHours[player.PlayerId].teams[train.ModalityId]) {
           playerHours[player.PlayerId].teams[train.ModalityId] = {
             hours: 0,
@@ -244,7 +267,6 @@ function HorasPaePage() {
       });
     });
 
-    // Agora processamos para cada modalidade separadamente
     const modalityPlayers = {};
 
     Object.keys(modalities).forEach((modalityId) => {
@@ -252,7 +274,6 @@ function HorasPaePage() {
     });
 
     Object.values(playerHours).forEach((player) => {
-      // Encontra a modalidade principal (onde tem mais horas)
       let mainModalityId = null;
       let maxHours = 0;
 
@@ -263,7 +284,6 @@ function HorasPaePage() {
         }
       });
 
-      // Se o jogador tem horas em alguma modalidade, adiciona à modalidade principal
       if (mainModalityId) {
         modalityPlayers[mainModalityId].push({
           ...player,
@@ -275,7 +295,6 @@ function HorasPaePage() {
       }
     });
 
-    // Ordena os jogadores em cada modalidade por horas totais
     Object.keys(modalityPlayers).forEach((modalityId) => {
       modalityPlayers[modalityId].sort((a, b) => b.totalHours - a.totalHours);
     });
@@ -283,7 +302,6 @@ function HorasPaePage() {
     return modalityPlayers;
   };
 
-  // Busca modalidades e dados dos jogadores
   useEffect(() => {
     if (!authChecked) return;
 
@@ -299,29 +317,32 @@ function HorasPaePage() {
         ]);
 
         const mods = modResponse.data;
+        console.log("Modalidades recebidas:", mods);
+
         const processedPlayers = processPlayerHours(trainsResponse.data, mods);
 
         setModalidades(mods);
         setModalityPlayers(processedPlayers);
 
-        // Define a modalidade inicial
         if (
           userRole === "Administrador" ||
           userRole === "Administrador Geral"
         ) {
-          setSelectedModalityId(Object.keys(mods)[0]);
+          if (Object.keys(mods).length > 0) {
+            setSelectedModalityId(Object.keys(mods)[0]);
+          } else {
+            console.warn("Nenhuma modalidade disponível para seleção");
+            setSelectedModalityId("all");
+          }
         } else {
-          // Para jogadores normais, encontra a modalidade padrão
           let userModalityId = null;
           let captainModalityId = null;
 
           Object.keys(mods).forEach((modId) => {
-            // Verifica se é capitão
             if (userData?.nome && mods[modId].Name.includes(userData.nome)) {
               captainModalityId = modId;
             }
 
-            // Verifica se tem jogadores nesta modalidade
             if (processedPlayers[modId]?.some((p) => p.name === discordId)) {
               userModalityId = modId;
             }
@@ -332,12 +353,15 @@ function HorasPaePage() {
 
           if (defaultModalityId) {
             setSelectedModalityId(defaultModalityId);
+          } else {
+            console.warn("Nenhuma modalidade associada ao usuário");
           }
         }
 
         setLoading(false);
       } catch (error) {
         console.error("Erro ao buscar dados:", error);
+        alert("Erro ao carregar dados. Tente novamente.");
         setLoading(false);
       }
     };
@@ -345,18 +369,17 @@ function HorasPaePage() {
     fetchData();
   }, [authChecked, discordId, userData, userRole]);
 
-  // FUNÇÕES PARA CÁLCULO DOS RANKS
   const getCurrentRank = (hours) => {
-    if (hours >= 80) return 8; // Diamante (80h)
-    if (hours >= 70) return 7; // Vermelho (70-79h)
-    if (hours >= 60) return 6; // Roxo (60-69h)
-    if (hours >= 50) return 5; // Esmeralda (50-59h)
-    if (hours >= 35) return 4; // Azul (35-49h)
-    if (hours >= 25) return 3; // Ouro (25-34h)
-    if (hours >= 15) return 2; // Prata (15-24h)
-    if (hours >= 10) return 1; // Bronze (10-14h)
-    if (hours >= 1) return 0; // Branco (1-9h)
-    return -1; // Vazio (0h)
+    if (hours >= 80) return 8;
+    if (hours >= 70) return 7;
+    if (hours >= 60) return 6;
+    if (hours >= 50) return 5;
+    if (hours >= 35) return 4;
+    if (hours >= 25) return 3;
+    if (hours >= 15) return 2;
+    if (hours >= 10) return 1;
+    if (hours >= 1) return 0;
+    return -1;
   };
 
   const getFillPercentage = (hours) => {
@@ -417,8 +440,7 @@ function HorasPaePage() {
     return `${totalProgress * 100}%`;
   };
 
-  // Renderização condicional
-  if (loading) {
+  if (loading || !authChecked) {
     return (
       <div className="min-h-screen bg-[#0D1117] text-white flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
@@ -426,15 +448,6 @@ function HorasPaePage() {
     );
   }
 
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen bg-[#0D1117] text-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
-      </div>
-    );
-  }
-
-  // Mensagens de feedback
   if (userRole === "Jogador" && !discordId) {
     return (
       <div className="min-h-screen bg-[#0D1117] text-white flex items-center justify-center">
@@ -482,15 +495,26 @@ function HorasPaePage() {
 
   const currentModality = modalidades[selectedModalityId] || {};
 
+  const allPlayers =
+    selectedModalityId === "all"
+      ? Object.values(modalityPlayers)
+          .flat()
+          .sort((a, b) => b.totalHours - a.totalHours)
+      : modalityPlayers[selectedModalityId] || [];
+
   return (
     <div className="min-h-screen bg-[#0D1117] text-white">
       <div className="bg-[#010409] h-[104px]"></div>
-      <PageBanner pageName={`Horas PAEs - ${currentModality.Name || ""}`} />
+      <PageBanner
+        pageName={`Horas PAEs - ${
+          selectedModalityId === "all"
+            ? "Todas as Modalidades"
+            : currentModality.Name || ""
+        }`}
+      />
 
       <div className="flex flex-col gap-6 px-6 pb-8 md:px-14 md:py-15">
-        {/* Container para seletor e botões alinhados */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          {/* Seletor de modalidade */}
           <div className="md:w-[30%]">
             <label
               htmlFor="modality-select"
@@ -506,6 +530,7 @@ function HorasPaePage() {
                 value={selectedModalityId}
                 onChange={(e) => setSelectedModalityId(e.target.value)}
               >
+                <option value="all">Todos</option>
                 {Object.keys(modalidades).map((modId) => (
                   <option key={modId} value={modId}>
                     {modalidades[modId].Name}
@@ -521,33 +546,32 @@ function HorasPaePage() {
               />
             )}
           </div>
-
-          {/* Botões de exportação */}
-          <div className="flex gap-4">
-            <button
-              onClick={generateExcel}
-              disabled={generatingReport}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
-            >
-              <FaFileExcel /> Exportar Excel
-            </button>
-            <button
-              onClick={generatePDF}
-              disabled={generatingReport}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-900 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
-            >
-              <FaFilePdf /> Exportar PDF
-            </button>
-          </div>
+          {userRole === "Administrador" ||
+          userRole === "Administrador Geral" ||
+          userRole === "Capitão de Time" ? (
+            <div className="flex gap-4">
+              <button
+                onClick={generateExcel}
+                disabled={generatingReport}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
+              >
+                <FaFileExcel /> Exportar Excel
+              </button>
+              <button
+                onClick={generatePDF}
+                disabled={generatingReport}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-900 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
+              >
+                <FaFilePdf /> Exportar PDF
+              </button>
+            </div>
+          ) : null}
         </div>
-        {/* Conteúdo principal */}
+
         <main className="xl:col-span-9">
           <div className="w-full bg-gray-800 border-2 border-gray-700 rounded-[30px] shadow-lg p-6 overflow-x-auto">
             <div className="flex mb-4 min-w-[800px]">
-              {/* Espaço para o nome do jogador (mesma largura que na lista) */}
               <div className="w-24 md:w-32"></div>
-
-              {/* Grid dos ranks - mesma estrutura que as barras */}
               <div className="flex-1 grid grid-cols-8 gap-1">
                 {ranks.map((rank) => (
                   <div key={rank._id} className="flex flex-col items-center">
@@ -560,16 +584,16 @@ function HorasPaePage() {
                 ))}
               </div>
             </div>
-            {/* Lista de jogadores */}
-            {modalityPlayers[selectedModalityId]?.length > 0 ? (
-              modalityPlayers[selectedModalityId].map((player, index) => {
+
+            {allPlayers.length > 0 ? (
+              allPlayers.map((player, index) => {
                 const currentRank = getCurrentRank(player.totalHours);
                 const fillPercentage = getFillPercentage(player.totalHours);
                 const roundedHours = Math.round(player.totalHours * 10) / 10;
 
                 return (
                   <div
-                    key={index}
+                    key={`${player.name}-${index}`}
                     className="flex items-center mb-4 min-w-[800px]"
                   >
                     <div className="w-24 md:w-32 font-semibold truncate">
@@ -580,7 +604,6 @@ function HorasPaePage() {
                     </div>
 
                     <div className="flex-1 grid grid-cols-8 gap-1 relative">
-                      {/* Linha de 40h */}
                       <div
                         className="absolute top-0 bottom-0 w-0.5 bg-yellow-300 z-10"
                         style={{
@@ -595,7 +618,6 @@ function HorasPaePage() {
                         40h
                       </div>
 
-                      {/* Barras de progresso */}
                       {ranks.map((_, rankIndex) => {
                         const rankNum = rankIndex + 1;
                         const isActive = rankNum === currentRank + 1;
@@ -649,7 +671,7 @@ function HorasPaePage() {
                   : "Nenhum dado de jogadores encontrado para esta modalidade."}
               </div>
             )}
-            {/* Legenda */}
+
             <div className="mt-8 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {[
                 { range: "1-9h", color: "bg-white", name: "Iniciante" },
@@ -660,11 +682,7 @@ function HorasPaePage() {
                   name: "Intermediário",
                 },
                 { range: "25-34h", color: "bg-[#FCA610]", name: "Avançado" },
-                {
-                  range: "35-49h",
-                  color: "bg-[#39A0B1]",
-                  name: "Experiente",
-                },
+                { range: "35-49h", color: "bg-[#39A0B1]", name: "Experiente" },
                 { range: "50-59h", color: "bg-[#047C21]", name: "Veterano" },
                 { range: "60-69h", color: "bg-[#60409E]", name: "Elite" },
                 { range: "70-79h", color: "bg-[#C10146]", name: "Mestre" },

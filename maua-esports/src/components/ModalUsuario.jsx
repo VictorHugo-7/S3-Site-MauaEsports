@@ -15,6 +15,7 @@ const ModalUsuario = ({
   modoEdicao,
   currentUserEmail,
   podeAdicionarTipo,
+
   times = {}, // Agora recebe um objeto, não array
   usuarioAtual,
 }) => {
@@ -23,7 +24,10 @@ const ModalUsuario = ({
     discordID: "",
     tipoUsuario: "Jogador",
     time: "",
+
   });
+  const [erro, setErro] = React.useState("");
+  const [isVisible, setIsVisible] = useState(false); // Estado para animação
 
   const [errors, setErrors] = useState({});
 
@@ -44,6 +48,7 @@ const ModalUsuario = ({
       });
     }
   }, [modoEdicao, usuario]);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -75,10 +80,12 @@ const ModalUsuario = ({
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
     if (validate()) {
       onSave(formData);
     }
@@ -103,6 +110,7 @@ const ModalUsuario = ({
           <button
             onClick={onClose}
             className="text-vermelho-claro hover:text-vermelho-escuro"
+
           >
             <FaTimes size={20} />
           </button>
@@ -124,6 +132,7 @@ const ModalUsuario = ({
               <p className="text-vermelho-claro text-sm mt-1">{errors.email}</p>
             )}
           </div>
+
 
           <div className="mb-4">
             <label className="block text-white mb-2">Discord ID</label>
@@ -149,6 +158,7 @@ const ModalUsuario = ({
               <select
                 name="tipoUsuario"
                 value={formData.tipoUsuario}
+
                 onChange={handleChange}
                 disabled={modoEdicao && usuario?.email === currentUserEmail && usuario?.tipoUsuario === 'Administrador Geral'}
                 className={`w-full p-2 rounded bg-fundo text-white border ${errors.tipoUsuario ? "border-vermelho-claro" : "border-borda"}`}
@@ -187,6 +197,7 @@ const ModalUsuario = ({
                 {formData.tipoUsuario === "Jogador" && <FaUserAlt />}
               </div>
             </div>
+
           </div>
 
           {["Capitão de time", "Jogador"].includes(formData.tipoUsuario) && (
@@ -214,9 +225,11 @@ const ModalUsuario = ({
                 <p className="text-vermelho-claro text-sm mt-1">
                   {errors.time}
                 </p>
+
               )}
             </div>
           )}
+
 
           <div className="flex justify-end gap-2 mt-6">
             <button
@@ -232,6 +245,7 @@ const ModalUsuario = ({
             >
               {modoEdicao ? "Salvar Alterações" : "Adicionar Usuário"}
             </button>
+
           </div>
         </form>
       </div>
