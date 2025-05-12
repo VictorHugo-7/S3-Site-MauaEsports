@@ -33,7 +33,7 @@ const NavBar = () => {
   const [isSwordHovered, setSwordHovered] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
-  const [isVisible, setIsVisible] = useState(false); // Estado para animação do modal
+  const [isVisible, setIsVisible] = useState(false);
   const { instance } = useMsal();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const location = useLocation();
@@ -41,7 +41,6 @@ const NavBar = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [isAdminHovered, setIsAdminHovered] = useState(false);
   const [isEditHovered, setIsEditHovered] = useState(false);
-  // Estados para edição de perfil
   const [editFormData, setEditFormData] = useState({
     email: "",
     discordID: "",
@@ -52,14 +51,26 @@ const NavBar = () => {
   const [editError, setEditError] = useState("");
   const [userDataLoaded, setUserDataLoaded] = useState(false);
   const [userType, setUserType] = useState<string>("");
-  // Estados para o cropper de imagem
   const [image, setImage] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedArea, setCroppedArea] = useState<CroppedArea | null>(null);
   const [tempCroppedImage, setTempCroppedImage] = useState<string | null>(null);
 
-  /// Efeito para verificar scroll
+  // Funções para verificar rotas ativas
+  const isTimesActive = (path: string) => {
+    return path === "/times" || path === "/admins";
+  };
+
+  const isActive = (path: string) => location.pathname === path;
+
+  // Fechar dropdowns quando a rota muda
+  useEffect(() => {
+    setIsDropdownOpen(false);
+    setIsProfileDropdownOpen(false);
+  }, [location.pathname]);
+
+  // Efeitos para scroll e autenticação
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 0);
@@ -67,13 +78,13 @@ const NavBar = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-  // Efeito para controlar animação do modal
+
   useEffect(() => {
     if (showEditModal) {
-      setIsVisible(true); // Inicia animação de entrada
+      setIsVisible(true);
     }
   }, [showEditModal]);
-  // Efeitos para autenticação
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -367,25 +378,27 @@ const NavBar = () => {
     window.location.href = discordAuthUrl;
   };
 
-  // Funções auxiliares
+  // Funções auxiliares modificadas
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
-  const toggleProfileDropdown = () =>
+  
+  const toggleProfileDropdown = () => 
     setIsProfileDropdownOpen(!isProfileDropdownOpen);
+  
   const toggleHamburgerMenu = () => setIsHamburgerOpen(!isHamburgerOpen);
-  // Função para alternar o modal com animação
+  
   const toggleEditModal = () => {
     if (showEditModal) {
-      setIsVisible(false); // Inicia animação de saída
+      setIsVisible(false);
       setTimeout(() => {
         setShowEditModal(false);
         setEditError("");
-      }, 300); // Aguarda a animação (300ms)
+      }, 300);
     } else {
-      setShowEditModal(true); // Mostra o modal e dispara animação via useEffect
+      setShowEditModal(true);
     }
+    setIsProfileDropdownOpen(false);
   };
 
-  const isActive = (path: string) => location.pathname === path;
   const activeAccount = instance.getActiveAccount();
   // Adicionar um useEffect para detectar o redirecionamento e recarregar os dados
   useEffect(() => {
@@ -402,14 +415,11 @@ const NavBar = () => {
   return (
     <>
       <nav
-        className={`z-50 py-5 fixed w-full flex justify-between items-center text-lg text-white font-blinker transition-all duration-300 ease-in-out
-          ${
-            isScrolled
-              ? "bg-navbar lg:bg-navbar/97"
-              : "bg-transparent lg:bg-transparent"
-          }
-          md:bg-navbar 
-        `}
+        className={`z-50 py-5 fixed w-full flex justify-between items-center text-lg text-white font-blinker transition-all duration-300 ease-in-out ${
+          isScrolled
+            ? "bg-navbar lg:bg-navbar/97"
+            : "bg-transparent lg:bg-transparent"
+        } md:bg-navbar`}
       >
         <div className="absolute bottom-0 left-0 w-full h-[1.5px] bg-transparent">
           <div
@@ -422,8 +432,10 @@ const NavBar = () => {
         <div className="mx-14">
           <img className="w-16 h-16" src={logo} alt="Logo" />
         </div>
+        
         {successMessage && <AlertaOk mensagem={successMessage} />}
         {errorMessage && <AlertaErro mensagem={errorMessage} />}
+        
         <button
           className={`lg:hidden text-white fixed right-5 cursor-pointer transform transition-all duration-300 ${
             isHamburgerOpen ? "rotate-90" : "rotate-0"
@@ -448,9 +460,7 @@ const NavBar = () => {
             <li
               className={`px-4 py-2 cursor-pointer transition-transform duration-300 hover:translate-y-[-4px] border-b-3 ${
                 isHamburgerOpen
-                  ? `border-borda ${
-                      isActive("/") ? "text-azul-claro font-bold" : ""
-                    }`
+                  ? `border-borda ${isActive("/") ? "text-azul-claro font-bold" : ""}`
                   : `border-b-transparent hover:text-azul-claro hover:font-bold ${
                       isActive("/") ? "text-azul-claro font-bold" : ""
                     }`
@@ -462,7 +472,11 @@ const NavBar = () => {
             <li className="relative px-4 py-2 transition-transform duration-300 hover:translate-y-[-4px] border-b-3 border-b-transparent">
               <button
                 onClick={toggleDropdown}
-                className="focus:outline-none flex items-center gap-1 cursor-pointer hover:text-azul-claro hover:font-bold"
+                className={`focus:outline-none flex items-center gap-1 cursor-pointer ${
+                  isTimesActive(location.pathname)
+                    ? "text-azul-claro font-bold"
+                    : "hover:text-azul-claro hover:font-bold"
+                }`}
               >
                 Times{" "}
                 <IoMdArrowDropdown
@@ -486,6 +500,7 @@ const NavBar = () => {
                 <li className="px-4 py-2 border-b-2 border-borda relative">
                   <Link
                     to="/times"
+                    onClick={() => setIsDropdownOpen(false)}
                     className={`px-4 border-transparent inline-flex items-center gap-2 transform hover:scale-110 transition-transform duration-300 cursor-pointer ${
                       isActive("/times")
                         ? "text-azul-claro font-bold"
@@ -500,6 +515,7 @@ const NavBar = () => {
                 <li className="px-4 py-2">
                   <Link
                     to="/admins"
+                    onClick={() => setIsDropdownOpen(false)}
                     className={`px-4 border-transparent inline-flex items-center gap-2 transform hover:scale-110 transition-transform duration-300 cursor-pointer ${
                       isActive("/admins")
                         ? "text-azul-claro font-bold"
@@ -517,12 +533,10 @@ const NavBar = () => {
               className={`px-4 py-2 cursor-pointer transition-transform duration-300 hover:translate-y-[-4px] border-b-3 ${
                 isHamburgerOpen
                   ? `border-borda ${
-                      isActive("/campeonatos")
-                        ? "text-azul-claro font-bold"
-                        : ""
+                      isActive("/campeonatos") ? "text-azul-claro font-bold" : ""
                     }`
                   : `border-b-transparent hover:text-azul-claro hover:font-bold ${
-                      isActive("/campeonatos") ? "text-azul-claro" : ""
+                      isActive("/campeonatos") ? "text-azul-claro font-bold" : ""
                     }`
               }`}
             >
@@ -536,7 +550,7 @@ const NavBar = () => {
                       isActive("/novidades") ? "text-azul-claro font-bold" : ""
                     }`
                   : `border-b-transparent hover:text-azul-claro hover:font-bold ${
-                      isActive("/novidades") ? "text-azul-claro" : ""
+                      isActive("/novidades") ? "text-azul-claro font-bold" : ""
                     }`
               }`}
             >
@@ -600,7 +614,7 @@ const NavBar = () => {
                             <img
                               src={croppedImage}
                               alt="Foto de Perfil"
-                              className="w-full h-full transform hover:scale-110 transition-transform duration-300 "
+                              className="w-full h-full transform hover:scale-110 transition-transform duration-300"
                             />
                           ) : (
                             <HiUserCircle className="w-14 h-14 transform hover:scale-110 transition-transform duration-300 cursor-pointer hover:bg-hover hover:border-2 hover:border-borda hover:rounded-full" />
@@ -619,7 +633,11 @@ const NavBar = () => {
 
                     <div className="flex-grow pb-10 items-left">
                       {userType !== "Jogador" && (
-                        <Link to="/treinos-admin" className="w-full">
+                        <Link 
+                          to="/treinos-admin" 
+                          className="w-full"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                        >
                           <div
                             className="w-full p-2 cursor-pointer flex items-center gap-3 hover:bg-hover group pr-10"
                             onMouseEnter={() => setSwordHovered(true)}
@@ -630,7 +648,7 @@ const NavBar = () => {
                                 className="text-2xl text-azul-claro"
                                 style={{
                                   animation: isSwordHovered
-                                    ? "shake 0.7s ease-in-out "
+                                    ? "shake 0.7s ease-in-out"
                                     : "none",
                                 }}
                               />
@@ -645,7 +663,11 @@ const NavBar = () => {
                         </Link>
                       )}
 
-                      <Link to="/horas-pae" className="w-full">
+                      <Link 
+                        to="/horas-pae" 
+                        className="w-full"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                      >
                         <div
                           className="w-full p-2 cursor-pointer flex items-center gap-3 hover:bg-hover group pr-10"
                           onMouseEnter={() => setClockIsHovered(true)}
@@ -656,7 +678,7 @@ const NavBar = () => {
                               className="text-2xl text-azul-claro"
                               style={{
                                 animation: isClockHovered
-                                  ? "rodar 0.7s ease-in-out "
+                                  ? "rodar 0.7s ease-in-out"
                                   : "none",
                               }}
                             />
@@ -671,8 +693,11 @@ const NavBar = () => {
                       </Link>
 
                       {userType !== "Jogador" && (
-                        // No seu componente:
-                        <Link to="/admin-usuarios" className="w-full">
+                        <Link 
+                          to="/admin-usuarios" 
+                          className="w-full"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                        >
                           <div
                             className="w-full p-2 cursor-pointer flex items-center gap-3 hover:bg-hover group pr-10"
                             onMouseEnter={() => setIsAdminHovered(true)}
@@ -697,6 +722,7 @@ const NavBar = () => {
                           </div>
                         </Link>
                       )}
+                      
                       <div
                         className="w-full p-2 cursor-pointer flex items-center gap-3 hover:bg-hover group pr-10"
                         onClick={toggleEditModal}
@@ -721,10 +747,14 @@ const NavBar = () => {
                         </div>
                       </div>
                     </div>
+                    
                     <div className="flex flex-col">
                       <button
                         className="w-full border-t-2 border-borda p-2 mt-auto text-vermelho-claro flex items-center gap-2 cursor-pointer hover:bg-hover pl-4"
-                        onClick={handleLogout}
+                        onClick={() => {
+                          handleLogout();
+                          setIsProfileDropdownOpen(false);
+                        }}
                       >
                         <CgLogOut className="text-2xl" />
                         <span>Sair da conta</span>
