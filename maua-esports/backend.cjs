@@ -155,10 +155,9 @@ const usuarioSchema = new mongoose.Schema({
   },
   discordID: {
     type: String,
-    required: false, // Tornando opcional
+    required: false,
     validate: {
       validator: function (v) {
-        // Só valida se o campo foi fornecido
         if (!v) return true;
         return /^\d{18}$/.test(v);
       },
@@ -167,7 +166,7 @@ const usuarioSchema = new mongoose.Schema({
     },
   },
   fotoPerfil: {
-    data: { type: Buffer, required: false }, // Tornando opcional
+    data: { type: Buffer, required: false },
     contentType: { type: String, required: false },
     nomeOriginal: { type: String, required: false },
   },
@@ -181,6 +180,10 @@ const usuarioSchema = new mongoose.Schema({
       "Jogador",
     ],
     default: "Jogador",
+  },
+  time: {
+    type: String,
+    required: false, // Campo opcional
   },
   createdAt: {
     type: Date,
@@ -196,8 +199,9 @@ const Usuario = mongoose.model("Usuario", usuarioSchema);
 ///////////////////////////////////////////////////////////////////////////////AREA DE USUÁRIOS ////////////////////////////////////////////////////////////////////
 app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
   try {
-    const { email, discordID, tipoUsuario } = req.body;
 
+    const { email, discordID, tipoUsuario, time } = req.body;
+    
     if (!email) {
       return res.status(400).json({
         success: false,
@@ -208,7 +212,8 @@ app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
     const usuarioData = {
       email,
       ...(discordID && { discordID }),
-      tipoUsuario: tipoUsuario?.trim() || "Jogador", // Adicione trim() aqui
+      tipoUsuario: tipoUsuario?.trim() || "Jogador",
+      ...(time && { time }), // Adiciona time se existir
       ...(req.file && {
         fotoPerfil: {
           data: req.file.buffer,
@@ -226,8 +231,9 @@ app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
       usuario: {
         _id: novoUsuario._id,
         email: novoUsuario.email,
-        ...(novoUsuario.discordID && { discordID: novoUsuario.discordID }), // Só retorna se existir
+        ...(novoUsuario.discordID && { discordID: novoUsuario.discordID }),
         tipoUsuario: novoUsuario.tipoUsuario,
+        ...(novoUsuario.time && { time: novoUsuario.time }), // Inclui time se existir
         createdAt: novoUsuario.createdAt,
       },
       message: "Usuário criado com sucesso",
@@ -250,6 +256,7 @@ app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
     });
   }
 });
+
 app.get("/usuarios/verificar-email", async (req, res) => {
   try {
     const email = req.query.email;
@@ -312,8 +319,8 @@ app.get("/usuarios/por-email", async (req, res) => {
       success: true,
       usuario: {
         ...usuario._doc,
-        // Garante que discordID está incluso
         discordID: usuario.discordID || null,
+        time: usuario.time || null, // Inclui time ou null
       },
     });
   } catch (error) {
@@ -325,6 +332,8 @@ app.get("/usuarios/por-email", async (req, res) => {
     });
   }
 });
+
+
 
 // GET - Listar todos os usuários
 app.get("/usuarios", async (req, res) => {
@@ -349,11 +358,10 @@ app.get("/usuarios", async (req, res) => {
   }
 });
 
-// PUT - Atualizar usuário (com suporte para remoção de foto)
+
 app.put("/usuarios/:id", upload.single("fotoPerfil"), async (req, res) => {
   try {
-    const { removeFoto } = req.body;
-    const updateData = { ...req.body };
+    const { removeFoto, ...updateData } = req.body; // Inclui time se vier no body
 
     // Se foi solicitado para remover a foto
     if (removeFoto === "true") {
@@ -367,7 +375,6 @@ app.put("/usuarios/:id", upload.single("fotoPerfil"), async (req, res) => {
         nomeOriginal: req.file.originalname,
       };
     }
-    // Se não foi enviada nova foto nem solicitado remoção, mantém a foto existente
 
     const usuario = await Usuario.findByIdAndUpdate(req.params.id, updateData, {
       new: true,

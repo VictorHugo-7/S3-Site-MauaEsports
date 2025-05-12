@@ -1,6 +1,7 @@
 import { Mail, ArrowUp } from "lucide-react";
-import { BsInstagram, BsTwitch, BsDiscord, BsYoutube} from "react-icons/bs";
+import { BsInstagram, BsTwitch, BsDiscord, BsYoutube } from "react-icons/bs";
 import { Link } from "react-router-dom";
+import Margin from "./padrao/Margin";
 
 const Rodape = () => {
     const scrollToTop = () => {
@@ -12,11 +13,11 @@ const Rodape = () => {
 
     return (
         <footer className="bg-navbar border-t border-borda mt-auto py-6 w-full">
-            <div className="mx-4 md:mx-14 px-4">
-                <div className="flex flex-col md:flex-row justify-between items-center">
-                    <div className="flex flex-row items-center gap-5 mb-4 md:mb-0 text-fonte-escura">
-                        <p>© 2025 Todos Direitos Reservados Mauá Esports</p>
-                        <Link to="/politicas" className="hover:underline">Termos e Políticas</Link>
+            <Margin horizontal="60px">
+                <div className="flex flex-col lg:flex-row justify-between items-center">
+                    <div className="flex flex-col lg:flex-row items-center lg:gap-5 mb-4 lg:mb-0 text-fonte-escura">
+                        <p className="text-center lg:text-left mb-2 lg:mb-0">© 2025 Todos Direitos Reservados Mauá Esports</p>
+                        <Link to="/politicas" className="hover:underline mb-4 lg:mb-0">Termos e Políticas</Link>
                     </div>
 
                     <div className="flex items-center space-x-4 text-fonte-escura">
@@ -34,7 +35,7 @@ const Rodape = () => {
                         </button>
                     </div>
                 </div>
-            </div>
+            </Margin>
         </footer>
     );
 };

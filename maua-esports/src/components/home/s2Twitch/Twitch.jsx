@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Calendar, ExternalLink, Users, Heart } from 'lucide-react';
-import Margin from '../padrao/Margin';
+import Margin from '../../padrao/Margin';
 
 // Componente para exibir as tags do canal
 const ChannelTags = ({ tags }) => (
@@ -83,7 +83,8 @@ const Twitch = () => {
 
     return (
         <Margin horizontal="60px">
-            <div className="flex flex-col md:flex-row bg-fundo rounded-lg overflow-hidden">
+            <h1 data-aos-delay="100" data-aos="fade-up" className='text-3xl text-center font-bold mb-15 text-azul-claro'>Twitch</h1>
+            <div data-aos-delay="200" data-aos="fade-up" className="flex flex-col md:flex-row bg-fundo rounded-lg overflow-hidden">
                 <ChannelInfo channel={{
                     name: "Gaules",
                     description: "O maior canal de CS2 da Twitch! Aqui tem jogo, entretenimento e muita interação com a comunidade. #PartiuGaules",
