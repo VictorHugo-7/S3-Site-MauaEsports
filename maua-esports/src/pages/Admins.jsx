@@ -3,6 +3,8 @@ import CardAdmin from "../components/CardAdmin";
 import ModalEditarAdmin from "../components/ModalEditarAdmin";
 import AdicionarAdmin from "../components/AdicionarAdmin";
 import PageBanner from "../components/PageBanner";
+import AlertaErro from "../components/AlertaErro";
+import AlertaOk from "../components/AlertaOk";
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -11,7 +13,8 @@ const Admins = () => {
   const [carregando, setCarregando] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState(null);
   const [adminEditando, setAdminEditando] = useState(null);
-  const [feedback, setFeedback] = useState(null);
+  const [erro, setErro] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   const carregarAdmins = async () => {
     try {
@@ -66,10 +69,8 @@ const Admins = () => {
       if (error.name === "AbortError") {
         mensagemErro = "Tempo de conexão excedido. Verifique sua internet.";
       } else if (error.message.includes("Failed to fetch")) {
-        mensagemErro = "Não foi possível conectar ao servidor. Verifique:";
-        mensagemErro += "\n1. Se o servidor está rodando";
-        mensagemErro += "\n2. Se a URL está correta";
-        mensagemErro += "\n3. Se não há problemas de CORS";
+        mensagemErro =
+          "Não foi possível conectar ao servidor. Verifique:\n1. Se o servidor está rodando\n2. Se a URL está correta\n3. Se não há problemas de CORS";
       } else {
         mensagemErro = error.message;
       }
@@ -84,6 +85,7 @@ const Admins = () => {
   useEffect(() => {
     carregarAdmins();
   }, []);
+
   const handleDeleteAdmin = async (adminId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/admins/${adminId}`, {
@@ -95,12 +97,12 @@ const Admins = () => {
       }
 
       setAdmins((prev) => prev.filter((a) => a._id !== adminId));
+      setSuccessMessage("Administrador deletado com sucesso!");
     } catch (error) {
-      console.error("Erro ao deletar jogador:", error);
-      alert(`Erro ao deletar jogador: ${error.message}`);
+      console.error("Erro ao deletar admin:", error);
+      setErro(`Erro ao deletar administrador: ${error.message}`);
     }
   };
-
 
   const dataURLtoBlob = (dataURL) => {
     const arr = dataURL.split(",");
@@ -120,13 +122,14 @@ const Admins = () => {
       formData.append("nome", adminAtualizado.nome);
       formData.append("titulo", adminAtualizado.titulo || "");
       formData.append("descricao", adminAtualizado.descricao || "");
-      formData.append("insta", adminAtualizado.instagram || "");
+      formData.append("insta", adminAtualizado.insta || "");
       formData.append("twitter", adminAtualizado.twitter || "");
       formData.append("twitch", adminAtualizado.twitch || "");
 
-      if (adminAtualizado.foto?.startsWith("data:image")) {
-        const fotoBlob = dataURLtoBlob(adminAtualizado.foto);
-        formData.append("foto", fotoBlob, "foto.jpg");
+      if (adminAtualizado.foto instanceof File) {
+        formData.append("foto", adminAtualizado.foto);
+      } else if (adminAtualizado.foto === null) {
+        formData.append("removeFoto", "true");
       }
 
       const response = await fetch(
@@ -137,7 +140,6 @@ const Admins = () => {
         }
       );
 
-      // Verifica primeiro o status da resposta
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || "Falha ao atualizar admin");
@@ -145,36 +147,33 @@ const Admins = () => {
 
       const data = await response.json();
 
-      // Atualização correta do estado
       setAdmins((prev) =>
         prev.map((admin) =>
           admin._id === adminAtualizado._id
             ? {
-              ...admin,
-              nome: data.nome,
-              titulo: data.titulo,
-              descricao: data.descricao,
-              insta: data.insta,
-              twitter: data.twitter,
-              twitch: data.twitch,
-              fotoUrl: data.fotoUrl || admin.fotoUrl,
-            }
+                ...admin,
+                nome: data.nome,
+                titulo: data.titulo,
+                descricao: data.descricao,
+                insta: data.insta,
+                twitter: data.twitter,
+                twitch: data.twitch,
+                fotoUrl: data.foto
+                  ? `${API_BASE_URL}/admins/${data._id}/foto?${Date.now()}`
+                  : null,
+              }
             : admin
         )
       );
 
       setAdminEditando(null);
-      setFeedback({ type: "success", message: "Admin atualizado!" });
-      return true;
+      setSuccessMessage("Administrador atualizado com sucesso!");
     } catch (error) {
       console.error("Erro na edição:", error);
-      setFeedback({
-        type: "error",
-        message: error.message || "Erro ao atualizar admin",
-      });
-      return false;
+      setErro(error.message || "Erro ao atualizar administrador");
     }
   };
+
   const handleCreateAdmin = async (novoAdmin) => {
     try {
       const formData = new FormData();
@@ -213,12 +212,10 @@ const Admins = () => {
         },
       ]);
 
-      setFeedback({ type: "success", message: "Admin criado com sucesso!" });
-      setTimeout(() => setFeedback(null), 3000);
-      return true;
+      setSuccessMessage("Administrador criado com sucesso!");
     } catch (error) {
       console.error("Erro ao criar admin:", error);
-      throw error;
+      setErro(error.message || "Erro ao criar administrador");
     }
   };
 
@@ -232,7 +229,7 @@ const Admins = () => {
       titulo: adminToEdit.titulo,
       descricao: adminToEdit.descricao,
       fotoUrl: adminToEdit.fotoUrl,
-      instagram: adminToEdit.insta || "",
+      insta: adminToEdit.insta || "",
       twitter: adminToEdit.twitter || "",
       twitch: adminToEdit.twitch || "",
     });
@@ -276,14 +273,8 @@ const Admins = () => {
 
   return (
     <div className="w-full min-h-screen bg-fundo">
-      {feedback && (
-        <div
-          className={`fixed top-4 right-4 p-4 rounded-lg z-50 ${feedback.type === "success" ? "bg-green-500" : "bg-red-500"
-            } text-white shadow-lg`}
-        >
-          {feedback.message}
-        </div>
-      )}
+      {erro && <AlertaErro mensagem={erro} />}
+      {successMessage && <AlertaOk mensagem={successMessage} />}
 
       <div className="bg-[#010409] h-[104px]">.</div>
 

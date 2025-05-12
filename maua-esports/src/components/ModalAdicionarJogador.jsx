@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaInstagram } from "react-icons/fa";
 import { RiTwitterXFill } from "react-icons/ri";
 import { IoLogoTwitch } from "react-icons/io";
@@ -8,6 +8,8 @@ import SalvarBtn from "./SalvarBtn";
 import CancelarBtn from "./CancelarBtn";
 import ImageCropper from "./ImageCropper";
 import { UseImageCrop } from "./UseImageCrop";
+import AlertaErro from "./AlertaErro";
+import AlertaOk from "./AlertaOk";
 
 const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
   const [formData, setFormData] = useState({
@@ -26,10 +28,23 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
     handleFileChange: handleFotoFileChange,
     handleCropComplete: handleFotoCropComplete,
     handleCancelCrop: handleCancelFotoCrop,
-    setCroppedImage: setFotoCropped
+    setCroppedImage: setFotoCropped,
   } = UseImageCrop(null);
 
   const [erro, setErro] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(true); // Ativa a animação de entrada quando o modal é montado
+  }, []);
+
+  const handleClose = () => {
+    setIsVisible(false); // Inicia a animação de saída
+    setTimeout(() => {
+      onClose(); // Chama onClose após a animação (300ms)
+    }, 300);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,8 +53,7 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
 
   const validarLinks = () => {
     const { instagram, twitter, twitch } = formData;
-  
-    // Apenas validação básica de formato
+
     if (instagram && !instagram.startsWith("https://")) {
       setErro("O link do Instagram deve começar com https://");
       return false;
@@ -57,35 +71,52 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     // Validação básica
-    if (!fotoCropped || !formData.nome || !formData.titulo || !formData.descricao) {
+    if (
+      !fotoCropped ||
+      !formData.nome ||
+      !formData.titulo ||
+      !formData.descricao
+    ) {
       setErro("Preencha todos os campos obrigatórios!");
       return;
     }
-  
+
+    if (!validarLinks()) return;
+
     // Prepara os dados garantindo que redes sociais vazias sejam null
     const novoJogador = {
       nome: formData.nome.trim(),
       titulo: formData.titulo.trim(),
       descricao: formData.descricao.trim(),
       foto: fotoCropped,
-      insta: formData.instagram?.trim() || null, // Garante null se vazio
+      insta: formData.instagram?.trim() || null,
       twitter: formData.twitter?.trim() || null,
       twitch: formData.twitch?.trim() || null,
       time: timeId,
     };
-  
+
     try {
       await onSave(novoJogador);
-      onClose(); // Fecha o modal após sucesso
+      setSuccessMessage("Jogador adicionado com sucesso!");
+      setTimeout(() => {
+        handleClose(); // Fecha o modal após exibir o alerta de sucesso
+      }, 2000); // Aguarda 2 segundos para o usuário ver o sucesso
     } catch (error) {
       setErro(error.message || "Erro ao adicionar jogador");
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-fundo/80">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${
+        isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
+    >
+      {erro && <AlertaErro mensagem={erro} />}
+      {successMessage && <AlertaOk mensagem={successMessage} />}
+
       {isCroppingFoto && (
         <ImageCropper
           initialImage={fotoImage}
@@ -97,22 +128,20 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
         />
       )}
 
-      <div className="bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-full max-w-md relative max-h-[90vh] overflow-y-auto">
+      <div
+        className={`bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-full max-w-md relative max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
+          isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+        }`}
+      >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-branco">Adicionar Jogador</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-fonte-escura hover:text-vermelho-claro hover:cursor-pointer"
           >
             <RiCloseFill size={24} />
           </button>
         </div>
-
-        {erro && (
-          <div className="mb-4 p-2 bg-vermelho-claro/20 text-vermelho-claro rounded text-sm">
-            {erro}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -259,7 +288,7 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
 
           <div className="flex justify-end space-x-3 mt-6">
             <SalvarBtn type="submit" />
-            <CancelarBtn onClick={onClose} />
+            <CancelarBtn onClick={handleClose} />
           </div>
         </form>
       </div>

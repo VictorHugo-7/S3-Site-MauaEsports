@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { RiCloseFill, RiImageAddLine, RiImageEditLine } from "react-icons/ri";
 import PropTypes from "prop-types";
 import SalvarBtn from "./SalvarBtn";
@@ -14,8 +14,8 @@ const ModalNovoTime = ({ onSave, onClose }) => {
     foto: null,
     jogo: null,
   });
-  const [erro, setErro] = useState("");
-  
+  const [isVisible, setIsVisible] = useState(false);
+
   // Controles para a foto do time
   const {
     image: fotoImage,
@@ -24,9 +24,9 @@ const ModalNovoTime = ({ onSave, onClose }) => {
     handleFileChange: handleFotoFileChange,
     handleCropComplete: handleFotoCropComplete,
     handleCancelCrop: handleCancelFotoCrop,
-    setCroppedImage: setFotoCropped
+    setCroppedImage: setFotoCropped,
   } = UseImageCrop(null);
-  
+
   // Controles para o logo do jogo
   const {
     image: jogoImage,
@@ -35,8 +35,19 @@ const ModalNovoTime = ({ onSave, onClose }) => {
     handleFileChange: handleJogoFileChange,
     handleCropComplete: handleJogoCropComplete,
     handleCancelCrop: handleCancelJogoCrop,
-    setCroppedImage: setJogoCropped
+    setCroppedImage: setJogoCropped,
   } = UseImageCrop(null);
+
+  useEffect(() => {
+    setIsVisible(true); // Ativa a animação de entrada
+  }, []);
+
+  const handleClose = () => {
+    setIsVisible(false); // Inicia a animação de saída
+    setTimeout(() => {
+      onClose(); // Chama onClose após a animação
+    }, 300);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -48,6 +59,7 @@ const ModalNovoTime = ({ onSave, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
       if (!formData.id || !formData.nome ) {
         throw new Error("ID e Nome são obrigatórios!");
@@ -69,12 +81,25 @@ const ModalNovoTime = ({ onSave, onClose }) => {
     } catch (error) {
       console.error("Erro ao criar time:", error);
       setErro(error.message || "Ocorreu um erro ao criar o time");
+
     }
+
+    const dataToSave = {
+      ...formData,
+      foto: fotoCropped,
+      jogo: jogoCropped,
+    };
+
+    await onSave(dataToSave);
+    handleClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-fundo/80">
-      {/* Modal de corte de imagem para foto do time */}
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${
+        isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
+    >
       {isCroppingFoto && (
         <ImageCropper
           initialImage={fotoImage}
@@ -85,8 +110,7 @@ const ModalNovoTime = ({ onSave, onClose }) => {
           cropSize={{ width: 400, height: 400 }}
         />
       )}
-      
-      {/* Modal de corte de imagem para logo do jogo */}
+
       {isCroppingJogo && (
         <ImageCropper
           initialImage={jogoImage}
@@ -97,27 +121,23 @@ const ModalNovoTime = ({ onSave, onClose }) => {
           cropSize={{ width: 400, height: 400 }}
         />
       )}
-      
-      {/* Modal principal */}
-      <div className="bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-96 relative max-h-[90vh] overflow-y-auto">
+
+      <div
+        className={`bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-96 relative max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
+          isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+        }`}
+      >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-branco">Criar Novo Time</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-fonte-escura hover:text-vermelho-claro hover:cursor-pointer"
           >
             <RiCloseFill size={24} />
           </button>
         </div>
 
-        {erro && (
-          <div className="mb-4 p-2 bg-vermelho-claro/20 text-vermelho-claro rounded">
-            {erro}
-          </div>
-        )}
-
         <form onSubmit={handleSubmit}>
-          {/* ID do Time */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               ID do Time <span className="text-vermelho-claro">*</span>
@@ -132,7 +152,6 @@ const ModalNovoTime = ({ onSave, onClose }) => {
             />
           </div>
 
-          {/* Nome do Time */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               Nome do Time <span className="text-vermelho-claro">*</span>
@@ -147,8 +166,6 @@ const ModalNovoTime = ({ onSave, onClose }) => {
             />
           </div>
 
-
-          {/* Foto do Time */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               Foto do Time <span className="text-vermelho-claro">*</span>
@@ -198,7 +215,6 @@ const ModalNovoTime = ({ onSave, onClose }) => {
             )}
           </div>
 
-          {/* Logo do Jogo */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               Logo do Jogo <span className="text-vermelho-claro">*</span>
@@ -250,7 +266,7 @@ const ModalNovoTime = ({ onSave, onClose }) => {
 
           <div className="flex justify-end space-x-2 mt-6">
             <SalvarBtn type="submit" />
-            <CancelarBtn onClick={onClose} />
+            <CancelarBtn onClick={handleClose} />
           </div>
         </form>
       </div>

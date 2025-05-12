@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { RiImageAddLine, RiCloseFill } from "react-icons/ri";
 import { FaInstagram, FaTwitter, FaTwitch } from "react-icons/fa";
@@ -6,7 +6,7 @@ import SalvarBtn from "./SalvarBtn";
 import CancelarBtn from "./CancelarBtn";
 import FotoPadrao from "../assets/images/Foto.svg";
 
-const ModalAdicionarAdmin = ({ onClose, onSave, erro }) => {
+const ModalAdicionarAdmin = ({ onClose, onSave }) => {
   const [formData, setFormData] = useState({
     nome: "",
     titulo: "",
@@ -16,28 +16,35 @@ const ModalAdicionarAdmin = ({ onClose, onSave, erro }) => {
     twitter: "",
     twitch: "",
   });
-
   const [fotoPreview, setFotoPreview] = useState(FotoPadrao);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [erroLocal, setErroLocal] = useState(erro || "");
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(true); // Ativa a animação quando o modal é montado
+  }, []);
+
+  const handleClose = () => {
+    setIsVisible(false); // Inicia a animação de saída
+    setTimeout(() => {
+      onClose(); // Chama onClose após a animação (300ms)
+    }, 300);
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       const tiposPermitidos = ["image/jpeg", "image/jpg", "image/png"];
       if (!tiposPermitidos.includes(file.type)) {
-        setErroLocal(
+        throw new Error(
           "Formato de imagem inválido. Use apenas JPG, JPEG ou PNG."
         );
-        return;
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        setErroLocal("A imagem deve ter no máximo 5MB");
-        return;
+        throw new Error("A imagem deve ter no máximo 5MB");
       }
 
-      setErroLocal("");
       const reader = new FileReader();
       reader.onloadend = () => {
         setFotoPreview(reader.result);
@@ -62,8 +69,7 @@ const ModalAdicionarAdmin = ({ onClose, onSave, erro }) => {
 
     const validarLink = (url, rede) => {
       if (url && !url.startsWith("https://")) {
-        setErroLocal(`O link do ${rede} deve começar com https://`);
-        return false;
+        throw new Error(`O link do ${rede} deve começar com https://`);
       }
       return true;
     };
@@ -78,20 +84,12 @@ const ModalAdicionarAdmin = ({ onClose, onSave, erro }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setErroLocal("");
 
-    // Validação dos campos obrigatórios
     if (!formData.nome || !formData.titulo || !formData.descricao) {
-      setErroLocal("Preencha todos os campos obrigatórios!");
-      setIsSubmitting(false);
-      return;
+      throw new Error("Preencha todos os campos obrigatórios!");
     }
 
-    // Validação dos links
-    if (!validarLinks()) {
-      setIsSubmitting(false);
-      return;
-    }
+    validarLinks();
 
     try {
       await onSave({
@@ -103,36 +101,35 @@ const ModalAdicionarAdmin = ({ onClose, onSave, erro }) => {
         twitter: formData.twitter.trim() || null,
         twitch: formData.twitch.trim() || null,
       });
-    } catch (error) {
-      setErroLocal(error.message || "Erro ao adicionar administrador");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-fundo/80">
-      <div className="bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-96 relative max-h-[90vh] overflow-y-auto">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${
+        isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
+    >
+      <div
+        className={`bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-96 relative max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
+          isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+        }`}
+      >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-branco">
             Adicionar Administrador
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-fonte-escura hover:text-vermelho-claro hover:cursor-pointer"
           >
             <RiCloseFill size={24} />
           </button>
         </div>
 
-        {(erroLocal || erro) && (
-          <div className="mb-4 p-2 bg-vermelho-claro/20 text-vermelho-claro rounded">
-            {erroLocal || erro}
-          </div>
-        )}
-
         <form onSubmit={handleSubmit}>
-          {/* Foto */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               Foto <span className="text-vermelho-claro">*</span>
@@ -158,7 +155,7 @@ const ModalAdicionarAdmin = ({ onClose, onSave, erro }) => {
                   <img
                     src={fotoPreview}
                     alt="Preview da foto"
-                    className="w-full h-full rounded object-cover border border-cinza-escuro" // Alterado aqui
+                    className="w-full h-full rounded object-cover border border-cinza-escuro"
                   />
                   <button
                     type="button"
@@ -173,7 +170,6 @@ const ModalAdicionarAdmin = ({ onClose, onSave, erro }) => {
             )}
           </div>
 
-          {/* Nome */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               Nome <span className="text-vermelho-claro">*</span>
@@ -188,7 +184,6 @@ const ModalAdicionarAdmin = ({ onClose, onSave, erro }) => {
             />
           </div>
 
-          {/* Título */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               Título <span className="text-vermelho-claro">*</span>
@@ -203,7 +198,6 @@ const ModalAdicionarAdmin = ({ onClose, onSave, erro }) => {
             />
           </div>
 
-          {/* Descrição */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               Descrição <span className="text-vermelho-claro">*</span>
@@ -218,12 +212,10 @@ const ModalAdicionarAdmin = ({ onClose, onSave, erro }) => {
             ></textarea>
           </div>
 
-          {/* Redes Sociais */}
           <div className="mb-4">
             <h3 className="text-sm text-fonte-escura font-semibold mb-2">
               Redes Sociais
             </h3>
-
             <div className="flex items-center mb-2">
               <div className="bg-fonte-escura rounded-l-md px-2 py-2 flex items-center justify-center">
                 <FaInstagram className="text-2xl text-preto" />
@@ -237,7 +229,6 @@ const ModalAdicionarAdmin = ({ onClose, onSave, erro }) => {
                 className="w-full border border-borda border-l-0 text-branco bg-preto p-2 rounded-r-md focus:outline-none"
               />
             </div>
-
             <div className="flex items-center mb-2">
               <div className="bg-fonte-escura rounded-l-md px-2 py-2 flex items-center justify-center">
                 <FaTwitter className="text-2xl text-preto" />
@@ -251,7 +242,6 @@ const ModalAdicionarAdmin = ({ onClose, onSave, erro }) => {
                 className="w-full border border-borda border-l-0 text-branco bg-preto p-2 rounded-r-md focus:outline-none"
               />
             </div>
-
             <div className="flex items-center">
               <div className="bg-fonte-escura rounded-l-md px-2 py-2 flex items-center justify-center">
                 <FaTwitch className="text-2xl text-preto" />
@@ -269,7 +259,7 @@ const ModalAdicionarAdmin = ({ onClose, onSave, erro }) => {
 
           <div className="flex justify-end space-x-2 mt-6">
             <SalvarBtn type="submit" disabled={isSubmitting} />
-            <CancelarBtn onClick={onClose} disabled={isSubmitting} />
+            <CancelarBtn onClick={handleClose} disabled={isSubmitting} />
           </div>
         </form>
       </div>
@@ -280,7 +270,6 @@ const ModalAdicionarAdmin = ({ onClose, onSave, erro }) => {
 ModalAdicionarAdmin.propTypes = {
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
-  erro: PropTypes.string,
 };
 
 export default ModalAdicionarAdmin;

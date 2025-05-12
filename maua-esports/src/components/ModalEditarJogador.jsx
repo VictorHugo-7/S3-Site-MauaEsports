@@ -1,6 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { RiCloseFill, RiImageAddLine, RiImageEditLine, RiTwitterXFill } from "react-icons/ri";
+import {
+  RiCloseFill,
+  RiImageAddLine,
+  RiImageEditLine,
+  RiTwitterXFill,
+} from "react-icons/ri";
 import { IoLogoTwitch } from "react-icons/io";
 import { FaInstagram } from "react-icons/fa";
 import SalvarBtn from "./SalvarBtn";
@@ -38,13 +43,20 @@ const EditarJogador = ({
     handleFileChange: handleFotoFileChange,
     handleCropComplete: handleFotoCropComplete,
     handleCancelCrop: handleCancelFotoCrop,
-    setCroppedImage: setFotoCropped
+    setCroppedImage: setFotoCropped,
   } = UseImageCrop(fotoInicial || null);
 
-  const [erro, setErro] = useState("");
+  const [isVisible, setIsVisible] = useState(false);
 
-  const validarLink = (link) => {
-    return !link || link.startsWith("https://");
+  useEffect(() => {
+    setIsVisible(true); // Ativa a animação de entrada
+  }, []);
+
+  const handleClose = () => {
+    setIsVisible(false); // Inicia a animação de saída
+    setTimeout(() => {
+      onClose(); // Chama onClose após a animação
+    }, 300);
   };
 
   const handleChange = (e) => {
@@ -61,45 +73,39 @@ const EditarJogador = ({
 
   const handleSave = async (e) => {
     e.preventDefault();
-  
+
     if (!formData.nome || !formData.titulo || !formData.descricao) {
-      setErro("Preencha todos os campos obrigatórios!");
-      return;
+      throw new Error("Preencha todos os campos obrigatórios!");
     }
-  
-    // Mantenha apenas a validação básica dos links
+
     if (formData.instagram && !formData.instagram.startsWith("https://")) {
-      setErro("O link do Instagram deve começar com https://");
-      return;
+      throw new Error("O link do Instagram deve começar com https://");
     }
-  
+
     if (formData.twitter && !formData.twitter.startsWith("https://")) {
-      setErro("O link do Twitter deve começar com https://");
-      return;
+      throw new Error("O link do Twitter deve começar com https://");
     }
-  
+
     if (formData.twitch && !formData.twitch.startsWith("https://")) {
-      setErro("O link do Twitch deve começar com https://");
-      return;
+      throw new Error("O link do Twitch deve começar com https://");
     }
-  
-    setErro("");
-    
+
     const jogadorAtualizado = {
       id: jogadorId,
       ...formData,
       foto: fotoCropped || fotoInicial,
     };
-  
-    try {
-      await onSave(jogadorAtualizado);
-    } catch (error) {
-      setErro(error.message || "Erro ao salvar jogador");
-    }
+
+    await onSave(jogadorAtualizado);
+    handleClose(); // Fecha o modal após salvar
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-fundo/80">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${
+        isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
+    >
       {isCroppingFoto && (
         <ImageCropper
           initialImage={fotoImage}
@@ -111,22 +117,20 @@ const EditarJogador = ({
         />
       )}
 
-      <div className="bg-fundo p-6 rounded-lg max-w-md w-full border shadow-sm shadow-azul-claro max-h-[90vh] overflow-y-auto">
+      <div
+        className={`bg-fundo p-6 rounded-lg max-w-md w-full border shadow-sm shadow-azul-claro max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
+          isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+        }`}
+      >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-branco">Editar Jogador</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-fonte-escura hover:text-vermelho-claro hover:cursor-pointer"
           >
             <RiCloseFill size={24} />
           </button>
         </div>
-
-        {erro && (
-          <div className="mb-4 p-2 bg-vermelho-claro/20 text-vermelho-claro rounded text-sm">
-            {erro}
-          </div>
-        )}
 
         <form onSubmit={handleSave}>
           <div className="space-y-4">
@@ -273,7 +277,7 @@ const EditarJogador = ({
 
           <div className="flex justify-end space-x-3 mt-6">
             <SalvarBtn type="submit" />
-            <CancelarBtn onClick={onClose} />
+            <CancelarBtn onClick={handleClose} />
           </div>
         </form>
       </div>

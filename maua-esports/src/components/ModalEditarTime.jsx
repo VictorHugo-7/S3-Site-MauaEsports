@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { RiCloseFill, RiImageAddLine, RiImageEditLine } from "react-icons/ri";
 import SalvarBtn from "./SalvarBtn";
@@ -12,9 +12,9 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
     nome: time.nome,
     rota: time.rota,
   });
-  const [erro, setErro] = useState("");
   const [jogoImage, setJogoImage] = useState(time.jogo || null);
-  
+  const [isVisible, setIsVisible] = useState(false);
+
   // Controles para a foto do time (com cropper)
   const {
     image: fotoImage,
@@ -23,8 +23,19 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
     handleFileChange: handleFotoFileChange,
     handleCropComplete: handleFotoCropComplete,
     handleCancelCrop: handleCancelFotoCrop,
-    setCroppedImage: setFotoCropped
+    setCroppedImage: setFotoCropped,
   } = UseImageCrop(time.foto || null);
+
+  useEffect(() => {
+    setIsVisible(true); // Ativa a animação de entrada
+  }, []);
+
+  const handleClose = () => {
+    setIsVisible(false); // Inicia a animação de saída
+    setTimeout(() => {
+      onClose(); // Chama onClose após a animação
+    }, 300);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -34,22 +45,20 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
     });
   };
 
-  // Manipulador simples para a imagem do jogo (sem cropper)
   const handleJogoFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       const tiposPermitidos = ["image/jpeg", "image/jpg", "image/png"];
       if (!tiposPermitidos.includes(file.type)) {
-        setErro("Formato de imagem inválido. Use apenas JPG, JPEG ou PNG.");
-        return;
+        throw new Error(
+          "Formato de imagem inválido. Use apenas JPG, JPEG ou PNG."
+        );
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        setErro("A imagem deve ter no máximo 5MB");
-        return;
+        throw new Error("A imagem deve ter no máximo 5MB");
       }
 
-      setErro("");
       const reader = new FileReader();
       reader.onload = () => {
         setJogoImage(reader.result);
@@ -64,6 +73,7 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
       if (!formData.nome) {
         throw new Error("Nome é obrigatório!");
@@ -79,12 +89,25 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
     } catch (error) {
       console.error("Erro ao editar time:", error);
       setErro(error.message || "Ocorreu um erro ao editar o time");
+
     }
+
+    const dataToSave = {
+      ...formData,
+      foto: fotoCropped || time.foto,
+      jogo: jogoImage,
+    };
+
+    await onSave(dataToSave);
+    handleClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-fundo/80">
-      {/* Modal de corte de imagem apenas para foto do time */}
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${
+        isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
+    >
       {isCroppingFoto && (
         <ImageCropper
           initialImage={fotoImage}
@@ -95,26 +118,23 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
           cropSize={{ width: 400, height: 400 }}
         />
       )}
-      
-      <div className="bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-96 relative max-h-[90vh] overflow-y-auto">
+
+      <div
+        className={`bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-96 relative max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
+          isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+        }`}
+      >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-branco">Editar Time</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-fonte-escura hover:text-vermelho-claro hover:cursor-pointer"
           >
             <RiCloseFill size={24} />
           </button>
         </div>
 
-        {erro && (
-          <div className="mb-4 p-2 bg-vermelho-claro/20 text-vermelho-claro rounded">
-            {erro}
-          </div>
-        )}
-
         <form onSubmit={handleSubmit}>
-          {/* ID do Time */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               ID do Time
@@ -129,7 +149,6 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
             />
           </div>
 
-          {/* Nome do Time */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               Nome do Time <span className="text-vermelho-claro">*</span>
@@ -144,7 +163,22 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
             />
           </div>
 
-          {/* Foto do Time (com cropper) */}
+
+          <div className="mb-4">
+            <label className="block text-sm text-fonte-escura font-semibold mb-2">
+              Rota <span className="text-vermelho-claro">*</span>
+            </label>
+            <input
+              type="text"
+              name="rota"
+              value={formData.rota}
+              onChange={handleChange}
+              className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
+              required
+            />
+          </div>
+
+
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               Foto do Time
@@ -194,7 +228,6 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
             )}
           </div>
 
-          {/* Logo do Jogo (sem cropper) */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               Logo do Jogo
@@ -243,7 +276,7 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
 
           <div className="flex justify-end space-x-2 mt-6">
             <SalvarBtn type="submit" />
-            <CancelarBtn onClick={onClose} />
+            <CancelarBtn onClick={handleClose} />
           </div>
         </form>
       </div>
