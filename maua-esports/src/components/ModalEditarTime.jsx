@@ -65,8 +65,8 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (!formData.nome || !formData.rota) {
-        throw new Error("Nome e rota são obrigatórios!");
+      if (!formData.nome) {
+        throw new Error("Nome é obrigatório!");
       }
       
       const dataToSave = {
@@ -138,21 +138,6 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
               type="text"
               name="nome"
               value={formData.nome}
-              onChange={handleChange}
-              className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
-              required
-            />
-          </div>
-
-          {/* Rota */}
-          <div className="mb-4">
-            <label className="block text-sm text-fonte-escura font-semibold mb-2">
-              Rota <span className="text-vermelho-claro">*</span>
-            </label>
-            <input
-              type="text"
-              name="rota"
-              value={formData.rota}
               onChange={handleChange}
               className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
               required
