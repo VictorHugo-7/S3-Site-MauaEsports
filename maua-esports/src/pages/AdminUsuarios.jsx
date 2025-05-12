@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useMsal } from '@azure/msal-react';
-import { FaUserPlus, FaSearch, FaUserCog } from 'react-icons/fa';
+import { FaUserPlus, FaSearch, FaUserCog, FaTimes} from 'react-icons/fa';
 import EditarBtn from '../components/EditarBtn';
 import DeletarBtn from '../components/DeletarBtn';
 import ModalUsuario from '../components/ModalUsuario';
@@ -30,6 +30,12 @@ const AdminUsuarios = () => {
 
   const [times, setTimes] = useState([]);
   const [loadingTimes, setLoadingTimes] = useState(true);
+  // Estado para controle da imagem ampliada
+  const [imagemAmpliada, setImagemAmpliada] = useState({
+    aberto: false,
+    src: null,
+    alt: ''
+  });
 
   const fetchTimes = async () => {
     try {
@@ -46,6 +52,24 @@ const AdminUsuarios = () => {
       setTimes({}); // Objeto vazio em caso de erro
       setLoadingTimes(false);
     }
+  };
+
+  // Função para abrir a imagem ampliada
+  const abrirImagemAmpliada = (src, alt) => {
+    setImagemAmpliada({
+      aberto: true,
+      src,
+      alt
+    });
+  };
+
+  // Função para fechar a imagem ampliada
+  const fecharImagemAmpliada = () => {
+    setImagemAmpliada({
+      aberto: false,
+      src: null,
+      alt: ''
+    });
   };
 
 
@@ -132,22 +156,22 @@ const AdminUsuarios = () => {
 
     // Administrador Geral pode adicionar todos, exceto outro Administrador Geral
     if (usuarioAtual.tipoUsuario === 'Administrador Geral') {
-        return tipo !== 'Administrador Geral';
+      return tipo !== 'Administrador Geral';
     }
 
     // Administrador pode adicionar Admins, Capitães e Jogadores
     if (usuarioAtual.tipoUsuario === 'Administrador') {
-        return ['Administrador', 'Capitão de time', 'Jogador'].includes(tipo);
+      return ['Administrador', 'Capitão de time', 'Jogador'].includes(tipo);
     }
 
     // Capitão pode adicionar APENAS Jogadores
     if (usuarioAtual.tipoUsuario === 'Capitão de time') {
-        return tipo === 'Jogador';
+      return tipo === 'Jogador';
 
     }
 
     return false;
-};
+  };
 
   // Verifica se o time é válido para o tipo de usuário
   const timeValidoParaTipo = (tipoUsuario, time) => {
@@ -220,20 +244,20 @@ const AdminUsuarios = () => {
   const handleSubmit = async (formData) => {
     try {
 
-        const usuarioAtual = usuarios.find(u => u.email === currentUser?.username);
-        
-        // Validação específica para capitães
-        if (usuarioAtual?.tipoUsuario === 'Capitão de time') {
-            if (!modoEdicao && formData.tipoUsuario !== 'Jogador') {
-                alert('Como Capitão, você só pode adicionar jogadores!');
-                return;
-            }
-            
-            if (formData.time !== usuarioAtual.time) {
-                alert('Você só pode adicionar jogadores do seu próprio time!');
-                return;
-            }
+      const usuarioAtual = usuarios.find(u => u.email === currentUser?.username);
+
+      // Validação específica para capitães
+      if (usuarioAtual?.tipoUsuario === 'Capitão de time') {
+        if (!modoEdicao && formData.tipoUsuario !== 'Jogador') {
+          alert('Como Capitão, você só pode adicionar jogadores!');
+          return;
         }
+
+        if (formData.time !== usuarioAtual.time) {
+          alert('Você só pode adicionar jogadores do seu próprio time!');
+          return;
+        }
+      }
       // Verificação se é auto-edição
       const isSelfEdit = modoEdicao && usuarioSelecionado?.email === currentUser?.username;
 
@@ -313,7 +337,7 @@ const AdminUsuarios = () => {
     }
   };
 
- const handleImageError = (userId) => {
+  const handleImageError = (userId) => {
     console.log(`Erro ao carregar imagem para usuário ${userId}`);
     setImageErrors((prev) => ({ ...prev, [userId]: true }));
   };
@@ -383,7 +407,26 @@ const AdminUsuarios = () => {
   }
 
   return (
+
     <div className="w-full min-h-screen bg-fundo flex flex-col items-center">
+      {/* Modal da imagem ampliada */}
+      {imagemAmpliada.aberto && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
+          <button
+            onClick={fecharImagemAmpliada}
+            className="absolute top-4 right-4 text-white text-2xl hover:text-azul-claro transition-colors"
+          >
+            <FaTimes />
+          </button>
+          <div className="max-w-full max-h-full">
+            <img
+              src={imagemAmpliada.src}
+              alt={imagemAmpliada.alt}
+              className="max-w-full max-h-[90vh] object-contain"
+            />
+          </div>
+        </div>
+      )}
       <div className="w-full bg-navbar mb-10">
         <div className="h-[104px]"></div>
         <PageBanner
@@ -423,16 +466,16 @@ const AdminUsuarios = () => {
           {["Administrador Geral", "Administrador", "Capitão de time"].includes(
             usuarioAtual.tipoUsuario
           ) && (
-            <button
-              onClick={abrirModalCriacao}
+              <button
+                onClick={abrirModalCriacao}
 
-              className="bg-azul-claro hover:bg-azul-escuro text-white px-4 py-2 rounded flex items-center gap-2 transition-colors w-full sm:w-auto justify-center"
-              disabled={!podeAdicionarTipo('Jogador', usuarioAtual?.time)} // Verifica se pode adicionar jogador do seu time
+                className="bg-azul-claro hover:bg-azul-escuro text-white px-4 py-2 rounded flex items-center gap-2 transition-colors w-full sm:w-auto justify-center"
+                disabled={!podeAdicionarTipo('Jogador', usuarioAtual?.time)} // Verifica se pode adicionar jogador do seu time
 
-            >
-              <FaUserPlus /> Adicionar Usuário
-            </button>
-          )}
+              >
+                <FaUserPlus /> Adicionar Usuário
+              </button>
+            )}
         </div>
 
         <div className="overflow-x-auto bg-navbar rounded-lg border-2 border-borda shadow-lg">
@@ -440,7 +483,7 @@ const AdminUsuarios = () => {
             <thead className="bg-cinza-escuro">
               <tr>
 
-                 <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">
                   Foto
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">Email</th>
@@ -463,16 +506,22 @@ const AdminUsuarios = () => {
                       key={usuario._id}
                       className="hover:bg-fundo/50 transition-colors"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-white">
+                      <td className="px-4 py-4 whitespace-nowrap text-white h-20 w-20">
                         {!imageErrors[usuario._id] ? (
-                          <img
-                            src={`${API_BASE_URL}/usuarios/${
-                              usuario._id
-                            }/foto?t=${Date.now()}`}
-                            alt={`Foto de ${usuario.email}`}
-                            className="w-10 h-10 rounded-full object-cover border-2 border-azul-claro"
-                            onError={() => handleImageError(usuario._id)}
-                          />
+                          <button
+                            onClick={() => abrirImagemAmpliada(
+                              `${API_BASE_URL}/usuarios/${usuario._id}/foto?t=${Date.now()}`,
+                              `Foto de ${usuario.email}`
+                            )}
+                            className=""
+                          >
+                            <img
+                              src={`${API_BASE_URL}/usuarios/${usuario._id}/foto?t=${Date.now()}`}
+                              alt={`Foto de ${usuario.email}`}
+                              className="w-full h-full transform hover:scale-110 transition-transform duration-300 hover:bg-hover hover:border-2 hover:border-borda object-cover rounded-full cursor-pointer"
+                              onError={() => handleImageError(usuario._id)}
+                            />
+                          </button>
                         ) : (
                           <HiUserCircle className="w-10 h-10 text-white" />
                         )}
