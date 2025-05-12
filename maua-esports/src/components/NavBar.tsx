@@ -847,17 +847,17 @@ const NavBar = () => {
                                 discordID: e.target.value,
                               })
                             }
-                            placeholder="123456789012345678"
+                            placeholder="Exemplo:123456789012345678"
                             className="w-full border border-borda border-l-0 rounded-r-md p-2 focus:border-azul-claro text-branco bg-preto focus:outline-none"
                             pattern="\d{18}|^$"
                           />
                         </div>
-                        <p className="text-xs text-fonte-escura/50 mt-1">
+                        <p className="text-xs text-fonte-escura mt-1">
                           Deixe vazio para remover o Discord ID (deve ser um
                           número de 18 dígitos)
                         </p>
                         <p
-                          className="text-xs text-fonte-escura/50 mt-1 hover:cursor-pointer hover:text-azul-claro transform transition-all duration-200"
+                          className="text-xs text-fonte-escura mt-1 hover:cursor-pointer hover:text-azul-claro transform transition-all duration-200"
                           onClick={VincularContaDiscord}
                         >
                           Deseja vincular sua conta?

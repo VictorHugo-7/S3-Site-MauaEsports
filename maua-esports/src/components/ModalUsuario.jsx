@@ -160,9 +160,14 @@ const ModalUsuario = ({
                   ? "border-vermelho-claro focus:border-vermelho-claro"
                   : "border-borda focus:border-azul-claro"
                   }`}
-                placeholder="Opcional"
+                placeholder="Exemplo: 123456789012345678"
+                pattern="\d{18}|^$"
               />
             </div>
+            <p className="text-xs text-fonte-escura mt-1">
+              Deixe vazio para remover o Discord ID (deve ser um
+              número de 18 dígitos)
+            </p>
             {errors.discordID && (
               <p className="text-vermelho-claro text-sm mt-1">
                 {errors.discordID}
