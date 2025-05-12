@@ -107,11 +107,11 @@ const ModalUsuario = ({
   const getTipoUsuarioIcon = () => {
     switch (formData.tipoUsuario) {
       case "Administrador Geral":
-        return <FaUserShield className="text-2xl" />;
-      case "Administrador":
-        return <FaUserShield className="text-2xl" />;
-      case "Capitão de time":
         return <FaUserTie className="text-2xl" />;
+      case "Administrador":
+        return <FaUserTie className="text-2xl" />;
+      case "Capitão de time":
+        return <FaUserShield className="text-2xl" />;
       case "Jogador":
         return <FaUserAlt className="text-2xl" />;
       default:
