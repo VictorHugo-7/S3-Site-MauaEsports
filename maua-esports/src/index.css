@@ -90,6 +90,36 @@
   75% { transform: translateY(-3px) rotate(0deg); }
 }
 
+@keyframes pular {
+  0%, 100% { 
+    transform: translateY(0);
+    animation-timing-function: ease-in-out;
+  }
+  15% { 
+    transform: translateY(-6px);
+    animation-timing-function: ease-out;
+  }
+  30% { 
+    transform: translateY(0);
+    animation-timing-function: ease-in;
+  }
+  45% { 
+    transform: translateY(-3px);
+    animation-timing-function: ease-out;
+  }
+  60% { 
+    transform: translateY(0);
+    animation-timing-function: ease-in;
+  }
+  75% { 
+    transform: translateY(-1px);
+    animation-timing-function: ease-out;
+  }
+  90% { 
+    transform: translateY(0);
+  }
+}
+
 @keyframes pulseEdit {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.2); }

@@ -15,7 +15,7 @@ const DeletarBtn = ({ onDelete }) => {
       <FaTrash
         className="w-4 h-4"
         style={{
-          animation: isHovered ? "shake 0.7s ease-in-out" : "none",
+          animation: isHovered ? "pular 1.2s " : "none",
         }}
       />
     </button>

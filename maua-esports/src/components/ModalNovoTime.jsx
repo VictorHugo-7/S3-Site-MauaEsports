@@ -49,8 +49,8 @@ const ModalNovoTime = ({ onSave, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (!formData.id || !formData.nome || !formData.rota) {
-        throw new Error("ID, Nome e Rota são obrigatórios!");
+      if (!formData.id || !formData.nome ) {
+        throw new Error("ID e Nome são obrigatórios!");
       }
       if (!fotoCropped || !jogoCropped) {
         throw new Error("Foto do time e logo do jogo são obrigatórios!");
@@ -147,20 +147,6 @@ const ModalNovoTime = ({ onSave, onClose }) => {
             />
           </div>
 
-          {/* Rota */}
-          <div className="mb-4">
-            <label className="block text-sm text-fonte-escura font-semibold mb-2">
-              Rota <span className="text-vermelho-claro">*</span>
-            </label>
-            <input
-              type="text"
-              name="rota"
-              value={formData.rota}
-              onChange={handleChange}
-              className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
-              required
-            />
-          </div>
 
           {/* Foto do Time */}
           <div className="mb-4">

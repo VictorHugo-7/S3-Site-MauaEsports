@@ -800,7 +800,6 @@ const timeSchema = mongoose.Schema({
     contentType: String,
     nomeOriginal: String,
   },
-  rota: { type: String, required: true, unique: true },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -919,15 +918,15 @@ app.post(
   ]),
   async (req, res) => {
     try {
-      const { id, nome, rota } = req.body;
+      const { id, nome} = req.body;
       const fotoFile = req.files["foto"][0];
       const jogoFile = req.files["jogo"][0];
 
       // Validações
-      if (!id || !nome || !rota) {
+      if (!id || !nome ) {
         return res
           .status(400)
-          .json({ message: "ID, nome e rota são obrigatórios" });
+          .json({ message: "ID e nome são obrigatórios" });
       }
       if (!fotoFile || !jogoFile) {
         return res
@@ -938,7 +937,6 @@ app.post(
       const novoTime = new Time({
         id,
         nome,
-        rota,
         foto: {
           data: fotoFile.buffer,
           contentType: fotoFile.mimetype,
@@ -955,12 +953,11 @@ app.post(
       res.status(201).json({
         id: novoTime.id,
         nome: novoTime.nome,
-        rota: novoTime.rota,
       });
     } catch (error) {
       if (error.code === 11000) {
         return res.status(400).json({
-          message: "Erro: ID, nome ou rota já existem",
+          message: "Erro: ID ou nome já existem",
           error: error.keyValue,
         });
       }
@@ -1028,8 +1025,8 @@ app.put(
   ]),
   async (req, res) => {
     try {
-      const { nome, rota } = req.body;
-      const updateData = { nome, rota };
+      const { nome} = req.body;
+      const updateData = { nome};
       const fotoFile = req.files?.["foto"]?.[0];
       const jogoFile = req.files?.["jogo"]?.[0];
 
@@ -1063,7 +1060,7 @@ app.put(
     } catch (error) {
       if (error.code === 11000) {
         return res.status(400).json({
-          message: "Erro: Nome ou rota já existem",
+          message: "Erro: Nome já existe",
           error: error.keyValue,
         });
       }
