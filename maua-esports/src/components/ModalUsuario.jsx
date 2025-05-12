@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { FaUser, FaDiscord, FaUserShield, FaUserTie, FaUserAlt, FaTimes } from "react-icons/fa";
+import {
+  FaUser,
+  FaDiscord,
+  FaUserShield,
+  FaUserTie,
+  FaUserAlt,
+} from "react-icons/fa";
 import SalvarBtn from "./SalvarBtn";
 import CancelarBtn from "./CancelarBtn";
 import { RiCloseFill } from "react-icons/ri";
@@ -22,6 +28,11 @@ const ModalUsuario = ({
   });
   const [erro, setErro] = useState("");
   const [errors, setErrors] = useState({});
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(true); // Ativa a animação de entrada quando o modal é montado
+  }, []);
 
   useEffect(() => {
     if (modoEdicao && usuario) {
@@ -40,6 +51,13 @@ const ModalUsuario = ({
       });
     }
   }, [modoEdicao, usuario]);
+
+  const handleClose = () => {
+    setIsVisible(false); // Inicia a animação de saída
+    setTimeout(() => {
+      onClose(); // Chama onClose após a animação
+    }, 300);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -102,14 +120,22 @@ const ModalUsuario = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-fundo/80">
-      <div className="bg-fundo p-6 rounded-lg max-w-md w-full border shadow-sm shadow-azul-claro max-h-[90vh] overflow-y-auto">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${
+        isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
+    >
+      <div
+        className={`bg-fundo p-6 rounded-lg max-w-md w-full border shadow-sm shadow-azul-claro max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
+          isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+        }`}
+      >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-branco">
             {modoEdicao ? "Editar Usuário" : "Adicionar Usuário"}
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-fonte-escura hover:text-vermelho-claro hover:cursor-pointer"
           >
             <RiCloseFill size={24} />
@@ -133,10 +159,11 @@ const ModalUsuario = ({
               value={formData.email}
               onChange={handleChange}
               disabled={modoEdicao}
-              className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${errors.email
-                ? "border-vermelho-claro focus:border-vermelho-claro"
-                : "border-borda focus:border-azul-claro"
-                }`}
+              className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
+                errors.email
+                  ? "border-vermelho-claro focus:border-vermelho-claro"
+                  : "border-borda focus:border-azul-claro"
+              }`}
             />
             {errors.email && (
               <p className="text-vermelho-claro text-sm mt-1">{errors.email}</p>
@@ -156,10 +183,11 @@ const ModalUsuario = ({
                 name="discordID"
                 value={formData.discordID}
                 onChange={handleChange}
-                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${errors.discordID
-                  ? "border-vermelho-claro focus:border-vermelho-claro"
-                  : "border-borda focus:border-azul-claro"
-                  }`}
+                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
+                  errors.discordID
+                    ? "border-vermelho-claro focus:border-vermelho-claro"
+                    : "border-borda focus:border-azul-claro"
+                }`}
                 placeholder="Opcional"
               />
             </div>
@@ -187,12 +215,16 @@ const ModalUsuario = ({
                   usuario?.email === currentUserEmail &&
                   usuario?.tipoUsuario === "Administrador Geral"
                 }
-                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${errors.tipoUsuario
-                  ? "border-vermelho-claro focus:border-vermelho-claro"
-                  : "border-borda focus:border-azul-claro"
-                  }`}
+                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
+                  errors.tipoUsuario
+                    ? "border-vermelho-claro focus:border-vermelho-claro"
+                    : "border-borda focus:border-azul-claro"
+                }`}
               >
-                <option value="Jogador" disabled={!podeAdicionarTipo("Jogador")}>
+                <option
+                  value="Jogador"
+                  disabled={!podeAdicionarTipo("Jogador")}
+                >
                   Jogador
                 </option>
                 <option
@@ -220,7 +252,10 @@ const ModalUsuario = ({
           {["Capitão de time", "Jogador"].includes(formData.tipoUsuario) && (
             <div>
               <label className="block text-sm text-fonte-escura font-semibold mb-1">
-                Time {formData.tipoUsuario !== "Administrador" && <span className="text-vermelho-claro">*</span>}
+                Time{" "}
+                {formData.tipoUsuario !== "Administrador" && (
+                  <span className="text-vermelho-claro">*</span>
+                )}
               </label>
               <select
                 name="time"
@@ -231,10 +266,11 @@ const ModalUsuario = ({
                   usuario?.tipoUsuario === "Capitão de time" &&
                   usuario?.email === currentUserEmail
                 }
-                className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${errors.time
-                  ? "border-vermelho-claro focus:border-vermelho-claro"
-                  : "border-borda focus:border-azul-claro"
-                  }`}
+                className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
+                  errors.time
+                    ? "border-vermelho-claro focus:border-vermelho-claro"
+                    : "border-borda focus:border-azul-claro"
+                }`}
               >
                 <option value="">Selecione um time</option>
                 {getTimesDisponiveis().map((time) => (
@@ -253,7 +289,7 @@ const ModalUsuario = ({
 
           <div className="flex justify-end space-x-2 mt-6">
             <SalvarBtn type="submit" />
-            <CancelarBtn onClick={onClose} />
+            <CancelarBtn onClick={handleClose} />
           </div>
         </form>
       </div>

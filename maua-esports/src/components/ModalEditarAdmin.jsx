@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { RiImageAddLine, RiImageEditLine, RiCloseFill } from "react-icons/ri";
 import { FaInstagram, FaTwitter, FaTwitch } from "react-icons/fa";
@@ -11,35 +11,44 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
     nome: admin.nome || "",
     titulo: admin.titulo || "",
     descricao: admin.descricao || "",
-    foto: admin.fotoUrl || FotoPadrao,
+    foto: null,
     instagram: admin.insta || "",
     twitter: admin.twitter || "",
     twitch: admin.twitch || "",
   });
-
+  const [isVisible, setIsVisible] = useState(false);
   const [fotoPreview, setFotoPreview] = useState(admin.fotoUrl || FotoPadrao);
-  const [erro, setErro] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(() => {
+      onClose();
+    }, 300);
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       const tiposPermitidos = ["image/jpeg", "image/jpg", "image/png"];
       if (!tiposPermitidos.includes(file.type)) {
-        setErro("Formato de imagem inválido. Use apenas JPG, JPEG ou PNG.");
-        return;
+        throw new Error(
+          "Formato de imagem inválido. Use apenas JPG, JPEG ou PNG."
+        );
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        setErro("A imagem deve ter no máximo 5MB");
-        return;
+        throw new Error("A imagem deve ter no máximo 5MB");
       }
 
-      setErro("");
       const reader = new FileReader();
       reader.onloadend = () => {
         setFotoPreview(reader.result);
-        setFormData({ ...formData, foto: reader.result });
+        setFormData({ ...formData, foto: file });
       };
       reader.readAsDataURL(file);
     }
@@ -60,8 +69,7 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
 
     const validarLink = (url, rede) => {
       if (url && !url.startsWith("https://")) {
-        setErro(`O link do ${rede} deve começar com https://`);
-        return false;
+        throw new Error(`O link do ${rede} deve começar com https://`);
       }
       return true;
     };
@@ -76,20 +84,12 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
-    setErro("");
 
-    // Validação dos campos obrigatórios
     if (!formData.nome || !formData.titulo || !formData.descricao) {
-      setErro("Preencha todos os campos obrigatórios!");
-      setIsSaving(false);
-      return;
+      throw new Error("Preencha todos os campos obrigatórios!");
     }
 
-    // Validação dos links
-    if (!validarLinks()) {
-      setIsSaving(false);
-      return;
-    }
+    validarLinks();
 
     try {
       await onSave({
@@ -102,36 +102,35 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
         twitter: formData.twitter.trim() || null,
         twitch: formData.twitch.trim() || null,
       });
-    } catch (error) {
-      setErro(error.message || "Erro ao atualizar administrador");
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-fundo/80">
-      <div className="bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-96 relative max-h-[90vh] overflow-y-auto ">
-        <div className="flex justify-between items-center mb-4 ">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${
+        isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
+    >
+      <div
+        className={`bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-96 relative max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
+          isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+        }`}
+      >
+        <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-branco">
             Editar Administrador
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-fonte-escura hover:text-vermelho-claro hover:cursor-pointer"
           >
             <RiCloseFill size={24} />
           </button>
         </div>
 
-        {erro && (
-          <div className="mb-4 p-2 bg-vermelho-claro/20 text-vermelho-claro rounded">
-            {erro}
-          </div>
-        )}
-
         <form onSubmit={handleSubmit}>
-          {/* Foto */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               Foto <span className="text-vermelho-claro">*</span>
@@ -168,7 +167,7 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
                   <img
                     src={fotoPreview}
                     alt="Preview da foto"
-                    className="w-full h-full rounded object-cover border border-cinza-escuro" // Alterado aqui
+                    className="w-full h-full rounded object-cover border border-cinza-escuro"
                   />
                   <button
                     type="button"
@@ -183,7 +182,6 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
             )}
           </div>
 
-          {/* Nome */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               Nome <span className="text-vermelho-claro">*</span>
@@ -198,7 +196,6 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
             />
           </div>
 
-          {/* Título */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               Título <span className="text-vermelho-claro">*</span>
@@ -213,7 +210,6 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
             />
           </div>
 
-          {/* Descrição */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
               Descrição <span className="text-vermelho-claro">*</span>
@@ -228,12 +224,10 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
             ></textarea>
           </div>
 
-          {/* Redes Sociais */}
           <div className="mb-4">
             <h3 className="text-sm text-fonte-escura font-semibold mb-2">
               Redes Sociais
             </h3>
-
             <div className="flex items-center mb-2">
               <div className="bg-fonte-escura rounded-l-md px-2 py-2 flex items-center justify-center">
                 <FaInstagram className="text-2xl text-preto" />
@@ -247,7 +241,6 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
                 className="w-full border border-borda border-l-0 text-branco bg-preto p-2 rounded-r-md focus:outline-none"
               />
             </div>
-
             <div className="flex items-center mb-2">
               <div className="bg-fonte-escura rounded-l-md px-2 py-2 flex items-center justify-center">
                 <FaTwitter className="text-2xl text-preto" />
@@ -261,7 +254,6 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
                 className="w-full border border-borda border-l-0 text-branco bg-preto p-2 rounded-r-md focus:outline-none"
               />
             </div>
-
             <div className="flex items-center">
               <div className="bg-fonte-escura rounded-l-md px-2 py-2 flex items-center justify-center">
                 <FaTwitch className="text-2xl text-preto" />
@@ -279,7 +271,7 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
 
           <div className="flex justify-end space-x-2 mt-6">
             <SalvarBtn type="submit" disabled={isSaving} />
-            <CancelarBtn onClick={onClose} disabled={isSaving} />
+            <CancelarBtn onClick={handleClose} disabled={isSaving} />
           </div>
         </form>
       </div>

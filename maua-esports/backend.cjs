@@ -199,9 +199,8 @@ const Usuario = mongoose.model("Usuario", usuarioSchema);
 ///////////////////////////////////////////////////////////////////////////////AREA DE USUÁRIOS ////////////////////////////////////////////////////////////////////
 app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
   try {
-
     const { email, discordID, tipoUsuario, time } = req.body;
-    
+
     if (!email) {
       return res.status(400).json({
         success: false,
@@ -333,8 +332,6 @@ app.get("/usuarios/por-email", async (req, res) => {
   }
 });
 
-
-
 // GET - Listar todos os usuários
 app.get("/usuarios", async (req, res) => {
   try {
@@ -357,7 +354,6 @@ app.get("/usuarios", async (req, res) => {
     });
   }
 });
-
 
 app.put("/usuarios/:id", upload.single("fotoPerfil"), async (req, res) => {
   try {
