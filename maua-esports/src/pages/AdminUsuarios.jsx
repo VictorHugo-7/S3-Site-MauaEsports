@@ -30,9 +30,9 @@ const AdminUsuarios = () => {
       const response = await axios.get('/api/modality/all', {
         headers: { Authorization: "Bearer frontendmauaesports" }
       });
-      
+
       // A API retorna um objeto onde cada chave é um ID
-      setTimes(response.data); 
+      setTimes(response.data);
       setLoadingTimes(false);
     } catch (err) {
       console.error("Erro ao carregar times:", err);
@@ -83,12 +83,11 @@ const AdminUsuarios = () => {
     }
   };
 
-  // Função para verificar se o usuário pode gerenciar outro usuário
   const podeGerenciarUsuario = (usuarioAlvo) => {
     const usuarioAtual = usuarios.find(u => u.email === currentUser?.username);
     if (!usuarioAtual) return false;
 
-    // Se for o próprio usuário, pode editar/excluir a si mesmo
+    // Se for o próprio usuário, pode editar/excluir a si mesmo (com algumas restrições)
     if (usuarioAlvo.email === currentUser?.username) {
       return true;
     }
@@ -110,11 +109,10 @@ const AdminUsuarios = () => {
 
     // Capitão só pode gerenciar jogadores do seu time
     if (usuarioAtual.tipoUsuario === 'Capitão de time') {
-      return usuarioAlvo.tipoUsuario === 'Jogador' && 
-             usuarioAlvo.time === usuarioAtual.time;
+      return usuarioAlvo.tipoUsuario === 'Jogador' &&
+        usuarioAlvo.time === usuarioAtual.time;
     }
 
-    // Jogador não pode gerenciar ninguém (exceto a si mesmo, já tratado acima)
     return false;
   };
 
@@ -124,21 +122,21 @@ const AdminUsuarios = () => {
 
     // Administrador Geral pode adicionar todos, exceto outro Administrador Geral
     if (usuarioAtual.tipoUsuario === 'Administrador Geral') {
-      return tipo !== 'Administrador Geral';
+        return tipo !== 'Administrador Geral';
     }
 
     // Administrador pode adicionar Admins, Capitães e Jogadores
     if (usuarioAtual.tipoUsuario === 'Administrador') {
-      return ['Administrador', 'Capitão de time', 'Jogador'].includes(tipo);
+        return ['Administrador', 'Capitão de time', 'Jogador'].includes(tipo);
     }
 
     // Capitão pode adicionar APENAS Jogadores
     if (usuarioAtual.tipoUsuario === 'Capitão de time') {
-      return tipo === 'Jogador';
+        return tipo === 'Jogador';
     }
 
     return false;
-  };
+};
 
   // Verifica se o time é válido para o tipo de usuário
   const timeValidoParaTipo = (tipoUsuario, time) => {
@@ -164,7 +162,7 @@ const AdminUsuarios = () => {
       const response = await fetch(`${API_BASE_URL}/usuarios/${id}`, {
         method: 'DELETE'
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Erro ao excluir usuário');
@@ -202,39 +200,58 @@ const AdminUsuarios = () => {
 
   const handleSubmit = async (formData) => {
     try {
-      // Verifica se pode adicionar/editar este tipo de usuário
-      if (!modoEdicao && !podeAdicionarTipo(formData.tipoUsuario)) {
-        alert('Você não tem permissão para adicionar este tipo de usuário!');
-        return;
-      }
+        const usuarioAtual = usuarios.find(u => u.email === currentUser?.username);
+        
+        // Validação específica para capitães
+        if (usuarioAtual?.tipoUsuario === 'Capitão de time') {
+            if (!modoEdicao && formData.tipoUsuario !== 'Jogador') {
+                alert('Como Capitão, você só pode adicionar jogadores!');
+                return;
+            }
+            
+            if (formData.time !== usuarioAtual.time) {
+                alert('Você só pode adicionar jogadores do seu próprio time!');
+                return;
+            }
+        }
+      // Verificação se é auto-edição
+      const isSelfEdit = modoEdicao && usuarioSelecionado?.email === currentUser?.username;
 
-      // Verifica se o time é válido para o tipo de usuário
-      if (!timeValidoParaTipo(formData.tipoUsuario, formData.time)) {
-        alert('Este tipo de usuário precisa estar vinculado a um time!');
-        return;
-      }
+      if (isSelfEdit) {
+        // Administrador Geral não pode se editar
+        if (usuarioSelecionado.tipoUsuario === 'Administrador Geral') {
+          alert('Administrador Geral não pode editar seu próprio perfil!');
+          return;
+        }
 
-      // Validação extra para edição
-      if (modoEdicao) {
-        const usuarioOriginal = usuarios.find(u => u._id === usuarioSelecionado._id);
-        if (usuarioOriginal) {
-          // Se está tentando mudar o tipo, verifica se tem permissão
-          if (formData.tipoUsuario !== usuarioOriginal.tipoUsuario && 
-              !podeAdicionarTipo(formData.tipoUsuario)) {
-            alert('Você não tem permissão para alterar para este tipo de usuário!');
-            return;
-          }
+        // Capitão não pode mudar seu próprio time
+        if (usuarioSelecionado.tipoUsuario === 'Capitão de time' &&
+          formData.time !== usuarioSelecionado.time) {
+          alert('Você não pode alterar o time ao qual está vinculado!');
+          return;
+        }
 
-          // Capitão não pode mudar seu próprio time
-          if (usuarioOriginal.email === currentUser?.username && 
-              usuarioOriginal.tipoUsuario === 'Capitão de time' &&
-              formData.time !== usuarioOriginal.time) {
-            alert('Você não pode alterar o time ao qual está vinculado!');
-            return;
-          }
+        // Capitão só pode abaixar seu próprio cargo (não pode se promover)
+        if (usuarioSelecionado.tipoUsuario === 'Capitão de time' &&
+          formData.tipoUsuario !== 'Capitão de time' &&
+          formData.tipoUsuario !== 'Jogador') {
+          alert('Como Capitão, você só pode se rebaixar para Jogador!');
+          return;
+        }
+      } else {
+        // Validações normais para edição de outros usuários
+        if (!modoEdicao && !podeAdicionarTipo(formData.tipoUsuario)) {
+          alert('Você não tem permissão para adicionar este tipo de usuário!');
+          return;
+        }
+
+        if (!timeValidoParaTipo(formData.tipoUsuario, formData.time)) {
+          alert('Este tipo de usuário precisa estar vinculado a um time!');
+          return;
         }
       }
 
+      // Resto do código de submit permanece o mesmo
       const url = modoEdicao
         ? `${API_BASE_URL}/usuarios/${usuarioSelecionado._id}`
         : `${API_BASE_URL}/usuarios`;
@@ -371,7 +388,7 @@ const AdminUsuarios = () => {
             <button
               onClick={abrirModalCriacao}
               className="bg-azul-claro hover:bg-azul-escuro text-white px-4 py-2 rounded flex items-center gap-2 transition-colors w-full sm:w-auto justify-center"
-              disabled={!['Administrador Geral', 'Administrador', 'Capitão de time'].some(tipo => podeAdicionarTipo(tipo))}
+              disabled={!podeAdicionarTipo('Jogador', usuarioAtual?.time)} // Verifica se pode adicionar jogador do seu time
             >
               <FaUserPlus /> Adicionar Usuário
             </button>
@@ -403,25 +420,26 @@ const AdminUsuarios = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-white">{usuario.discordID || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-white">{usuario.tipoUsuario}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-white">
-                        {usuario.time || 
-                          (['Administrador Geral', 'Administrador'].includes(usuario.tipoUsuario) ? 
-                          '-' : 'Não definido')}
+                        {usuario.time ||
+                          (['Administrador Geral', 'Administrador'].includes(usuario.tipoUsuario) ?
+                            '-' : 'Não definido')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-white">
                         {new Date(usuario.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap flex gap-2">
-                        {!podeGerenciar ? (
+                        {!podeGerenciarUsuario(usuario) ? (
                           <span className="text-branco">Sem permissão</span>
                         ) : (
                           <>
                             <EditarBtn
                               onClick={() => abrirModalEdicao(usuario)}
-                              disabled={eUsuarioAtual}
+                            // Removida a restrição para auto-edição
                             />
                             <DeletarBtn
                               onDelete={() => handleDelete(usuario._id)}
-                              disabled={eUsuarioAtual}
+                              // Permite auto-exclusão exceto para Administrador Geral
+                              disabled={usuario.tipoUsuario === 'Administrador Geral' && usuario.email === currentUser?.username}
                             />
                           </>
                         )}

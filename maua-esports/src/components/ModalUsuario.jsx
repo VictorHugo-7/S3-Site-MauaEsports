@@ -87,10 +87,10 @@ const ModalUsuario = ({
   // Filtra os times disponíveis baseado no tipo de usuário
   const getTimesDisponiveis = () => {
     if (usuarioAtual?.tipoUsuario === "Capitão de time") {
-      // Capitão só pode ver o próprio time
+      // Capitão só pode ver/adicionar ao próprio time
       return Object.values(times).filter((t) => t?.Name === usuarioAtual?.time);
     }
-    return Object.values(times); // Converte o objeto em array de valores
+    return Object.values(times);
   };
 
   return (
@@ -117,9 +117,8 @@ const ModalUsuario = ({
               value={formData.email}
               onChange={handleChange}
               disabled={modoEdicao}
-              className={`w-full p-2 rounded bg-fundo text-white border ${
-                errors.email ? "border-vermelho-claro" : "border-borda"
-              }`}
+              className={`w-full p-2 rounded bg-fundo text-white border ${errors.email ? "border-vermelho-claro" : "border-borda"
+                }`}
             />
             {errors.email && (
               <p className="text-vermelho-claro text-sm mt-1">{errors.email}</p>
@@ -133,9 +132,8 @@ const ModalUsuario = ({
               name="discordID"
               value={formData.discordID}
               onChange={handleChange}
-              className={`w-full p-2 rounded bg-fundo text-white border ${
-                errors.discordID ? "border-vermelho-claro" : "border-borda"
-              }`}
+              className={`w-full p-2 rounded bg-fundo text-white border ${errors.discordID ? "border-vermelho-claro" : "border-borda"
+                }`}
               placeholder="Opcional"
             />
             {errors.discordID && (
@@ -152,10 +150,8 @@ const ModalUsuario = ({
                 name="tipoUsuario"
                 value={formData.tipoUsuario}
                 onChange={handleChange}
-                disabled={modoEdicao && usuario?.email === currentUserEmail}
-                className={`w-full p-2 rounded bg-fundo text-white border ${
-                  errors.tipoUsuario ? "border-vermelho-claro" : "border-borda"
-                }`}
+                disabled={modoEdicao && usuario?.email === currentUserEmail && usuario?.tipoUsuario === 'Administrador Geral'}
+                className={`w-full p-2 rounded bg-fundo text-white border ${errors.tipoUsuario ? "border-vermelho-claro" : "border-borda"}`}
               >
                 <option
                   value="Jogador"
@@ -205,9 +201,7 @@ const ModalUsuario = ({
                   usuario?.tipoUsuario === "Capitão de time" &&
                   usuario?.email === currentUserEmail
                 }
-                className={`w-full p-2 rounded bg-fundo text-white border ${
-                  errors.time ? "border-vermelho-claro" : "border-borda"
-                }`}
+                className={`w-full p-2 rounded bg-fundo text-white border ${errors.time ? "border-vermelho-claro" : "border-borda"}`}
               >
                 <option value="">Selecione um time</option>
                 {getTimesDisponiveis().map((time) => (
