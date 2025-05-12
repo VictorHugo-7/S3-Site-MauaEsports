@@ -3,6 +3,8 @@ import CardTime from "../components/CardTime";
 import EditarTime from "../components/ModalEditarTime";
 import AdicionarTime from "../components/AdicionarTime";
 import PageBanner from "../components/PageBanner";
+import AlertaErro from "../components/AlertaErro"; // Novo
+import AlertaOk from "../components/AlertaOk"; // Novo
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -10,6 +12,7 @@ const Times = () => {
   const [times, setTimes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null); // Novo
   const [timeEditando, setTimeEditando] = useState(null);
 
   const carregarTimes = async () => {
@@ -76,16 +79,16 @@ const Times = () => {
       }
 
       setTimes(times.filter((time) => time.id !== timeId));
+      setSuccessMessage("Time excluído com sucesso!"); // Novo
     } catch (error) {
       console.error("Erro ao deletar time:", error);
-      alert(
+      setErroCarregamento(
         error.message ||
-        "Não foi possível excluir o time. Verifique se não há jogadores associados."
+          "Não foi possível excluir o time. Verifique se não há jogadores associados."
       );
     }
   };
 
-  // Função para converter base64 para Blob
   const dataURLtoBlob = (dataURL) => {
     const arr = dataURL.split(",");
     const mime = arr[0].match(/:(.*?);/)[1];
@@ -104,16 +107,16 @@ const Times = () => {
       formData.append("nome", timeAtualizado.nome);
       formData.append("rota", timeAtualizado.rota);
 
-      // Verifica se a foto foi alterada (é uma nova imagem em base64)
       if (timeAtualizado.foto && timeAtualizado.foto.startsWith("data:image")) {
         const fotoBlob = dataURLtoBlob(timeAtualizado.foto);
         formData.append("foto", fotoBlob, `foto-${Date.now()}.jpg`);
       }
 
-      // Verifica se o jogo foi alterado (é uma nova imagem em base64)
       if (timeAtualizado.jogo && timeAtualizado.jogo.startsWith("data:image")) {
         const jogoBlob = dataURLtoBlob(timeAtualizado.jogo);
         formData.append("jogo", jogoBlob, `jogo-${Date.now()}.jpg`);
+      } else if (timeAtualizado.jogo === null) {
+        formData.append("removeJogo", "true");
       }
 
       const response = await fetch(
@@ -125,29 +128,31 @@ const Times = () => {
       );
 
       if (!response.ok) {
-        throw new Error("Falha ao atualizar time");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Falha ao atualizar time");
       }
 
       const data = await response.json();
 
-      // Atualiza a lista de times mantendo a ordem
       setTimes(
         times.map((time) =>
           time.id === timeAtualizado.id
             ? {
-              ...data,
-              fotoUrl: `${API_BASE_URL}/times/${data.id}/foto?${Date.now()}`,
-              jogoUrl: `${API_BASE_URL}/times/${data.id}/jogo?${Date.now()}`,
-            }
+                ...data,
+                fotoUrl: `${API_BASE_URL}/times/${data.id}/foto?${Date.now()}`,
+                jogoUrl: `${API_BASE_URL}/times/${data.id}/jogo?${Date.now()}`,
+              }
             : time
         )
       );
 
       setTimeEditando(null);
-      return true; // Indica sucesso
+      setSuccessMessage("Time atualizado com sucesso!"); // Novo
+      return true;
     } catch (error) {
       console.error("Erro ao atualizar time:", error);
-      throw error; // Rejeita a promise para mostrar erro no modal
+      setErroCarregamento(error.message || "Erro ao atualizar time"); // Novo
+      throw error;
     }
   };
 
@@ -167,13 +172,11 @@ const Times = () => {
       formData.append("nome", novoTime.nome);
       formData.append("rota", novoTime.rota);
 
-      // Adiciona a foto (se existir)
       if (novoTime.foto && novoTime.foto.startsWith("data:image")) {
         const fotoBlob = dataURLtoBlob(novoTime.foto);
         formData.append("foto", fotoBlob, `foto-${Date.now()}.jpg`);
       }
 
-      // Adiciona o jogo (se existir)
       if (novoTime.jogo && novoTime.jogo.startsWith("data:image")) {
         const jogoBlob = dataURLtoBlob(novoTime.jogo);
         formData.append("jogo", jogoBlob, `jogo-${Date.now()}.jpg`);
@@ -191,7 +194,6 @@ const Times = () => {
 
       const data = await response.json();
 
-      // Adiciona o novo time mantendo a ordem
       setTimes(
         [
           ...times,
@@ -203,10 +205,12 @@ const Times = () => {
         ].sort((a, b) => a.id - b.id)
       );
 
-      return true; // Indica sucesso
+      setSuccessMessage("Time criado com sucesso!"); // Novo
+      return true;
     } catch (error) {
       console.error("Erro ao criar time:", error);
-      throw error; // Rejeita a promise para mostrar erro no modal
+      setErroCarregamento(error.message || "Erro ao criar time"); // Novo
+      throw error;
     }
   };
 
@@ -214,7 +218,7 @@ const Times = () => {
     const time = times.find((t) => t.id === timeId);
     setTimeEditando({
       ...time,
-      foto: time.fotoUrl, // Usa a URL para preview
+      foto: time.fotoUrl,
       jogo: time.jogoUrl,
     });
   };
@@ -228,40 +232,13 @@ const Times = () => {
     );
   }
 
-  if (erroCarregamento) {
-    return (
-      <div className="w-full min-h-screen bg-fundo flex flex-col items-center justify-center p-4">
-        <div className="bg-preto p-6 rounded-lg max-w-md text-center border border-vermelho-claro">
-          <h2 className="text-xl font-bold text-vermelho-claro mb-2">
-            Erro ao carregar
-          </h2>
-          <p className="text-branco mb-4">{erroCarregamento}</p>
-          <div className="flex flex-col space-y-2">
-            <button
-              onClick={carregarTimes}
-              className="bg-azul-escuro text-branco px-4 py-2 rounded hover:bg-azul-escuro"
-            >
-              Tentar novamente
-            </button>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-cinza-escuro text-branco px-4 py-2 rounded hover:bg-cinza-claro"
-            >
-              Recarregar página
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full min-h-screen bg-fundo">
-
+      {erroCarregamento && <AlertaErro mensagem={erroCarregamento} />}{" "}
+      {/* Novo */}
+      {successMessage && <AlertaOk mensagem={successMessage} />} {/* Novo */}
       <div className="bg-[#010409] h-[104px]">.</div>
-
       <PageBanner pageName="Escolha seu time!" />
-
       <div className="bg-fundo w-full flex justify-center items-center overflow-auto scrollbar-hidden">
         <div className="w-full flex flex-wrap py-16 justify-center gap-8">
           {times.length > 0 ? (
@@ -284,7 +261,6 @@ const Times = () => {
           <AdicionarTime onAdicionarTime={handleCreateTime} />
         </div>
       </div>
-
       {timeEditando && (
         <EditarTime
           time={timeEditando}

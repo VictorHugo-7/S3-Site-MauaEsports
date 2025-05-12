@@ -76,18 +76,37 @@
 }
 
 @keyframes spinGear {
-  0% { transform: translateX(0) rotate(0deg); }
-  25% { transform: translateX(-3px) rotate(-5deg); }
-  50% { transform: translateX(3px) rotate(5deg); }
-  75% { transform: translateX(-3px) rotate(0deg); }
-  100% { transform: translateX(0) rotate(0deg); }
+  0% {
+    transform: translateX(0) rotate(0deg);
+  }
+  25% {
+    transform: translateX(-3px) rotate(-5deg);
+  }
+  50% {
+    transform: translateX(3px) rotate(5deg);
+  }
+  75% {
+    transform: translateX(-3px) rotate(0deg);
+  }
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
 }
 
 @keyframes pencilEdit {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-3px) rotate(-5deg); }
-  50% { transform: translateY(0) rotate(5deg); }
-  75% { transform: translateY(-3px) rotate(0deg); }
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-3px) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(0) rotate(5deg);
+  }
+  75% {
+    transform: translateY(-3px) rotate(0deg);
+  }
 }
 
 @keyframes pular {
@@ -121,6 +140,28 @@
 }
 
 @keyframes pulseEdit {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+/* Scrollbar estilizada (modo leve e invisível) */
+.scroll-custom::-webkit-scrollbar {
+  width: 6px;
+}
+.scroll-custom::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-custom::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+/* Firefox */
+.scroll-custom {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
