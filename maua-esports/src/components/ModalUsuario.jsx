@@ -1,12 +1,8 @@
 import React, { useState, useEffect } from "react";
-import {
-  FaUser,
-  FaDiscord,
-  FaUserShield,
-  FaUserTie,
-  FaUserAlt,
-  FaTimes,
-} from "react-icons/fa";
+import { FaUser, FaDiscord, FaUserShield, FaUserTie, FaUserAlt, FaTimes } from "react-icons/fa";
+import SalvarBtn from "./SalvarBtn";
+import CancelarBtn from "./CancelarBtn";
+import { RiCloseFill } from "react-icons/ri";
 
 const ModalUsuario = ({
   usuario,
@@ -15,8 +11,7 @@ const ModalUsuario = ({
   modoEdicao,
   currentUserEmail,
   podeAdicionarTipo,
-
-  times = {}, // Agora recebe um objeto, não array
+  times = {},
   usuarioAtual,
 }) => {
   const [formData, setFormData] = useState({
@@ -24,11 +19,8 @@ const ModalUsuario = ({
     discordID: "",
     tipoUsuario: "Jogador",
     time: "",
-
   });
-  const [erro, setErro] = React.useState("");
-  const [isVisible, setIsVisible] = useState(false); // Estado para animação
-
+  const [erro, setErro] = useState("");
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -49,7 +41,6 @@ const ModalUsuario = ({
     }
   }, [modoEdicao, usuario]);
 
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -60,7 +51,6 @@ const ModalUsuario = ({
 
   const validate = () => {
     const newErrors = {};
-
     if (!formData.email) {
       newErrors.email = "Email é obrigatório";
     } else if (!formData.email.endsWith("@maua.br")) {
@@ -80,52 +70,72 @@ const ModalUsuario = ({
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     if (validate()) {
       onSave(formData);
     }
   };
 
-  // Filtra os times disponíveis baseado no tipo de usuário
   const getTimesDisponiveis = () => {
     if (usuarioAtual?.tipoUsuario === "Capitão de time") {
-      // Capitão só pode ver/adicionar ao próprio time
       return Object.values(times).filter((t) => t?.Name === usuarioAtual?.time);
     }
     return Object.values(times);
   };
 
+  const getTipoUsuarioIcon = () => {
+    switch (formData.tipoUsuario) {
+      case "Administrador Geral":
+        return <FaUserShield className="text-2xl" />;
+      case "Administrador":
+        return <FaUserShield className="text-2xl" />;
+      case "Capitão de time":
+        return <FaUserTie className="text-2xl" />;
+      case "Jogador":
+        return <FaUserAlt className="text-2xl" />;
+      default:
+        return <FaUser className="text-2xl" />;
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-navbar rounded-lg p-6 w-full max-w-md border-2 border-borda">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-fundo/80">
+      <div className="bg-fundo p-6 rounded-lg max-w-md w-full border shadow-sm shadow-azul-claro max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-white">
+          <h2 className="text-xl font-bold text-branco">
             {modoEdicao ? "Editar Usuário" : "Adicionar Usuário"}
           </h2>
           <button
             onClick={onClose}
-            className="text-vermelho-claro hover:text-vermelho-escuro"
-
+            className="text-fonte-escura hover:text-vermelho-claro hover:cursor-pointer"
           >
-            <FaTimes size={20} />
+            <RiCloseFill size={24} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-white mb-2">Email</label>
+        {erro && (
+          <div className="mb-4 p-2 bg-vermelho-claro/20 text-vermelho-claro rounded text-sm">
+            {erro}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm text-fonte-escura font-semibold mb-1">
+              Email <span className="text-vermelho-claro">*</span>
+            </label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
               disabled={modoEdicao}
-              className={`w-full p-2 rounded bg-fundo text-white border ${errors.email ? "border-vermelho-claro" : "border-borda"
+              className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${errors.email
+                ? "border-vermelho-claro focus:border-vermelho-claro"
+                : "border-borda focus:border-azul-claro"
                 }`}
             />
             {errors.email && (
@@ -133,18 +143,26 @@ const ModalUsuario = ({
             )}
           </div>
 
-
-          <div className="mb-4">
-            <label className="block text-white mb-2">Discord ID</label>
-            <input
-              type="text"
-              name="discordID"
-              value={formData.discordID}
-              onChange={handleChange}
-              className={`w-full p-2 rounded bg-fundo text-white border ${errors.discordID ? "border-vermelho-claro" : "border-borda"
-                }`}
-              placeholder="Opcional"
-            />
+          <div>
+            <label className="block text-sm text-fonte-escura font-semibold mb-1">
+              Discord ID
+            </label>
+            <div className="flex items-center">
+              <div className="bg-fonte-escura rounded-l-md px-2 py-2 flex items-center justify-center">
+                <FaDiscord className="text-2xl" />
+              </div>
+              <input
+                type="text"
+                name="discordID"
+                value={formData.discordID}
+                onChange={handleChange}
+                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${errors.discordID
+                  ? "border-vermelho-claro focus:border-vermelho-claro"
+                  : "border-borda focus:border-azul-claro"
+                  }`}
+                placeholder="Opcional"
+              />
+            </div>
             {errors.discordID && (
               <p className="text-vermelho-claro text-sm mt-1">
                 {errors.discordID}
@@ -152,21 +170,29 @@ const ModalUsuario = ({
             )}
           </div>
 
-          <div className="mb-4">
-            <label className="block text-white mb-2">Tipo de Usuário</label>
-            <div className="relative">
+          <div>
+            <label className="block text-sm text-fonte-escura font-semibold mb-1">
+              Tipo de Usuário
+            </label>
+            <div className="flex items-center">
+              <div className="bg-fonte-escura rounded-l-md px-2 py-2 flex items-center justify-center">
+                {getTipoUsuarioIcon()}
+              </div>
               <select
                 name="tipoUsuario"
                 value={formData.tipoUsuario}
-
                 onChange={handleChange}
-                disabled={modoEdicao && usuario?.email === currentUserEmail && usuario?.tipoUsuario === 'Administrador Geral'}
-                className={`w-full p-2 rounded bg-fundo text-white border ${errors.tipoUsuario ? "border-vermelho-claro" : "border-borda"}`}
+                disabled={
+                  modoEdicao &&
+                  usuario?.email === currentUserEmail &&
+                  usuario?.tipoUsuario === "Administrador Geral"
+                }
+                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${errors.tipoUsuario
+                  ? "border-vermelho-claro focus:border-vermelho-claro"
+                  : "border-borda focus:border-azul-claro"
+                  }`}
               >
-                <option
-                  value="Jogador"
-                  disabled={!podeAdicionarTipo("Jogador")}
-                >
+                <option value="Jogador" disabled={!podeAdicionarTipo("Jogador")}>
                   Jogador
                 </option>
                 <option
@@ -188,21 +214,14 @@ const ModalUsuario = ({
                   Administrador Geral
                 </option>
               </select>
-              <div className="absolute right-3 top-3 text-white">
-                {formData.tipoUsuario === "Administrador Geral" && (
-                  <FaUserShield />
-                )}
-                {formData.tipoUsuario === "Administrador" && <FaUserShield />}
-                {formData.tipoUsuario === "Capitão de time" && <FaUserTie />}
-                {formData.tipoUsuario === "Jogador" && <FaUserAlt />}
-              </div>
             </div>
-
           </div>
 
           {["Capitão de time", "Jogador"].includes(formData.tipoUsuario) && (
-            <div className="mb-4">
-              <label className="block text-white mb-2">Time</label>
+            <div>
+              <label className="block text-sm text-fonte-escura font-semibold mb-1">
+                Time {formData.tipoUsuario !== "Administrador" && <span className="text-vermelho-claro">*</span>}
+              </label>
               <select
                 name="time"
                 value={formData.time}
@@ -212,7 +231,10 @@ const ModalUsuario = ({
                   usuario?.tipoUsuario === "Capitão de time" &&
                   usuario?.email === currentUserEmail
                 }
-                className={`w-full p-2 rounded bg-fundo text-white border ${errors.time ? "border-vermelho-claro" : "border-borda"}`}
+                className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${errors.time
+                  ? "border-vermelho-claro focus:border-vermelho-claro"
+                  : "border-borda focus:border-azul-claro"
+                  }`}
               >
                 <option value="">Selecione um time</option>
                 {getTimesDisponiveis().map((time) => (
@@ -225,27 +247,13 @@ const ModalUsuario = ({
                 <p className="text-vermelho-claro text-sm mt-1">
                   {errors.time}
                 </p>
-
               )}
             </div>
           )}
 
-
-          <div className="flex justify-end gap-2 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-cinza-escuro text-white rounded hover:bg-cinza-claro"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-azul-claro text-white rounded hover:bg-azul-escuro"
-            >
-              {modoEdicao ? "Salvar Alterações" : "Adicionar Usuário"}
-            </button>
-
+          <div className="flex justify-end space-x-2 mt-6">
+            <SalvarBtn type="submit" />
+            <CancelarBtn onClick={onClose} />
           </div>
         </form>
       </div>
