@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useMsal } from "@azure/msal-react";
 import { FaUserPlus, FaSearch, FaUserCog, FaTimes } from "react-icons/fa";
@@ -9,6 +10,7 @@ import AlertaErro from "../components/AlertaErro";
 import AlertaOk from "../components/AlertaOk";
 import axios from "axios";
 import { HiUserCircle } from "react-icons/hi2";
+
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -37,8 +39,8 @@ const AdminUsuarios = () => {
 
   const fetchTimes = async () => {
     try {
-      const response = await axios.get("/api/modality/all", {
-        headers: { Authorization: "Bearer frontendmauaesports" },
+      const response = await axios.get('/api/modality/all', {
+        headers: { Authorization: "Bearer frontendmauaesports" }
       });
 
       // A API retorna um objeto onde cada chave é um ID
@@ -113,9 +115,8 @@ const AdminUsuarios = () => {
   };
 
   const podeGerenciarUsuario = (usuarioAlvo) => {
-    const usuarioAtual = usuarios.find(
-      (u) => u.email === currentUser?.username
-    );
+
+    const usuarioAtual = usuarios.find(u => u.email === currentUser?.username);
     if (!usuarioAtual) return false;
 
     // Se for o próprio usuário, pode editar/excluir a si mesmo (com algumas restrições)
@@ -136,26 +137,27 @@ const AdminUsuarios = () => {
       return usuarioAlvo.tipoUsuario !== "Administrador Geral";
     }
 
+
     // Capitão só pode gerenciar jogadores do seu time
-    if (usuarioAtual.tipoUsuario === "Capitão de time") {
-      return (
-        usuarioAlvo.tipoUsuario === "Jogador" &&
-        usuarioAlvo.time === usuarioAtual.time
-      );
+    if (usuarioAtual.tipoUsuario === 'Capitão de time') {
+      return usuarioAlvo.tipoUsuario === 'Jogador' &&
+        usuarioAlvo.time === usuarioAtual.time;
+
     }
 
     return false;
   };
 
   const podeAdicionarTipo = (tipo) => {
-    const usuarioAtual = usuarios.find(
-      (u) => u.email === currentUser?.username
-    );
+
+
+    const usuarioAtual = usuarios.find(u => u.email === currentUser?.username);
     if (!usuarioAtual) return false;
 
     // Administrador Geral pode adicionar todos, exceto outro Administrador Geral
-    if (usuarioAtual.tipoUsuario === "Administrador Geral") {
-      return tipo !== "Administrador Geral";
+    if (usuarioAtual.tipoUsuario === 'Administrador Geral') {
+      return tipo !== 'Administrador Geral';
+
     }
 
     // Administrador pode adicionar Admins, Capitães e Jogadores
@@ -173,10 +175,7 @@ const AdminUsuarios = () => {
 
   // Verifica se o time é válido para o tipo de usuário
   const timeValidoParaTipo = (tipoUsuario, time) => {
-    if (
-      tipoUsuario === "Administrador Geral" ||
-      tipoUsuario === "Administrador"
-    ) {
+    if (tipoUsuario === 'Administrador Geral' || tipoUsuario === 'Administrador') {
       return true; // Admins não precisam de time
     }
     return !!time; // Capitães e jogadores precisam ter um time
@@ -203,14 +202,18 @@ const AdminUsuarios = () => {
         method: "DELETE",
       });
 
+
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Erro ao excluir usuário");
       }
 
-      setUsuarios(usuarios.filter((u) => u._id !== id));
+
+      setUsuarios(usuarios.filter(u => u._id !== id));
       setSuccess(`Usuário ${usuario.email} excluído com sucesso!`);
       setError(null);
+
     } catch (err) {
       console.error("Erro ao excluir usuário:", err);
       setError(err.message);
@@ -240,6 +243,7 @@ const AdminUsuarios = () => {
 
   const handleSubmit = async (formData) => {
     try {
+
       const usuarioAtual = usuarios.find(
         (u) => u.email === currentUser?.username
       );
@@ -248,53 +252,52 @@ const AdminUsuarios = () => {
       if (usuarioAtual?.tipoUsuario === "Capitão de time") {
         if (!modoEdicao && formData.tipoUsuario !== "Jogador") {
           alert("Como Capitão, você só pode adicionar jogadores!");
+
           return;
         }
 
         if (formData.time !== usuarioAtual.time) {
+
           alert("Você só pode adicionar jogadores do seu próprio time!");
+
           return;
         }
       }
       // Verificação se é auto-edição
-      const isSelfEdit =
-        modoEdicao && usuarioSelecionado?.email === currentUser?.username;
+      const isSelfEdit = modoEdicao && usuarioSelecionado?.email === currentUser?.username;
 
       if (isSelfEdit) {
         // Administrador Geral não pode se editar
-        if (usuarioSelecionado.tipoUsuario === "Administrador Geral") {
-          alert("Administrador Geral não pode editar seu próprio perfil!");
+        if (usuarioSelecionado.tipoUsuario === 'Administrador Geral') {
+          alert('Administrador Geral não pode editar seu próprio perfil!');
           return;
         }
 
         // Capitão não pode mudar seu próprio time
-        if (
-          usuarioSelecionado.tipoUsuario === "Capitão de time" &&
-          formData.time !== usuarioSelecionado.time
-        ) {
-          alert("Você não pode alterar o time ao qual está vinculado!");
+        if (usuarioSelecionado.tipoUsuario === 'Capitão de time' &&
+          formData.time !== usuarioSelecionado.time) {
+          alert('Você não pode alterar o time ao qual está vinculado!');
           return;
         }
 
         // Capitão só pode abaixar seu próprio cargo (não pode se promover)
-        if (
-          usuarioSelecionado.tipoUsuario === "Capitão de time" &&
-          formData.tipoUsuario !== "Capitão de time" &&
-          formData.tipoUsuario !== "Jogador"
-        ) {
-          alert("Como Capitão, você só pode se rebaixar para Jogador!");
+        if (usuarioSelecionado.tipoUsuario === 'Capitão de time' &&
+          formData.tipoUsuario !== 'Capitão de time' &&
+          formData.tipoUsuario !== 'Jogador') {
+          alert('Como Capitão, você só pode se rebaixar para Jogador!');
           return;
         }
       } else {
         // Validações normais para edição de outros usuários
         if (!modoEdicao && !podeAdicionarTipo(formData.tipoUsuario)) {
-          alert("Você não tem permissão para adicionar este tipo de usuário!");
+          alert('Você não tem permissão para adicionar este tipo de usuário!');
           return;
         }
 
         if (!timeValidoParaTipo(formData.tipoUsuario, formData.time)) {
-          alert("Este tipo de usuário precisa estar vinculado a um time!");
+          alert('Este tipo de usuário precisa estar vinculado a um time!');
           return;
+
         }
       }
 
@@ -343,13 +346,11 @@ const AdminUsuarios = () => {
     console.log(`Erro ao carregar imagem para usuário ${userId}`);
     setImageErrors((prev) => ({ ...prev, [userId]: true }));
   };
-  const usuariosFiltrados = usuarios.filter(
-    (usuario) =>
-      usuario.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (usuario.discordID && usuario.discordID.includes(searchTerm)) ||
-      usuario.tipoUsuario.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (usuario.time &&
-        usuario.time.toLowerCase().includes(searchTerm.toLowerCase()))
+  const usuariosFiltrados = usuarios.filter(usuario =>
+    usuario.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (usuario.discordID && usuario.discordID.includes(searchTerm)) ||
+    usuario.tipoUsuario.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (usuario.time && usuario.time.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   if (loading || loadingTimes) {
@@ -362,6 +363,7 @@ const AdminUsuarios = () => {
   }
 
   if (error) {
+
     return (
       <div className="w-full min-h-screen bg-fundo flex flex-col items-center justify-center p-4">
         <div className="bg-preto p-6 rounded-lg max-w-md text-center border border-vermelho-claro">
@@ -371,10 +373,12 @@ const AdminUsuarios = () => {
           <p className="text-branco mb-4">{error}</p>
           <div className="flex flex-col space-y-2">
             <button
+
               onClick={() => {
                 fetchUsuarios();
                 fetchTimes();
               }}
+
               className="bg-azul-escuro text-branco px-4 py-2 rounded hover:bg-azul-escuro"
             >
               Tentar novamente
@@ -389,12 +393,16 @@ const AdminUsuarios = () => {
         </div>
       </div>
     );
+
   }
+
 
   const usuarioAtual = usuarios.find((u) => u.email === currentUser?.username);
 
+
   // Jogadores não devem ter acesso a esta tela
-  if (!usuarioAtual || usuarioAtual.tipoUsuario === "Jogador") {
+  if (!usuarioAtual || usuarioAtual.tipoUsuario === 'Jogador') {
+
     return (
       <div className="text-center py-20">
         <h2 className="text-2xl font-bold mb-4">Acesso não autorizado</h2>
@@ -462,6 +470,7 @@ const AdminUsuarios = () => {
           {["Administrador Geral", "Administrador", "Capitão de time"].includes(
             usuarioAtual.tipoUsuario
           ) && (
+
             <button
               onClick={abrirModalCriacao}
               className="bg-azul-claro hover:bg-azul-escuro text-white px-4 py-2 rounded flex items-center gap-2 transition-colors w-full sm:w-auto justify-center"
@@ -470,6 +479,7 @@ const AdminUsuarios = () => {
               <FaUserPlus /> Adicionar Usuário
             </button>
           )}
+
         </div>
 
         <div className="overflow-x-auto bg-navbar rounded-lg border-2 border-borda shadow-lg">
@@ -479,24 +489,13 @@ const AdminUsuarios = () => {
                 <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">
                   Foto
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">
-                  Discord ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">
-                  Tipo de Usuário
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">
-                  Time
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">
-                  Data de Criação
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">
-                  Ações
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">Discord ID</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">Tipo de Usuário</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">Time</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">Data de Criação</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">Ações</th>
+
               </tr>
             </thead>
             <tbody className="bg-navbar divide-y divide-borda">
@@ -547,11 +546,8 @@ const AdminUsuarios = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-white">
                         {usuario.time ||
-                          (["Administrador Geral", "Administrador"].includes(
-                            usuario.tipoUsuario
-                          )
-                            ? "-"
-                            : "Não definido")}
+                          (['Administrador Geral', 'Administrador'].includes(usuario.tipoUsuario) ?
+                            '-' : 'Não definido')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-white">
                         {new Date(usuario.createdAt).toLocaleDateString()}
@@ -563,15 +559,12 @@ const AdminUsuarios = () => {
                           <>
                             <EditarBtn
                               onClick={() => abrirModalEdicao(usuario)}
-                              // Removida a restrição para auto-edição
+                            // Removida a restrição para auto-edição
                             />
                             <DeletarBtn
                               onDelete={() => handleDelete(usuario._id)}
                               // Permite auto-exclusão exceto para Administrador Geral
-                              disabled={
-                                usuario.tipoUsuario === "Administrador Geral" &&
-                                usuario.email === currentUser?.username
-                              }
+                              disabled={usuario.tipoUsuario === 'Administrador Geral' && usuario.email === currentUser?.username}
                             />
                           </>
                         )}
@@ -581,10 +574,9 @@ const AdminUsuarios = () => {
                 })
               ) : (
                 <tr>
-                  <td
-                    colSpan="6"
-                    className="px-6 py-4 text-center text-cinza-escuro"
-                  >
+
+                  <td colSpan="6" className="px-6 py-4 text-center text-cinza-escuro">
+
                     Nenhum usuário encontrado
                   </td>
                 </tr>
