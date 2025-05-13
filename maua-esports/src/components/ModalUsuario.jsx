@@ -71,8 +71,17 @@ const ModalUsuario = ({
     const newErrors = {};
     if (!formData.email) {
       newErrors.email = "Email é obrigatório";
-    } else if (!formData.email.endsWith("@maua.br")) {
-      newErrors.email = "Email deve ser @maua.br";
+    } else {
+      const emailParts = formData.email.split('@');
+      const emailWithoutDomain = emailParts[0];
+
+      if (!formData.email.endsWith("@maua.br") && emailWithoutDomain.length !== 10) {
+        newErrors.email = "Email deve ser @maua.br e a parte antes do @ deve ter 10 caracteres";
+      } else if (!formData.email.endsWith("@maua.br")) {
+        newErrors.email = "Email deve ser @maua.br";
+      } else if (emailWithoutDomain.length !== 10) {
+        newErrors.email = "A parte do email antes do @ deve ter exatamente 10 caracteres";
+      }
     }
 
     if (formData.discordID && !/^\d{18}$/.test(formData.discordID)) {
@@ -121,14 +130,12 @@ const ModalUsuario = ({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${
-        isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
-      }`}
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
     >
       <div
-        className={`bg-fundo p-6 rounded-lg max-w-md w-full border shadow-sm shadow-azul-claro max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
-          isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
-        }`}
+        className={`bg-fundo p-6 rounded-lg max-w-md w-full border shadow-sm shadow-azul-claro max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+          }`}
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-branco">
@@ -159,11 +166,10 @@ const ModalUsuario = ({
               value={formData.email}
               onChange={handleChange}
               disabled={modoEdicao}
-              className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
-                errors.email
-                  ? "border-vermelho-claro focus:border-vermelho-claro"
-                  : "border-borda focus:border-azul-claro"
-              }`}
+              className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${errors.email
+                ? "border-vermelho-claro focus:border-vermelho-claro"
+                : "border-borda focus:border-azul-claro"
+                }`}
             />
             {errors.email && (
               <p className="text-vermelho-claro text-sm mt-1">{errors.email}</p>
@@ -221,11 +227,10 @@ const ModalUsuario = ({
                   usuario?.email === currentUserEmail &&
                   usuario?.tipoUsuario === "Administrador Geral"
                 }
-                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
-                  errors.tipoUsuario
-                    ? "border-vermelho-claro focus:border-vermelho-claro"
-                    : "border-borda focus:border-azul-claro"
-                }`}
+                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${errors.tipoUsuario
+                  ? "border-vermelho-claro focus:border-vermelho-claro"
+                  : "border-borda focus:border-azul-claro"
+                  }`}
               >
                 <option
                   value="Jogador"
@@ -272,11 +277,10 @@ const ModalUsuario = ({
                   usuario?.tipoUsuario === "Capitão de time" &&
                   usuario?.email === currentUserEmail
                 }
-                className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
-                  errors.time
-                    ? "border-vermelho-claro focus:border-vermelho-claro"
-                    : "border-borda focus:border-azul-claro"
-                }`}
+                className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${errors.time
+                  ? "border-vermelho-claro focus:border-vermelho-claro"
+                  : "border-borda focus:border-azul-claro"
+                  }`}
               >
                 <option value="">Selecione um time</option>
                 {getTimesDisponiveis().map((time) => (

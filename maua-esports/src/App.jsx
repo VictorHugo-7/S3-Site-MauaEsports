@@ -48,6 +48,7 @@ function App() {
             }
           >
             <Route path="/horas-pae" element={<HorasPaePage />} />
+            <Route path="/treinos-admin" element={<TreinosAdmin />} />
           </Route>
 
           <Route
@@ -62,7 +63,7 @@ function App() {
             }
           >
             <Route path="/admin-usuarios" element={<AdminUsuarios />} />
-            <Route path="/treinos-admin" element={<TreinosAdmin />} />
+            
           </Route>
 
           <Route path="*" element={<NotFound />} />

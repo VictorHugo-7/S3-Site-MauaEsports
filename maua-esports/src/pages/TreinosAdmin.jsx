@@ -16,6 +16,7 @@ import { useMsal } from "@azure/msal-react";
 import AlertaErro from "../components/AlertaErro";
 import AlertaOk from "../components/AlertaOk";
 import DeletarBtn from "../components/DeletarBtn";
+import EditarBtn from "../components/EditarBtn";
 
 const Agendamento = ({
   inicio,
@@ -25,6 +26,7 @@ const Agendamento = ({
   status,
   onEditar,
   onExcluir,
+  podeEditar,
 }) => {
   const diasDaSemana = [
     "Domingo",
@@ -35,48 +37,38 @@ const Agendamento = ({
     "Sexta",
     "Sábado",
   ];
-  const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between p-4 sm:mx-4 my-0 min-h-[80px] border-b border-borda">
-      <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-8 w-full sm:w-auto">
-        <div className="flex flex-col items-center w-full sm:w-40">
-          <span className="text-branco font-bold">
-            {inicio} - {fim}
-          </span>
-          <span className="text-azul-claro text-sm">
-            Duração: {calcularDuracao(inicio, fim)}
-          </span>
-        </div>
-
-        <div className="w-32 text-center">
-          <span className="text-branco">{diasDaSemana[diaSemana]}</span>
-        </div>
-
-        <div className="ml-3 text-sm w-full sm:w-48 text-center sm:text-left">
-          <p className="font-semibold text-white font-blinker">{time}</p>
-        </div>
+    <div className="grid grid-cols-12 gap-2 p-4 border-b border-borda items-center">
+      <div className="col-span-3 flex flex-col">
+        <span className="text-branco font-bold">
+          {inicio} - {fim}
+        </span>
+        <span className="text-azul-claro text-sm">
+          Duração: {calcularDuracao(inicio, fim)}
+        </span>
       </div>
-      <div className="flex flex-row justify-center items-center sm:w-1/4 mt-2 sm:mt-0">
-        <button
-          onClick={onEditar}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          className="text-azul-claro text-2xl cursor-pointer mx-2"
-        >
-          <MdEdit
-            className="w-6 h-6"
-            style={{
-              animation: isHovered ? "shake 0.7s ease-in-out" : "none",
-              transformOrigin: "center center",
-            }}
+
+      <div className="col-span-3">
+        <span className="text-branco">{diasDaSemana[diaSemana]}</span>
+      </div>
+
+      <div className="col-span-4">
+        <p className="font-semibold text-white font-blinker truncate">{time}</p>
+      </div>
+
+      {podeEditar && (
+        <div className="col-span-2 flex justify-center space-x-2">
+          <EditarBtn
+            onClick={onEditar}
+            className="text-azul-claro text-xl cursor-pointer hover:text-blue-300"
           />
-        </button>
-        <DeletarBtn
-          onDelete={onExcluir}
-          className="text-vermelho-claro text-2xl cursor-pointer mx-2 hover:text-red-500"
-        />
-      </div>
+          <DeletarBtn
+            onDelete={onExcluir}
+            className="text-vermelho-claro text-xl cursor-pointer hover:text-red-300"
+          />
+        </div>
+      )}
     </div>
   );
 };
@@ -95,7 +87,7 @@ function calcularDuracao(inicio, fim) {
 
   return `${horas}h${minutos.toString().padStart(2, "0")}min`;
 }
-// Função auxiliar para comparar horários
+
 function compararHorarios(inicio, fim) {
   const [horaInicio, minutoInicio] = inicio.split(":").map(Number);
   const [horaFim, minutoFim] = fim.split(":").map(Number);
@@ -105,6 +97,7 @@ function compararHorarios(inicio, fim) {
 
   return totalMinutosInicio < totalMinutosFim;
 }
+
 const TreinosAdmin = () => {
   const { instance } = useMsal();
   const navigate = useNavigate();
@@ -146,7 +139,6 @@ const TreinosAdmin = () => {
     { value: 6, label: "Sábado" },
   ];
 
-  // Verifica autenticação e carrega dados do usuário
   useEffect(() => {
     const loadUserData = async () => {
       try {
@@ -187,38 +179,72 @@ const TreinosAdmin = () => {
     };
   };
 
-  // Função para determinar a modalidade do usuário
-  const determineUserModality = (mods, trainsData) => {
-    if (userRole === "Administrador" || userRole === "Administrador Geral") {
-      return null; // Admins podem ver tudo
-    }
+  const determineMainModality = (mods, trainsData) => {
+    const playerHours = {};
+    const modalityCount = {};
 
-    let userModalityId = null;
+    // Processa todos os treinos para calcular horas por modalidade
+    trainsData.forEach((train) => {
+      if (!train.AttendedPlayers || train.ModalityId === undefined) return;
+
+      const modality = mods[train.ModalityId];
+      if (!modality) return;
+
+      train.AttendedPlayers.forEach((player) => {
+        if (!player.PlayerId || player.PlayerId !== discordId) return;
+        if (!player.EntranceTimestamp || !player.ExitTimestamp) return;
+
+        const durationHours =
+          (player.ExitTimestamp - player.EntranceTimestamp) / (1000 * 60 * 60);
+
+        if (!playerHours[train.ModalityId]) {
+          playerHours[train.ModalityId] = 0;
+        }
+        playerHours[train.ModalityId] += durationHours;
+
+        if (!modalityCount[train.ModalityId]) {
+          modalityCount[train.ModalityId] = 0;
+        }
+        modalityCount[train.ModalityId]++;
+      });
+    });
+
+    // Verifica se é capitão (pelo nome no título da modalidade)
     let captainModalityId = null;
-
     Object.keys(mods).forEach((modId) => {
-      const modalityTrains = trainsData.filter((t) => t.ModalityId === modId);
-
-      // Verifica se é capitão (pelo nome no título da modalidade)
       if (userData?.nome && mods[modId].Name.includes(userData.nome)) {
         captainModalityId = modId;
-      }
-
-      // Verifica se participou de algum treino
-      for (const train of modalityTrains) {
-        if (train.AttendedPlayers?.some((p) => p.PlayerId === discordId)) {
-          userModalityId = modId;
-          break;
-        }
       }
     });
 
     setIsCaptain(!!captainModalityId);
-    return captainModalityId || userModalityId;
+
+    // Se for capitão, retorna essa modalidade
+    if (captainModalityId) {
+      return captainModalityId;
+    }
+
+    // Caso contrário, determina a modalidade com mais horas
+    let mainModalityId = null;
+    let maxHours = 0;
+
+    Object.entries(playerHours).forEach(([modalityId, hours]) => {
+      if (hours > maxHours) {
+        maxHours = hours;
+        mainModalityId = modalityId;
+      } else if (hours === maxHours) {
+        // Em caso de empate, usa a que tem mais treinos
+        if (modalityCount[modalityId] > modalityCount[mainModalityId]) {
+          mainModalityId = modalityId;
+        }
+      }
+    });
+
+    return mainModalityId;
   };
 
   useEffect(() => {
-    if (!userRole) return; // Espera até ter os dados do usuário
+    if (!userRole) return;
 
     const fetchData = async () => {
       try {
@@ -232,19 +258,7 @@ const TreinosAdmin = () => {
         ]);
 
         const mods = modResponse.data;
-        const userModalityId = determineUserModality(mods, trainsResponse.data);
-
-        // Se não for admin e não tiver modalidade, não mostra nada
-        if (
-          !(
-            userRole === "Administrador" || userRole === "Administrador Geral"
-          ) &&
-          !userModalityId
-        ) {
-          setModalidades({});
-          setCarregando(false);
-          return;
-        }
+        const userModalityId = determineMainModality(mods, trainsResponse.data);
 
         setModalidades(mods);
         setUserModality(userModalityId);
@@ -252,13 +266,8 @@ const TreinosAdmin = () => {
         const todosAgendamentos = [];
 
         for (const modId in mods) {
-          // Se não for admin, filtra apenas a modalidade do usuário
-          if (
-            !(
-              userRole === "Administrador" || userRole === "Administrador Geral"
-            ) &&
-            modId !== userModalityId
-          ) {
+          // Se for jogador, filtra apenas a modalidade principal
+          if (userRole === "Jogador" && modId !== userModalityId) {
             continue;
           }
 
@@ -285,11 +294,7 @@ const TreinosAdmin = () => {
         setAgendamentosOriginais(todosAgendamentos);
         setAgendamentosFiltrados(todosAgendamentos);
 
-        // Define a modalidade inicial
-        if (
-          userRole === "Administrador" ||
-          userRole === "Administrador Geral"
-        ) {
+        if (userRole === "Administrador" || userRole === "Administrador Geral") {
           setModalidadeSelecionada(Object.keys(mods)[0] || "");
           setFormCriacao((prev) => ({
             ...prev,
@@ -304,7 +309,7 @@ const TreinosAdmin = () => {
         }
       } catch (error) {
         console.error("Erro ao buscar dados:", error);
-        setHouErro("Erro ao carregar dados dos treinos");
+        setAlertaErro("Erro ao carregar dados dos treinos");
       } finally {
         setCarregando(false);
       }
@@ -343,16 +348,6 @@ const TreinosAdmin = () => {
   };
 
   const iniciarEdicao = (treino) => {
-    // Verifica se o usuário pode editar este treino
-    if (
-      userRole !== "Administrador" &&
-      userRole !== "Administrador Geral" &&
-      treino.ModalityId !== userModality
-    ) {
-      setAlertaErro("Você não tem permissão para editar este treino");
-      return;
-    }
-
     setEditandoTreino(treino);
     setFormEdicao({
       inicio: treino.inicio,
@@ -395,7 +390,6 @@ const TreinosAdmin = () => {
   };
 
   const salvarEdicao = async () => {
-    // Validar que o horário de início é anterior ao horário de término
     if (!compararHorarios(formEdicao.inicio, formEdicao.fim)) {
       setAlertaErro(
         "O horário de início deve ser anterior ao horário de término."
@@ -440,13 +434,13 @@ const TreinosAdmin = () => {
       const updatedAgendamentos = agendamentosOriginais.map((a) =>
         a.id === editandoTreino.id
           ? {
-              ...a,
-              inicio: formEdicao.inicio,
-              fim: formEdicao.fim,
-              diaSemana: parseInt(formEdicao.diaSemana),
-              cronInicio: novaCronInicio,
-              cronFim: novaCronFim,
-            }
+            ...a,
+            inicio: formEdicao.inicio,
+            fim: formEdicao.fim,
+            diaSemana: parseInt(formEdicao.diaSemana),
+            cronInicio: novaCronInicio,
+            cronFim: novaCronFim,
+          }
           : a
       );
 
@@ -469,7 +463,6 @@ const TreinosAdmin = () => {
       return;
     }
 
-    // Validar que o horário de início é anterior ao horário de término
     if (!compararHorarios(formCriacao.inicio, formCriacao.fim)) {
       setAlertaErro(
         "O horário de início deve ser anterior ao horário de término."
@@ -542,16 +535,6 @@ const TreinosAdmin = () => {
   };
 
   const excluirTreino = async (treino) => {
-    // Verifica se o usuário pode excluir este treino
-    if (
-      userRole !== "Administrador" &&
-      userRole !== "Administrador Geral" &&
-      treino.ModalityId !== userModality
-    ) {
-      setAlertaErro("Você não tem permissão para excluir este treino");
-      return;
-    }
-
     const confirmacao = window.confirm(
       `Deseja realmente excluir o treino do time ${treino.NomeModalidade} das ${treino.inicio} às ${treino.fim}?`
     );
@@ -677,10 +660,9 @@ const TreinosAdmin = () => {
                   setFiltroDataAtivo(true);
                 }}
                 className={`h-6 sm:h-8 text-xs sm:text-sm rounded-full flex items-center justify-center
-                  ${
-                    isSelecionado
-                      ? "bg-azul-claro text-white"
-                      : isHoje
+                  ${isSelecionado
+                    ? "bg-azul-claro text-white"
+                    : isHoje
                       ? "border-2 border-azul-claro text-white"
                       : "hover:bg-fundo/70 text-white"
                   }`}
@@ -704,70 +686,25 @@ const TreinosAdmin = () => {
     );
   }
 
-  // Verificação de permissão
-  if (userRole === "Jogador") {
-    return (
-      <div className="min-h-screen bg-[#0D1117] text-white flex items-center justify-center">
-        <div className="text-center p-6 max-w-md bg-gray-800 rounded-lg border border-gray-700">
-          <h2 className="text-2xl font-bold mb-4">Acesso restrito</h2>
-          <p className="mb-6">
-            Esta página é apenas para capitães e administradores.
-          </p>
-          <Link
-            to="/"
-            className="px-6 py-3 bg-azul-claro rounded-lg hover:bg-azul-escuro transition-colors inline-block"
-          >
-            Voltar para a página inicial
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (
-    Object.keys(modalidades).length === 0 &&
-    !(userRole === "Administrador" || userRole === "Administrador Geral")
-  ) {
-    return (
-      <div className="min-h-screen bg-[#0D1117] text-white flex items-center justify-center">
-        <div className="text-center p-6 max-w-md bg-gray-800 rounded-lg border border-gray-700">
-          <h2 className="text-2xl font-bold mb-4">Nenhum time encontrado</h2>
-          <p className="mb-6">
-            Você não está registrado em nenhum time ou não tem treinos
-            agendados.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-azul-claro rounded-lg hover:bg-azul-escuro transition-colors"
-          >
-            Recarregar
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const podeEditar = ["Administrador", "Administrador Geral", "Capitão"].includes(userRole);
 
   return (
     <div className="w-full min-h-screen bg-fundo flex flex-col items-center">
-      {/* Alertas de sucesso/erro */}
       <AlertaErro mensagem={alertaErro} />
       <AlertaOk mensagem={alertaOk} />
 
-      {/* Container unificado para NavBar e PageBanner */}
       <div className="w-full bg-navbar mb-10">
         <div className="h-[104px]"></div>
         <PageBanner pageName="Treinos" className="bg-navbar" />
       </div>
 
-      {/* Resumo centralizado */}
       <div className="bg-navbar p-3 sm:p-4 rounded-lg mb-4 sm:mb-6 w-[95%] sm:w-4/5 lg:w-3/4 text-center mx-auto">
         <div className="flex flex-col items-center gap-1 sm:gap-2">
           <h3 className="text-white font-bold text-sm sm:text-base text-center">
             {filtroDataAtivo
-              ? `Treinos na ${
-                  diasDaSemana.find((d) => d.value === dataSelecionada.getDay())
-                    ?.label
-                }`
+              ? `Treinos na ${diasDaSemana.find((d) => d.value === dataSelecionada.getDay())
+                ?.label
+              }`
               : "Todos os treinos"}
             {modalidadeSelecionada &&
               ` - ${modalidades[modalidadeSelecionada]?.Name}`}
@@ -779,7 +716,6 @@ const TreinosAdmin = () => {
         </div>
       </div>
 
-      {/* Barra de Controles centralizada */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-4 w-[95%] sm:w-4/5 lg:w-3/4">
         <div className="w-full sm:flex-1">
           <label className="text-white font-bold text-sm sm:text-lg mr-2">
@@ -795,40 +731,36 @@ const TreinosAdmin = () => {
               }));
             }}
             className="p-2 rounded-md bg-preto text-white w-full sm:w-[30%]"
+            disabled={userRole === "Jogador"}
           >
-            <option value="">Todos os times</option>
-            {Object.entries(modalidades).map(([id, mod]) => {
-              // Se não for admin, mostra apenas o time do usuário
-              if (
-                !(
-                  userRole === "Administrador" ||
-                  userRole === "Administrador Geral"
-                ) &&
-                id !== userModality
-              ) {
-                return null;
-              }
-              return (
-                <option key={id} value={id}>
-                  {mod.Name} ({mod.Tag})
-                </option>
-              );
-            })}
+            {userRole === "Jogador" ? (
+              <option value={userModality}>
+                {modalidades[userModality]?.Name || "Seu Time"}
+              </option>
+            ) : (
+              <>
+                <option value="">Todos os times</option>
+                {Object.entries(modalidades).map(([id, mod]) => (
+                  <option key={id} value={id}>
+                    {mod.Name} ({mod.Tag})
+                  </option>
+                ))}
+              </>
+            )}
           </select>
         </div>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
           <div className="flex items-center w-full sm:w-auto">
-            <label className="text-white text-sm sm:text-base mr-2 ">
+            <label className="text-white text-sm sm:text-base mr-2">
               Filtrar por dia:
             </label>
             <button
               onClick={() => setFiltroDataAtivo(!filtroDataAtivo)}
-              className={`px-3 py-1 rounded ${
-                filtroDataAtivo
-                  ? "bg-azul-claro text-white"
-                  : "bg-fundo text-white border border-borda"
-              }`}
+              className={`px-3 py-1 rounded ${filtroDataAtivo
+                ? "bg-azul-claro text-white"
+                : "bg-fundo text-white border border-borda"
+                }`}
             >
               {filtroDataAtivo ? "Ativo" : "Inativo"}
             </button>
@@ -845,26 +777,25 @@ const TreinosAdmin = () => {
         </div>
       </div>
 
-      {/* Botões de Criar */}
-      <div className="flex justify-end mb-4 w-[95%] sm:w-4/5 lg:w-3/4">
-        <button
-          onClick={iniciarCriacao}
-          className="bg-verde-claro text-white px-4 py-2 rounded flex items-center text-sm sm:text-base hover:bg-green-700 mr-2 hover:cursor-pointer"
-        >
-          <MdAdd className="mr-1" /> Criar Treino
-        </button>
-      </div>
+      {podeEditar && (
+        <div className="flex justify-end mb-4 w-[95%] sm:w-4/5 lg:w-3/4">
+          <button
+            onClick={iniciarCriacao}
+            className="bg-verde-claro text-white px-4 py-2 rounded flex items-center text-sm sm:text-base hover:bg-green-700 mr-2 hover:cursor-pointer"
+          >
+            <MdAdd className="mr-1" /> Criar Treino
+          </button>
+        </div>
+      )}
 
-      {/* Container principal centralizado */}
       <div className="flex flex-col lg:flex-row w-[95%] sm:w-4/5 lg:w-3/4 h-auto lg:h-[calc(100vh-180px)] gap-4 sm:gap-6 md:gap-8 mb-10">
-        {/* Lista de Treinos */}
         <div className="w-full lg:w-[65%] h-auto lg:h-full bg-navbar border border-borda rounded-xl overflow-y-auto order-2 lg:order-1">
           <div className="border-b border-borda p-3 sm:p-4 sticky top-0 bg-navbar z-10">
-            <div className="font-blinker text-sm sm:text-base md:text-lg lg:text-xl text-branco hidden sm:flex justify-between">
-              <span className="w-1/4">Horário</span>
-              <span className="w-1/4">Dia da Semana</span>
-              <span className="w-2/4">Time</span>
-              <span className="w-1/4 text-center">Ações</span>
+            <div className="font-blinker text-sm sm:text-base md:text-lg lg:text-xl text-branco grid grid-cols-12 gap-2">
+              <span className="col-span-3">Horário</span>
+              <span className="col-span-3">Dia da Semana</span>
+              <span className="col-span-4">Time</span>
+              {podeEditar && <span className="col-span-2 text-center">Ações</span>}
             </div>
             <div className="sm:hidden font-blinker text-base text-branco text-center">
               Lista de Treinos
@@ -872,86 +803,78 @@ const TreinosAdmin = () => {
           </div>
 
           <div className="pb-4 sm:pb-6">
-            {criandoTreino && (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 gap-3 sm:gap-4 border-b border-borda">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full">
-                  <div className="flex flex-col w-full sm:w-auto">
-                    <label className="text-white  text-xs sm:text-sm mb-1">
-                      Início
-                    </label>
+            {criandoTreino && podeEditar && (
+              <div className="grid grid-cols-12 gap-2 p-4 border-b border-borda items-center">
+                <div className="col-span-3 flex space-x-2">
+                  <div className="flex-1">
+                    <label className="text-white text-xs block mb-1">Início</label>
                     <input
                       type="time"
                       name="inicio"
                       value={formCriacao.inicio}
                       onChange={(e) => handleFormChange(e, true)}
-                      className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-32"
+                      className="p-1 w-full rounded bg-fundo text-white border border-borda"
+                      style={{ colorScheme: "dark" }}
                     />
                   </div>
-
-                  <div className="flex flex-col">
-                    <label className="text-white text-sm mb-1">Fim</label>
+                  <div className="flex-1">
+                    <label className="text-white text-xs block mb-1">Fim</label>
                     <input
                       type="time"
                       name="fim"
                       value={formCriacao.fim}
                       onChange={(e) => handleFormChange(e, true)}
-                      className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-32"
+                      className="p-1 w-full rounded bg-fundo text-white border border-borda"
+                      style={{ colorScheme: "dark" }}
                     />
-                  </div>
-
-                  <div className="flex flex-col">
-                    <label className="text-white text-sm mb-1">Dia</label>
-                    <select
-                      name="diaSemana"
-                      value={formCriacao.diaSemana}
-                      onChange={(e) => handleFormChange(e, true)}
-                      className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-40"
-                    >
-                      {diasDaSemana.map((dia) => (
-                        <option key={dia.value} value={dia.value}>
-                          {dia.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col">
-                    <label className="text-cinza-claro text-sm mb-1">
-                      Time
-                    </label>
-                    <select
-                      name="modalidadeId"
-                      value={formCriacao.modalidadeId}
-                      onChange={(e) => handleFormChange(e, true)}
-                      className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-48"
-                      disabled={
-                        !(
-                          userRole === "Administrador" ||
-                          userRole === "Administrador Geral"
-                        )
-                      }
-                    >
-                      {Object.entries(modalidades).map(([id, mod]) => (
-                        <option key={id} value={id}>
-                          {mod.Name} ({mod.Tag})
-                        </option>
-                      ))}
-                    </select>
                   </div>
                 </div>
 
-                <div className="flex gap-2 ml-4">
+                <div className="col-span-3">
+                  <label className="text-white text-xs block mb-1">Dia</label>
+                  <select
+                    name="diaSemana"
+                    value={formCriacao.diaSemana}
+                    onChange={(e) => handleFormChange(e, true)}
+                    className="p-1 w-full rounded bg-fundo text-white"
+                  >
+                    {diasDaSemana.map((dia) => (
+                      <option key={dia.value} value={dia.value}>
+                        {dia.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-span-4">
+                  <label className="text-white text-xs block mb-1">Time</label>
+                  <select
+                    name="modalidadeId"
+                    value={formCriacao.modalidadeId}
+                    onChange={(e) => handleFormChange(e, true)}
+                    className="p-1 w-full rounded bg-fundo text-white"
+                    disabled={!podeEditar}
+                  >
+                    {Object.entries(modalidades).map(([id, mod]) => (
+                      <option key={id} value={id}>
+                        {mod.Name} ({mod.Tag})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-span-2 flex justify-center space-x-2">
                   <button
                     onClick={criarTreino}
-                    className="bg-verde-claro text-white px-2 sm:px-3 py-1 rounded flex items-center text-xs sm:text-sm hover:bg-green-700 hover:cursor-pointer"
+                    className="bg-verde-claro text-white px-2 py-1 rounded text-xs hover:bg-green-700"
                   >
-                    <MdSave className="mr-1" /> Salvar
+                    <MdSave className="inline mr-1" />
                   </button>
                   <button
                     onClick={cancelarCriacao}
-                    className="bg-vermelho-claro text-white px-2 sm:px-3 py-1 rounded flex items-center text-xs sm:text-sm hover:bg-red-500 hover:cursor-pointer"
+                    className="bg-vermelho-claro text-white px-2 py-1 rounded text-xs hover:bg-red-500"
                   >
-                    <MdClose className="mr-1" /> Cancelar
+                    <MdClose className="inline mr-1" />
                   </button>
                 </div>
               </div>
@@ -961,65 +884,65 @@ const TreinosAdmin = () => {
               agendamentosFiltrados.map((agendamento) => (
                 <div key={agendamento.id} className="border-b border-borda">
                   {editandoTreino?.id === agendamento.id ? (
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 gap-3 sm:gap-4">
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full">
-                        <div className="flex flex-col w-full sm:w-auto">
-                          <label className="text-white text-xs sm:text-sm mb-1">
-                            Início
-                          </label>
+                    <div className="grid grid-cols-12 gap-2 p-4 items-center">
+                      {/* No formulário de edição */}
+                      <div className="col-span-3 flex space-x-2">
+                        <div className="flex-1">
+                          <label className="text-white text-xs block mb-1">Início</label>
                           <input
                             type="time"
                             name="inicio"
                             value={formEdicao.inicio}
                             onChange={handleFormChange}
-                            className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-32"
+                            className="p-1 w-full rounded bg-fundo text-white border border-borda"
+                            style={{ colorScheme: "dark" }}
                           />
                         </div>
-
-                        <div className="flex flex-col">
-                          <label className="text-white text-sm mb-1">Fim</label>
+                        <div className="flex-1">
+                          <label className="text-white text-xs block mb-1">Fim</label>
                           <input
                             type="time"
                             name="fim"
                             value={formEdicao.fim}
                             onChange={handleFormChange}
-                            className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-32"
+                            className="p-1 w-full rounded bg-fundo text-white border border-borda"
+                            style={{ colorScheme: "dark" }}
                           />
                         </div>
-
-                        <div className="flex flex-col">
-                          <label className="text-white text-sm mb-1">Dia</label>
-                          <select
-                            name="diaSemana"
-                            value={formEdicao.diaSemana}
-                            onChange={handleFormChange}
-                            className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-40"
-                          >
-                            {diasDaSemana.map((dia) => (
-                              <option key={dia.value} value={dia.value}>
-                                {dia.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <span className="text-white ml-4">
-                          {agendamento.NomeModalidade}
-                        </span>
                       </div>
 
-                      <div className="flex gap-2 ml-4">
+                      <div className="col-span-3">
+                        <label className="text-white text-xs block mb-1">Dia</label>
+                        <select
+                          name="diaSemana"
+                          value={formEdicao.diaSemana}
+                          onChange={handleFormChange}
+                          className="p-1 w-full rounded bg-fundo text-white"
+                        >
+                          {diasDaSemana.map((dia) => (
+                            <option key={dia.value} value={dia.value}>
+                              {dia.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="col-span-4">
+                        <span className="text-white">{agendamento.NomeModalidade}</span>
+                      </div>
+
+                      <div className="col-span-2 flex justify-center space-x-2">
                         <button
                           onClick={salvarEdicao}
-                          className="bg-verde-claro text-white px-2 sm:px-3 py-1 rounded flex items-center text-xs sm:text-sm hover:bg-green-700 hover:cursor-pointer"
+                          className="bg-verde-claro text-white px-2 py-1 rounded text-xs hover:bg-green-700"
                         >
-                          <MdSave className="mr-1" /> Salvar
+                          <MdSave className="inline mr-1" />
                         </button>
                         <button
                           onClick={cancelarEdicao}
-                          className="bg-vermelho-claro text-white px-2 sm:px-3 py-1 rounded flex items-center text-xs sm:text-sm hover:bg-red-500 hover:cursor-pointer"
+                          className="bg-vermelho-claro text-white px-2 py-1 rounded text-xs hover:bg-red-500"
                         >
-                          <MdClose className="mr-1" /> Cancelar
+                          <MdClose className="inline mr-1" />
                         </button>
                       </div>
                     </div>
@@ -1030,8 +953,9 @@ const TreinosAdmin = () => {
                       diaSemana={agendamento.diaSemana}
                       status={agendamento.status}
                       time={agendamento.NomeModalidade}
-                      onEditar={() => iniciarEdicao(agendamento)}
-                      onExcluir={() => excluirTreino(agendamento)}
+                      onEditar={() => podeEditar && iniciarEdicao(agendamento)}
+                      onExcluir={() => podeEditar && excluirTreino(agendamento)}
+                      podeEditar={podeEditar}
                     />
                   )}
                 </div>
@@ -1044,7 +968,6 @@ const TreinosAdmin = () => {
           </div>
         </div>
 
-        {/* Calendário */}
         <div className="w-full lg:w-[30%] h-auto sm:h-[400px] lg:h-[90%] bg-navbar border border-borda rounded-xl p-4 sm:p-6 order-1 lg:order-2">
           <Calendario />
         </div>
