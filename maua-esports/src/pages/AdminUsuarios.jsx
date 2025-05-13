@@ -526,7 +526,7 @@ const AdminUsuarios = () => {
                       key={usuario._id}
                       className="hover:bg-fundo/50 transition-colors"
                     >
-                      <td className="px-4 py-4 whitespace-nowrap text-white h-20 w-20">
+                      <td className="px-4 py-4 whitespace-nowrap text-white h-10 w-10">
                         {!imageErrors[usuario._id] ? (
                           <button
                             onClick={() =>
@@ -542,12 +542,12 @@ const AdminUsuarios = () => {
                               src={`${API_BASE_URL}/usuarios/${usuario._id
                                 }/foto?t=${Date.now()}`}
                               alt={`Foto de ${usuario.email}`}
-                              className="w-full h-full transform hover:scale-110 transition-transform duration-300 hover:bg-hover hover:border-2 hover:border-borda object-cover rounded-full cursor-pointer"
+                              className="w-11 h-11 transform hover:scale-110 transition-transform duration-300 hover:bg-hover hover:border-2 hover:border-borda object-cover rounded-full cursor-pointer"
                               onError={() => handleImageError(usuario._id)}
                             />
                           </button>
                         ) : (
-                          <HiUserCircle className="w-10 h-10 text-white" />
+                          <HiUserCircle className="w-11 h-11 text-white" />
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-white">
