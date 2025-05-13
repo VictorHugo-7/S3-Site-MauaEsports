@@ -95,7 +95,16 @@ function calcularDuracao(inicio, fim) {
 
   return `${horas}h${minutos.toString().padStart(2, "0")}min`;
 }
+// Função auxiliar para comparar horários
+function compararHorarios(inicio, fim) {
+  const [horaInicio, minutoInicio] = inicio.split(":").map(Number);
+  const [horaFim, minutoFim] = fim.split(":").map(Number);
 
+  const totalMinutosInicio = horaInicio * 60 + minutoInicio;
+  const totalMinutosFim = horaFim * 60 + minutoFim;
+
+  return totalMinutosInicio < totalMinutosFim;
+}
 const TreinosAdmin = () => {
   const { instance } = useMsal();
   const navigate = useNavigate();
@@ -386,6 +395,13 @@ const TreinosAdmin = () => {
   };
 
   const salvarEdicao = async () => {
+    // Validar que o horário de início é anterior ao horário de término
+    if (!compararHorarios(formEdicao.inicio, formEdicao.fim)) {
+      setAlertaErro(
+        "O horário de início deve ser anterior ao horário de término."
+      );
+      return;
+    }
     if (!editandoTreino || !formEdicao.inicio || !formEdicao.fim) {
       setAlertaErro("Preencha todos os campos obrigatórios");
       return;
@@ -447,7 +463,17 @@ const TreinosAdmin = () => {
 
   const criarTreino = async () => {
     if (!formCriacao.inicio || !formCriacao.fim || !formCriacao.modalidadeId) {
-      setAlertaErro("Preencha todos os campos obrigatórios");
+      setAlertaErro(
+        "Por favor, preencha o horário de início, fim e selecione um time."
+      );
+      return;
+    }
+
+    // Validar que o horário de início é anterior ao horário de término
+    if (!compararHorarios(formCriacao.inicio, formCriacao.fim)) {
+      setAlertaErro(
+        "O horário de início deve ser anterior ao horário de término."
+      );
       return;
     }
 
@@ -850,7 +876,7 @@ const TreinosAdmin = () => {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 gap-3 sm:gap-4 border-b border-borda">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full">
                   <div className="flex flex-col w-full sm:w-auto">
-                    <label className="text-cinza-claro text-xs sm:text-sm mb-1">
+                    <label className="text-white  text-xs sm:text-sm mb-1">
                       Início
                     </label>
                     <input
@@ -863,7 +889,7 @@ const TreinosAdmin = () => {
                   </div>
 
                   <div className="flex flex-col">
-                    <label className="text-cinza-claro text-sm mb-1">Fim</label>
+                    <label className="text-white text-sm mb-1">Fim</label>
                     <input
                       type="time"
                       name="fim"
@@ -874,7 +900,7 @@ const TreinosAdmin = () => {
                   </div>
 
                   <div className="flex flex-col">
-                    <label className="text-cinza-claro text-sm mb-1">Dia</label>
+                    <label className="text-white text-sm mb-1">Dia</label>
                     <select
                       name="diaSemana"
                       value={formCriacao.diaSemana}
@@ -938,7 +964,7 @@ const TreinosAdmin = () => {
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 gap-3 sm:gap-4">
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full">
                         <div className="flex flex-col w-full sm:w-auto">
-                          <label className="text-cinza-claro text-xs sm:text-sm mb-1">
+                          <label className="text-white text-xs sm:text-sm mb-1">
                             Início
                           </label>
                           <input
@@ -951,9 +977,7 @@ const TreinosAdmin = () => {
                         </div>
 
                         <div className="flex flex-col">
-                          <label className="text-cinza-claro text-sm mb-1">
-                            Fim
-                          </label>
+                          <label className="text-white text-sm mb-1">Fim</label>
                           <input
                             type="time"
                             name="fim"
@@ -964,9 +988,7 @@ const TreinosAdmin = () => {
                         </div>
 
                         <div className="flex flex-col">
-                          <label className="text-cinza-claro text-sm mb-1">
-                            Dia
-                          </label>
+                          <label className="text-white text-sm mb-1">Dia</label>
                           <select
                             name="diaSemana"
                             value={formEdicao.diaSemana}
