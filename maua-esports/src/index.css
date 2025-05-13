@@ -2,8 +2,15 @@
   font-family: Blinker;
   src: url(../src/fonts/Blinker-Regular.ttf);
 }
+
 @tailwind utilities;
+
 @import "tailwindcss";
+
+body {
+  @apply font-blinker;
+}
+
 @theme {
   --color-branco: oklch(100% 0 0);
   --color-fonte-clara: oklch(97.03% 0.0103 247.93);
@@ -110,31 +117,32 @@
 }
 
 @keyframes pular {
-  0%, 100% { 
+  0%,
+  100% {
     transform: translateY(0);
     animation-timing-function: ease-in-out;
   }
-  15% { 
+  15% {
     transform: translateY(-6px);
     animation-timing-function: ease-out;
   }
-  30% { 
+  30% {
     transform: translateY(0);
     animation-timing-function: ease-in;
   }
-  45% { 
+  45% {
     transform: translateY(-3px);
     animation-timing-function: ease-out;
   }
-  60% { 
+  60% {
     transform: translateY(0);
     animation-timing-function: ease-in;
   }
-  75% { 
+  75% {
     transform: translateY(-1px);
     animation-timing-function: ease-out;
   }
-  90% { 
+  90% {
     transform: translateY(0);
   }
 }

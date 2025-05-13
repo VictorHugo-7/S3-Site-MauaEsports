@@ -1,15 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
-import { useMsal } from '@azure/msal-react';
-import { FaUserPlus, FaSearch, FaUserCog, FaTimes} from 'react-icons/fa';
-import EditarBtn from '../components/EditarBtn';
-import DeletarBtn from '../components/DeletarBtn';
-import ModalUsuario from '../components/ModalUsuario';
-import PageBanner from '../components/PageBanner';
-import AlertaErro from '../components/AlertaErro';
-import AlertaOk from '../components/AlertaOk';
-import axios from 'axios';
-import { HiUserCircle } from 'react-icons/hi2';
+import React, { useState, useEffect } from "react";
+import { useMsal } from "@azure/msal-react";
+import { FaUserPlus, FaSearch, FaUserCog, FaTimes } from "react-icons/fa";
+import EditarBtn from "../components/EditarBtn";
+import DeletarBtn from "../components/DeletarBtn";
+import ModalUsuario from "../components/ModalUsuario";
+import PageBanner from "../components/PageBanner";
+import AlertaErro from "../components/AlertaErro";
+import AlertaOk from "../components/AlertaOk";
+import axios from "axios";
+import { HiUserCircle } from "react-icons/hi2";
 
 
 const API_BASE_URL = "http://localhost:3000";
@@ -34,7 +34,7 @@ const AdminUsuarios = () => {
   const [imagemAmpliada, setImagemAmpliada] = useState({
     aberto: false,
     src: null,
-    alt: ''
+    alt: "",
   });
 
   const fetchTimes = async () => {
@@ -59,7 +59,7 @@ const AdminUsuarios = () => {
     setImagemAmpliada({
       aberto: true,
       src,
-      alt
+      alt,
     });
   };
 
@@ -68,10 +68,9 @@ const AdminUsuarios = () => {
     setImagemAmpliada({
       aberto: false,
       src: null,
-      alt: ''
+      alt: "",
     });
   };
-
 
   useEffect(() => {
     const account = instance.getActiveAccount();
@@ -151,23 +150,24 @@ const AdminUsuarios = () => {
 
   const podeAdicionarTipo = (tipo) => {
 
+
     const usuarioAtual = usuarios.find(u => u.email === currentUser?.username);
     if (!usuarioAtual) return false;
 
     // Administrador Geral pode adicionar todos, exceto outro Administrador Geral
     if (usuarioAtual.tipoUsuario === 'Administrador Geral') {
       return tipo !== 'Administrador Geral';
+
     }
 
     // Administrador pode adicionar Admins, Capitães e Jogadores
-    if (usuarioAtual.tipoUsuario === 'Administrador') {
-      return ['Administrador', 'Capitão de time', 'Jogador'].includes(tipo);
+    if (usuarioAtual.tipoUsuario === "Administrador") {
+      return ["Administrador", "Capitão de time", "Jogador"].includes(tipo);
     }
 
     // Capitão pode adicionar APENAS Jogadores
-    if (usuarioAtual.tipoUsuario === 'Capitão de time') {
-      return tipo === 'Jogador';
-
+    if (usuarioAtual.tipoUsuario === "Capitão de time") {
+      return tipo === "Jogador";
     }
 
     return false;
@@ -244,17 +244,22 @@ const AdminUsuarios = () => {
   const handleSubmit = async (formData) => {
     try {
 
-      const usuarioAtual = usuarios.find(u => u.email === currentUser?.username);
+      const usuarioAtual = usuarios.find(
+        (u) => u.email === currentUser?.username
+      );
 
       // Validação específica para capitães
-      if (usuarioAtual?.tipoUsuario === 'Capitão de time') {
-        if (!modoEdicao && formData.tipoUsuario !== 'Jogador') {
-          alert('Como Capitão, você só pode adicionar jogadores!');
+      if (usuarioAtual?.tipoUsuario === "Capitão de time") {
+        if (!modoEdicao && formData.tipoUsuario !== "Jogador") {
+          alert("Como Capitão, você só pode adicionar jogadores!");
+
           return;
         }
 
         if (formData.time !== usuarioAtual.time) {
-          alert('Você só pode adicionar jogadores do seu próprio time!');
+
+          alert("Você só pode adicionar jogadores do seu próprio time!");
+
           return;
         }
       }
@@ -407,7 +412,6 @@ const AdminUsuarios = () => {
   }
 
   return (
-
     <div className="w-full min-h-screen bg-fundo flex flex-col items-center">
       {/* Modal da imagem ampliada */}
       {imagemAmpliada.aberto && (
@@ -466,23 +470,22 @@ const AdminUsuarios = () => {
           {["Administrador Geral", "Administrador", "Capitão de time"].includes(
             usuarioAtual.tipoUsuario
           ) && (
-              <button
-                onClick={abrirModalCriacao}
 
-                className="bg-azul-claro hover:bg-azul-escuro text-white px-4 py-2 rounded flex items-center gap-2 transition-colors w-full sm:w-auto justify-center"
-                disabled={!podeAdicionarTipo('Jogador', usuarioAtual?.time)} // Verifica se pode adicionar jogador do seu time
+            <button
+              onClick={abrirModalCriacao}
+              className="bg-azul-claro hover:bg-azul-escuro text-white px-4 py-2 rounded flex items-center gap-2 transition-colors w-full sm:w-auto justify-center"
+              disabled={!podeAdicionarTipo("Jogador", usuarioAtual?.time)} // Verifica se pode adicionar jogador do seu time
+            >
+              <FaUserPlus /> Adicionar Usuário
+            </button>
+          )}
 
-              >
-                <FaUserPlus /> Adicionar Usuário
-              </button>
-            )}
         </div>
 
         <div className="overflow-x-auto bg-navbar rounded-lg border-2 border-borda shadow-lg">
           <table className="min-w-full divide-y divide-borda">
             <thead className="bg-cinza-escuro">
               <tr>
-
                 <th className="px-6 py-3 text-left text-xs font-bold text-branco uppercase tracking-wider">
                   Foto
                 </th>
@@ -509,14 +512,20 @@ const AdminUsuarios = () => {
                       <td className="px-4 py-4 whitespace-nowrap text-white h-20 w-20">
                         {!imageErrors[usuario._id] ? (
                           <button
-                            onClick={() => abrirImagemAmpliada(
-                              `${API_BASE_URL}/usuarios/${usuario._id}/foto?t=${Date.now()}`,
-                              `Foto de ${usuario.email}`
-                            )}
+                            onClick={() =>
+                              abrirImagemAmpliada(
+                                `${API_BASE_URL}/usuarios/${
+                                  usuario._id
+                                }/foto?t=${Date.now()}`,
+                                `Foto de ${usuario.email}`
+                              )
+                            }
                             className=""
                           >
                             <img
-                              src={`${API_BASE_URL}/usuarios/${usuario._id}/foto?t=${Date.now()}`}
+                              src={`${API_BASE_URL}/usuarios/${
+                                usuario._id
+                              }/foto?t=${Date.now()}`}
                               alt={`Foto de ${usuario.email}`}
                               className="w-full h-full transform hover:scale-110 transition-transform duration-300 hover:bg-hover hover:border-2 hover:border-borda object-cover rounded-full cursor-pointer"
                               onError={() => handleImageError(usuario._id)}
