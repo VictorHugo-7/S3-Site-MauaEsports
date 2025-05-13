@@ -641,7 +641,7 @@ function HorasPaePage() {
                         return (
                           <div key={rankIndex} className="relative h-10">
                             <div
-                              className="absolute inset-0 bg-gray-700"
+                              className="absolute inset-0 bg-gray-700 "
                               style={{
                                 clipPath:
                                   "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)",

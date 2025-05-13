@@ -12,10 +12,11 @@ import HorasPaePage from "./pages/HorasPae";
 import TreinosAdmin from "./pages/TreinosAdmin";
 import Politicas from "./pages/Politicas";
 import Campeonatos from "./pages/Campeonatos";
-import AdminUsuarios from './pages/AdminUsuarios';
-import NaoAutorizado from './components/NaoAutorizado';
-import ProtectedRoute from './components/ProtectedRoute';
+import AdminUsuarios from "./pages/AdminUsuarios";
+import NaoAutorizado from "./components/NaoAutorizado";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Novidades from "./pages/Novidades";
+import "./index.css";
 
 function App() {
   return (
@@ -31,18 +32,39 @@ function App() {
           <Route path="/politicas" element={<Politicas />} />
           <Route path="/campeonatos" element={<Campeonatos />} />
           <Route path="/nao-autorizado" element={<NaoAutorizado />} />
-          <Route path ="/novidades" element={<Novidades/>} />
-          
+          <Route path="/novidades" element={<Novidades />} />
+
           {/* Rotas protegidas */}
-          <Route element={<ProtectedRoute allowedRoles={['Jogador', 'Capitão de time', 'Administrador', 'Administrador Geral']} />}>
+          <Route
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  "Jogador",
+                  "Capitão de time",
+                  "Administrador",
+                  "Administrador Geral",
+                ]}
+              />
+            }
+          >
             <Route path="/horas-pae" element={<HorasPaePage />} />
           </Route>
-          
-          <Route element={<ProtectedRoute allowedRoles={['Administrador', 'Administrador Geral', 'Capitão de time']} />}>
+
+          <Route
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  "Administrador",
+                  "Administrador Geral",
+                  "Capitão de time",
+                ]}
+              />
+            }
+          >
             <Route path="/admin-usuarios" element={<AdminUsuarios />} />
             <Route path="/treinos-admin" element={<TreinosAdmin />} />
           </Route>
-          
+
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Rodape />
