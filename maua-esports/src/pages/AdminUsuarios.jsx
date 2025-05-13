@@ -63,6 +63,11 @@ const AdminUsuarios = () => {
     });
   };
 
+  const isCurrentAdminGeral = (usuario) => {
+    return usuario.email === currentUser?.username &&
+      usuario.tipoUsuario === 'Administrador Geral';
+  };
+
   // Função para fechar a imagem ampliada
   const fecharImagemAmpliada = () => {
     setImagemAmpliada({
@@ -119,7 +124,10 @@ const AdminUsuarios = () => {
     const usuarioAtual = usuarios.find(u => u.email === currentUser?.username);
     if (!usuarioAtual) return false;
 
-    // Se for o próprio usuário, pode editar/excluir a si mesmo (com algumas restrições)
+    // Administrador Geral não pode gerenciar a si mesmo
+    if (isCurrentAdminGeral(usuarioAlvo)) {
+      return false;
+    }
 
     if (usuarioAlvo.email === currentUser?.username) {
       return true;
@@ -415,14 +423,23 @@ const AdminUsuarios = () => {
     <div className="w-full min-h-screen bg-fundo flex flex-col items-center">
       {/* Modal da imagem ampliada */}
       {imagemAmpliada.aberto && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4 cursor-pointer"
+          onClick={fecharImagemAmpliada}
+        >
           <button
-            onClick={fecharImagemAmpliada}
+            onClick={(e) => {
+              e.stopPropagation();
+              fecharImagemAmpliada();
+            }}
             className="absolute top-4 right-4 text-white text-2xl hover:text-azul-claro transition-colors"
           >
             <FaTimes />
           </button>
-          <div className="max-w-full max-h-full">
+          <div
+            className="max-w-full max-h-full"
+            onClick={(e) => e.stopPropagation()}
+          >
             <img
               src={imagemAmpliada.src}
               alt={imagemAmpliada.alt}
@@ -471,14 +488,14 @@ const AdminUsuarios = () => {
             usuarioAtual.tipoUsuario
           ) && (
 
-            <button
-              onClick={abrirModalCriacao}
-              className="bg-azul-claro hover:bg-azul-escuro text-white px-4 py-2 rounded flex items-center gap-2 transition-colors w-full sm:w-auto justify-center"
-              disabled={!podeAdicionarTipo("Jogador", usuarioAtual?.time)} // Verifica se pode adicionar jogador do seu time
-            >
-              <FaUserPlus /> Adicionar Usuário
-            </button>
-          )}
+              <button
+                onClick={abrirModalCriacao}
+                className="bg-azul-claro hover:bg-azul-escuro text-white px-4 py-2 rounded flex items-center gap-2 transition-colors w-full sm:w-auto justify-center"
+                disabled={!podeAdicionarTipo("Jogador", usuarioAtual?.time)} // Verifica se pode adicionar jogador do seu time
+              >
+                <FaUserPlus /> Adicionar Usuário
+              </button>
+            )}
 
         </div>
 
@@ -509,13 +526,12 @@ const AdminUsuarios = () => {
                       key={usuario._id}
                       className="hover:bg-fundo/50 transition-colors"
                     >
-                      <td className="px-4 py-4 whitespace-nowrap text-white h-20 w-20">
+                      <td className="px-4 py-4 whitespace-nowrap text-white h-10 w-10">
                         {!imageErrors[usuario._id] ? (
                           <button
                             onClick={() =>
                               abrirImagemAmpliada(
-                                `${API_BASE_URL}/usuarios/${
-                                  usuario._id
+                                `${API_BASE_URL}/usuarios/${usuario._id
                                 }/foto?t=${Date.now()}`,
                                 `Foto de ${usuario.email}`
                               )
@@ -523,16 +539,15 @@ const AdminUsuarios = () => {
                             className=""
                           >
                             <img
-                              src={`${API_BASE_URL}/usuarios/${
-                                usuario._id
-                              }/foto?t=${Date.now()}`}
+                              src={`${API_BASE_URL}/usuarios/${usuario._id
+                                }/foto?t=${Date.now()}`}
                               alt={`Foto de ${usuario.email}`}
-                              className="w-full h-full transform hover:scale-110 transition-transform duration-300 hover:bg-hover hover:border-2 hover:border-borda object-cover rounded-full cursor-pointer"
+                              className="w-11 h-11 transform hover:scale-110 transition-transform duration-300 hover:bg-hover hover:border-2 hover:border-borda object-cover rounded-full cursor-pointer"
                               onError={() => handleImageError(usuario._id)}
                             />
                           </button>
                         ) : (
-                          <HiUserCircle className="w-10 h-10 text-white" />
+                          <HiUserCircle className="w-11 h-11 text-white" />
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-white">
@@ -553,18 +568,17 @@ const AdminUsuarios = () => {
                         {new Date(usuario.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap flex gap-2">
-                        {!podeGerenciarUsuario(usuario) ? (
-                          <span className="text-branco">Sem permissão</span>
+                        {!podeGerenciarUsuario(usuario) || isCurrentAdminGeral(usuario) ? (
+                          <span className="text-branco">
+                            {isCurrentAdminGeral(usuario) ? "Ações não permitidas" : "Sem permissão"}
+                          </span>
                         ) : (
                           <>
                             <EditarBtn
                               onClick={() => abrirModalEdicao(usuario)}
-                            // Removida a restrição para auto-edição
                             />
                             <DeletarBtn
                               onDelete={() => handleDelete(usuario._id)}
-                              // Permite auto-exclusão exceto para Administrador Geral
-                              disabled={usuario.tipoUsuario === 'Administrador Geral' && usuario.email === currentUser?.username}
                             />
                           </>
                         )}
