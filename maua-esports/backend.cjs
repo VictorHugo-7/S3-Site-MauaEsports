@@ -914,12 +914,12 @@ app.post(
   ]),
   async (req, res) => {
     try {
-      const { id, nome} = req.body;
+      const { id, nome } = req.body;
       const fotoFile = req.files["foto"][0];
       const jogoFile = req.files["jogo"][0];
 
       // Validações
-      if (!id || !nome ) {
+      if (!id || !nome) {
         return res
           .status(400)
           .json({ message: "ID e nome são obrigatórios" });
@@ -1021,8 +1021,8 @@ app.put(
   ]),
   async (req, res) => {
     try {
-      const { nome} = req.body;
-      const updateData = { nome};
+      const { nome } = req.body;
+      const updateData = { nome };
       const fotoFile = req.files?.["foto"]?.[0];
       const jogoFile = req.files?.["jogo"]?.[0];
 
@@ -1501,9 +1501,8 @@ app.post("/admins", upload.single("foto"), async (req, res) => {
       success: true,
       admin: {
         ...novoAdmin.toObject(),
-        fotoUrl: `${req.protocol}://${req.get("host")}/admins/${
-          novoAdmin._id
-        }/foto`,
+        fotoUrl: `${req.protocol}://${req.get("host")}/admins/${novoAdmin._id
+          }/foto`,
         foto: undefined,
       },
     });
@@ -1568,9 +1567,8 @@ app.put("/admins/:id", upload.single("foto"), async (req, res) => {
       insta: updated.insta || undefined, // Envie undefined em vez de null
       twitter: updated.twitter || undefined,
       twitch: updated.twitch || undefined,
-      fotoUrl: `${req.protocol}://${req.get("host")}/admins/${
-        updated._id
-      }/foto`,
+      fotoUrl: `${req.protocol}://${req.get("host")}/admins/${updated._id
+        }/foto`,
     });
   } catch (error) {
     console.error("Erro na edição:", error);
