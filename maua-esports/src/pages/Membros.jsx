@@ -16,39 +16,41 @@ const Membros = () => {
   const [erro, setErro] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
+
+  const carregarDados = async () => {
+    try {
+      setCarregando(true);
+      setErro(null);
+
+      const responseTime = await fetch(`${API_BASE_URL}/times/${timeId}`);
+      if (!responseTime.ok)
+        throw new Error("Falha ao carregar dados do time");
+      const timeData = await responseTime.json();
+      setTime(timeData);
+
+      const responseJogadores = await fetch(
+        `${API_BASE_URL}/times/${timeId}/jogadores`
+      );
+      if (!responseJogadores.ok)
+        throw new Error("Falha ao carregar jogadores");
+      const jogadoresData = await responseJogadores.json();
+
+      setJogadores(
+        jogadoresData.map((j) => ({
+          ...j,
+          fotoUrl: `${API_BASE_URL}/jogadores/${j._id}/imagem?${Date.now()}`,
+        }))
+      );
+    } catch (error) {
+      console.error("Erro ao carregar dados:", error);
+      setErro(error.message || "Erro ao carregar dados");
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+
   useEffect(() => {
-    const carregarDados = async () => {
-      try {
-        setCarregando(true);
-        setErro(null);
-
-        const responseTime = await fetch(`${API_BASE_URL}/times/${timeId}`);
-        if (!responseTime.ok)
-          throw new Error("Falha ao carregar dados do time");
-        const timeData = await responseTime.json();
-        setTime(timeData);
-
-        const responseJogadores = await fetch(
-          `${API_BASE_URL}/times/${timeId}/jogadores`
-        );
-        if (!responseJogadores.ok)
-          throw new Error("Falha ao carregar jogadores");
-        const jogadoresData = await responseJogadores.json();
-
-        setJogadores(
-          jogadoresData.map((j) => ({
-            ...j,
-            fotoUrl: `${API_BASE_URL}/jogadores/${j._id}/imagem?${Date.now()}`,
-          }))
-        );
-      } catch (error) {
-        console.error("Erro ao carregar dados:", error);
-        setErro(error.message || "Erro ao carregar dados");
-      } finally {
-        setCarregando(false);
-      }
-    };
-
     carregarDados();
   }, [timeId]);
 
@@ -80,10 +82,12 @@ const Membros = () => {
       formData.append("twitter", updatedData.twitter || "");
       formData.append("twitch", updatedData.twitch || "");
 
-      if (updatedData.foto && updatedData.foto.startsWith("data:")) {
-        const response = await fetch(updatedData.foto);
-        const blob = await response.blob();
-        formData.append("foto", blob, "jogador-foto.jpg");
+      // Adiciona a foto se for um arquivo novo
+      if (updatedData.foto instanceof File) {
+        formData.append("foto", updatedData.foto);
+      } else if (updatedData.foto === null) {
+        // Se for null, indica para remover a foto
+        formData.append("removeFoto", "true");
       }
 
       const response = await fetch(`${API_BASE_URL}/jogadores/${jogadorId}`, {
@@ -102,25 +106,26 @@ const Membros = () => {
         prev.map((jogador) =>
           jogador._id === jogadorId
             ? {
-                ...jogador,
-                nome: data.nome,
-                titulo: data.titulo,
-                descricao: data.descricao,
-                insta: data.insta,
-                twitter: data.twitter,
-                twitch: data.twitch,
-                fotoUrl: `${API_BASE_URL}/jogadores/${
-                  data._id
-                }/imagem?${Date.now()}`,
-              }
+              ...jogador,
+              nome: data.nome,
+              titulo: data.titulo,
+              descricao: data.descricao,
+              insta: data.insta,
+              twitter: data.twitter,
+              twitch: data.twitch,
+              // Força o recarregamento da imagem com timestamp
+              fotoUrl: `${API_BASE_URL}/jogadores/${data._id}/imagem?${Date.now()}`,
+            }
             : jogador
         )
       );
-
+      carregarDados(); 
       setSuccessMessage("Jogador atualizado com sucesso!");
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Erro ao atualizar jogador:", error);
       setErro(error.message || "Erro ao atualizar jogador");
+      setTimeout(() => setErro(null), 3000);
     }
   };
 

@@ -3,7 +3,6 @@ import ReactDOM from "react-dom";
 import { FaInstagram } from "react-icons/fa";
 import { RiTwitterXFill } from "react-icons/ri";
 import { IoLogoTwitch } from "react-icons/io";
-import Foto from "../assets/images/Foto.svg";
 import DeletarBtn from "./DeletarBtn";
 import EditarBtn from "./EditarBtn";
 import EditarJogador from "./ModalEditarJogador";
@@ -52,12 +51,9 @@ const CardJogador = ({
 
         <div className="w-full h-full relative">
           <img
-            src={foto || Foto}
+            src={foto}
             alt={`Foto de ${nome}`}
             className="w-full h-[90%] object-cover rounded-t-md"
-            onError={(e) => {
-              e.target.src = Foto;
-            }}
           />
         </div>
 

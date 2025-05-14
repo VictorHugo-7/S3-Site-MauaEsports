@@ -151,26 +151,30 @@ const Admins = () => {
         prev.map((admin) =>
           admin._id === adminAtualizado._id
             ? {
-                ...admin,
-                nome: data.nome,
-                titulo: data.titulo,
-                descricao: data.descricao,
-                insta: data.insta,
-                twitter: data.twitter,
-                twitch: data.twitch,
-                fotoUrl: data.foto
-                  ? `${API_BASE_URL}/admins/${data._id}/foto?${Date.now()}`
-                  : null,
-              }
+              ...admin,
+              nome: data.nome,
+              titulo: data.titulo,
+              descricao: data.descricao,
+              insta: data.insta,
+              twitter: data.twitter,
+              twitch: data.twitch,
+              // Força o recarregamento da imagem
+              fotoUrl: data.foto
+                ? `${API_BASE_URL}/admins/${data._id}/foto?${Date.now()}`
+                : null,
+            }
             : admin
         )
       );
 
       setAdminEditando(null);
+      carregarAdmins();
       setSuccessMessage("Administrador atualizado com sucesso!");
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Erro na edição:", error);
       setErro(error.message || "Erro ao atualizar administrador");
+      setTimeout(() => setErro(null), 3000);
     }
   };
 

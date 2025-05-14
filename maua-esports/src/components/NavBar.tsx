@@ -64,6 +64,13 @@ const NavBar = () => {
     alt: "",
   });
 
+  const [initialFormData, setInitialFormData] = useState({
+    email: "",
+    discordID: "",
+    fotoPerfil: null as string | null,
+    userId: "",
+  });
+
   // Funções para verificar rotas ativas
   const isTimesActive = (path: string) => {
     return path === "/times" || path === "/admins";
@@ -328,13 +335,10 @@ const NavBar = () => {
       const formData = new FormData();
       formData.append("discordID", editFormData.discordID || "");
 
-      // Se há uma nova imagem temporária
       if (tempCroppedImage) {
         const blob = await fetch(tempCroppedImage).then((res) => res.blob());
         formData.append("fotoPerfil", blob, "profile.jpg");
-      }
-      // Se a imagem foi removida (não há imagem temporária E não há imagem atual)
-      else if (!tempCroppedImage && !croppedImage) {
+      } else if (!tempCroppedImage && !croppedImage) {
         formData.append("removeFoto", "true");
       }
 
@@ -350,6 +354,14 @@ const NavBar = () => {
         const errorData = await response.json();
         throw new Error(errorData.message || "Erro ao atualizar perfil");
       }
+
+      // Atualizar os valores iniciais após salvar
+      setInitialFormData({
+        email: editFormData.email,
+        discordID: editFormData.discordID,
+        fotoPerfil: tempCroppedImage || null,
+        userId: editFormData.userId,
+      });
 
       await loadUserData(editFormData.email);
       setShowEditModal(false);
@@ -410,14 +422,28 @@ const NavBar = () => {
   const toggleHamburgerMenu = () => setIsHamburgerOpen(!isHamburgerOpen);
 
   const toggleEditModal = () => {
-    if (showEditModal) {
+    if (!showEditModal) {
+      // Quando abrir o modal, salvar os valores atuais como iniciais
+      setInitialFormData({
+        email: editFormData.email,
+        discordID: editFormData.discordID,
+        fotoPerfil: croppedImage,
+        userId: editFormData.userId,
+      });
+      setShowEditModal(true);
+    } else {
+      // Quando fechar o modal sem salvar, restaurar os valores iniciais
+      setEditFormData({
+        ...editFormData,
+        discordID: initialFormData.discordID,
+      });
+      setCroppedImage(initialFormData.fotoPerfil);
+      setTempCroppedImage(null);
       setIsVisible(false);
       setTimeout(() => {
         setShowEditModal(false);
         setEditError("");
       }, 300);
-    } else {
-      setShowEditModal(true);
     }
     setIsProfileDropdownOpen(false);
   };
