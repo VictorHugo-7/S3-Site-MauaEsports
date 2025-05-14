@@ -1,13 +1,14 @@
-// eslint-disable-next-line no-unused-vars
 import React from "react";
 import PropTypes from "prop-types";
 import { MdCancel } from "react-icons/md";
 import { useState } from "react";
+
 const CancelarBtn = ({ onClick }) => {
   const [isCancelHovered, setCancelIsHovered] = useState(false);
 
   return (
     <button
+      type="button" // ← Isso resolve o problema!
       onMouseEnter={() => setCancelIsHovered(true)}
       onMouseLeave={() => setCancelIsHovered(false)}
       onClick={onClick}
@@ -24,7 +25,7 @@ const CancelarBtn = ({ onClick }) => {
 };
 
 CancelarBtn.propTypes = {
-  onClick: PropTypes.func.isRequired, // Função chamada ao clicar no botão
+  onClick: PropTypes.func.isRequired,
 };
 
 export default CancelarBtn;
