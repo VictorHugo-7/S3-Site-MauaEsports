@@ -8,8 +8,6 @@ import SalvarBtn from "./SalvarBtn";
 import CancelarBtn from "./CancelarBtn";
 import ImageCropper from "./ImageCropper";
 import { UseImageCrop } from "./UseImageCrop";
-import AlertaErro from "./AlertaErro";
-import AlertaOk from "./AlertaOk";
 
 const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
   const [formData, setFormData] = useState({
@@ -21,6 +19,9 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
     twitch: "",
   });
 
+  const [errors, setErrors] = useState({});
+  const [isVisible, setIsVisible] = useState(false);
+
   const {
     image: fotoImage,
     croppedImage: fotoCropped,
@@ -31,18 +32,14 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
     setCroppedImage: setFotoCropped,
   } = UseImageCrop(null);
 
-  const [erro, setErro] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-  const [isVisible, setIsVisible] = useState(false);
-
   useEffect(() => {
-    setIsVisible(true); // Ativa a animação de entrada quando o modal é montado
+    setIsVisible(true);
   }, []);
 
   const handleClose = () => {
-    setIsVisible(false); // Inicia a animação de saída
+    setIsVisible(false);
     setTimeout(() => {
-      onClose(); // Chama onClose após a animação (300ms)
+      onClose();
     }, 300);
   };
 
@@ -51,60 +48,61 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const validarLinks = () => {
-    const { instagram, twitter, twitch } = formData;
-
-    if (instagram && !instagram.startsWith("https://")) {
-      setErro("O link do Instagram deve começar com https://");
-      return false;
+  const validate = () => {
+    const newErrors = {};
+    
+    if (!fotoCropped) {
+      newErrors.foto = "Foto do Jogador é obrigatória";
     }
-    if (twitter && !twitter.startsWith("https://")) {
-      setErro("O link do Twitter deve começar com https://");
-      return false;
+    
+    if (!formData.nome) {
+      newErrors.nome = "Nome é obrigatório";
     }
-    if (twitch && !twitch.startsWith("https://")) {
-      setErro("O link do Twitch deve começar com https://");
-      return false;
+    
+    if (!formData.titulo) {
+      newErrors.titulo = "Título é obrigatório";
     }
-    return true;
+    
+    if (!formData.descricao) {
+      newErrors.descricao = "Descrição é obrigatória";
+    }
+    
+    if (formData.instagram && !formData.instagram.startsWith("https://")) {
+      newErrors.instagram = "O link do Instagram deve começar com https://";
+    }
+    
+    if (formData.twitter && !formData.twitter.startsWith("https://")) {
+      newErrors.twitter = "O link do Twitter deve começar com https://";
+    }
+    
+    if (formData.twitch && !formData.twitch.startsWith("https://")) {
+      newErrors.twitch = "O link do Twitch deve começar com https://";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (validate()) {
+      try {
+        const novoJogador = {
+          nome: formData.nome.trim(),
+          titulo: formData.titulo.trim(),
+          descricao: formData.descricao.trim(),
+          foto: fotoCropped,
+          insta: formData.instagram?.trim() || null,
+          twitter: formData.twitter?.trim() || null,
+          twitch: formData.twitch?.trim() || null,
+          time: timeId,
+        };
 
-    // Validação básica
-    if (
-      !fotoCropped ||
-      !formData.nome ||
-      !formData.titulo ||
-      !formData.descricao
-    ) {
-      setErro("Preencha todos os campos obrigatórios!");
-      return;
-    }
-
-    if (!validarLinks()) return;
-
-    // Prepara os dados garantindo que redes sociais vazias sejam null
-    const novoJogador = {
-      nome: formData.nome.trim(),
-      titulo: formData.titulo.trim(),
-      descricao: formData.descricao.trim(),
-      foto: fotoCropped,
-      insta: formData.instagram?.trim() || null,
-      twitter: formData.twitter?.trim() || null,
-      twitch: formData.twitch?.trim() || null,
-      time: timeId,
-    };
-
-    try {
-      await onSave(novoJogador);
-      setSuccessMessage("Jogador adicionado com sucesso!");
-      setTimeout(() => {
-        handleClose(); // Fecha o modal após exibir o alerta de sucesso
-      }, 2000); // Aguarda 2 segundos para o usuário ver o sucesso
-    } catch (error) {
-      setErro(error.message || "Erro ao adicionar jogador");
+        await onSave(novoJogador);
+        handleClose();
+      } catch (error) {
+        setErrors({ submit: error.message });
+      }
     }
   };
 
@@ -114,9 +112,6 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
         isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >
-      {erro && <AlertaErro mensagem={erro} />}
-      {successMessage && <AlertaOk mensagem={successMessage} />}
-
       {isCroppingFoto && (
         <ImageCropper
           initialImage={fotoImage}
@@ -143,10 +138,16 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
           </button>
         </div>
 
+        {errors.submit && (
+          <div className="mb-4 p-2 bg-vermelho-claro/20 text-vermelho-claro rounded text-sm">
+            {errors.submit}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div className="mb-4">
-              <label className="block text-sm text-fonte-escura font-semibold mb-2">
+              <label className="block text-sm text-fonte-escura font-semibold mb-1">
                 Foto do Jogador <span className="text-vermelho-claro">*</span>
               </label>
               <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-azul-claro rounded-lg cursor-pointer hover:bg-cinza-escuro/50 transition-colors">
@@ -171,9 +172,11 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
                     setFotoCropped(null);
                   }}
                   className="hidden"
-                  required
                 />
               </label>
+              {errors.foto && (
+                <p className="text-vermelho-claro text-sm mt-1">{errors.foto}</p>
+              )}
               {fotoCropped && (
                 <div className="mt-4 flex justify-center">
                   <div className="relative w-24 h-24">
@@ -182,14 +185,6 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
                       alt="Preview da foto"
                       className="w-full h-full object-cover border border-cinza-escuro"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setFotoCropped(null)}
-                      className="absolute -top-2 -right-2 bg-vermelho-claro text-branco rounded-full w-6 h-6 flex items-center justify-center hover:bg-vermelho-escuro transition-colors"
-                      title="Remover imagem"
-                    >
-                      <RiCloseFill className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
               )}
@@ -204,9 +199,15 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
                 name="nome"
                 value={formData.nome}
                 onChange={handleChange}
-                className="w-full border border-borda rounded p-2 text-branco bg-preto focus:border-azul-claro focus:outline-none"
-                required
+                className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
+                  errors.nome
+                    ? "border-vermelho-claro focus:border-vermelho-claro"
+                    : "border-borda focus:border-azul-claro"
+                }`}
               />
+              {errors.nome && (
+                <p className="text-vermelho-claro text-sm mt-1">{errors.nome}</p>
+              )}
             </div>
 
             <div>
@@ -218,9 +219,15 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
                 name="titulo"
                 value={formData.titulo}
                 onChange={handleChange}
-                className="w-full border border-borda rounded p-2 text-branco bg-preto focus:border-azul-claro focus:outline-none"
-                required
+                className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
+                  errors.titulo
+                    ? "border-vermelho-claro focus:border-vermelho-claro"
+                    : "border-borda focus:border-azul-claro"
+                }`}
               />
+              {errors.titulo && (
+                <p className="text-vermelho-claro text-sm mt-1">{errors.titulo}</p>
+              )}
             </div>
 
             <div>
@@ -231,10 +238,16 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
                 name="descricao"
                 value={formData.descricao}
                 onChange={handleChange}
-                className="w-full border border-borda rounded p-2 text-branco bg-preto focus:border-azul-claro focus:outline-none"
+                className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
+                  errors.descricao
+                    ? "border-vermelho-claro focus:border-vermelho-claro"
+                    : "border-borda focus:border-azul-claro"
+                }`}
                 rows="3"
-                required
               />
+              {errors.descricao && (
+                <p className="text-vermelho-claro text-sm mt-1">{errors.descricao}</p>
+              )}
             </div>
 
             <div>
@@ -252,9 +265,16 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
                   value={formData.instagram}
                   onChange={handleChange}
                   placeholder="https://instagram.com/usuario"
-                  className="w-full border border-borda border-l-0 rounded-r-md p-2 focus:border-azul-claro text-branco bg-preto focus:outline-none"
+                  className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
+                    errors.instagram
+                      ? "border-vermelho-claro focus:border-vermelho-claro"
+                      : "border-borda focus:border-azul-claro"
+                  }`}
                 />
               </div>
+              {errors.instagram && (
+                <p className="text-vermelho-claro text-sm mt-1">{errors.instagram}</p>
+              )}
 
               <div className="flex items-center mb-2">
                 <div className="bg-fonte-escura rounded-l-md px-2 py-2 flex items-center justify-center">
@@ -266,9 +286,16 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
                   value={formData.twitter}
                   onChange={handleChange}
                   placeholder="https://twitter.com/usuario"
-                  className="w-full border border-borda border-l-0 rounded-r-md p-2 focus:border-azul-claro text-branco bg-preto focus:outline-none"
+                  className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
+                    errors.twitter
+                      ? "border-vermelho-claro focus:border-vermelho-claro"
+                      : "border-borda focus:border-azul-claro"
+                  }`}
                 />
               </div>
+              {errors.twitter && (
+                <p className="text-vermelho-claro text-sm mt-1">{errors.twitter}</p>
+              )}
 
               <div className="flex items-center">
                 <div className="bg-fonte-escura rounded-l-md px-2 py-2 flex items-center justify-center">
@@ -280,9 +307,16 @@ const ModalAdicionarMembro = ({ onClose, onSave, timeId }) => {
                   value={formData.twitch}
                   onChange={handleChange}
                   placeholder="https://twitch.tv/usuario"
-                  className="w-full border border-borda border-l-0 rounded-r-md p-2 focus:border-azul-claro text-branco bg-preto focus:outline-none"
+                  className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
+                    errors.twitch
+                      ? "border-vermelho-claro focus:border-vermelho-claro"
+                      : "border-borda focus:border-azul-claro"
+                  }`}
                 />
               </div>
+              {errors.twitch && (
+                <p className="text-vermelho-claro text-sm mt-1">{errors.twitch}</p>
+              )}
             </div>
           </div>
 

@@ -161,7 +161,7 @@ const ModalUsuario = ({
               Email <span className="text-vermelho-claro">*</span>
             </label>
             <input
-              type="email"
+              type="text"
               name="email"
               value={formData.email}
               onChange={handleChange}
@@ -195,7 +195,6 @@ const ModalUsuario = ({
                   : "border-borda focus:border-azul-claro"
                   }`}
                 placeholder="Exemplo: 123456789012345678"
-                pattern="\d{18}|^$"
 
               />
             </div>

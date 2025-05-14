@@ -11,11 +11,10 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
     id: time.id,
     nome: time.nome,
   });
-  const [erro, setErro] = useState("");
+  const [errors, setErrors] = useState({});
   const [isVisible, setIsVisible] = useState(false);
   const [jogoPreview, setJogoPreview] = useState(time.jogo || null);
 
-  // Controles para a foto do time (mantém o ImageCropper)
   const {
     image: fotoImage,
     croppedImage: fotoCropped,
@@ -45,7 +44,6 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
     });
   };
 
-  // Função simplificada para o logo do jogo (sem ImageCropper)
   const handleJogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -57,28 +55,40 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
     }
   };
 
+  const validate = () => {
+    const newErrors = {};
+    
+    if (!formData.nome) {
+      newErrors.nome = "Nome é obrigatório";
+    }
+    
+    if (!fotoCropped && !time.foto) {
+      newErrors.foto = "Foto do Time é obrigatória";
+    }
+    
+    if (!jogoPreview && !time.jogo) {
+      newErrors.jogo = "Logo do Jogo é obrigatório";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      if (!formData.nome) {
-        throw new Error("Nome é obrigatório!");
+    if (validate()) {
+      try {
+        const dataToSave = {
+          ...formData,
+          foto: fotoCropped || time.foto,
+          jogo: jogoPreview || time.jogo
+        };
+        
+        await onSave(dataToSave);
+        handleClose();
+      } catch (error) {
+        setErrors({ submit: error.message });
       }
-      
-      if (!fotoCropped || !jogoPreview) {
-        throw new Error("Foto do time e logo do jogo são obrigatórios!");
-      }
-      
-      const dataToSave = {
-        ...formData,
-        foto: fotoCropped,
-        jogo: jogoPreview
-      };
-      
-      await onSave(dataToSave);
-      handleClose();
-    } catch (error) {
-      console.error("Erro ao editar time:", error);
-      setErro(error.message || "Ocorreu um erro ao editar o time");
     }
   };
 
@@ -88,7 +98,6 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
         isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >
-      {/* Modal de corte de imagem APENAS para foto do time */}
       {isCroppingFoto && (
         <ImageCropper
           initialImage={fotoImage}
@@ -115,16 +124,15 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
           </button>
         </div>
 
-        {erro && (
-          <div className="mb-4 p-2 bg-vermelho-claro/20 text-vermelho-claro rounded">
-            {erro}
+        {errors.submit && (
+          <div className="mb-4 p-2 bg-vermelho-claro/20 text-vermelho-claro rounded text-sm">
+            {errors.submit}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* ID do Time */}
           <div className="mb-4">
-            <label className="block text-sm text-fonte-escura font-semibold mb-2">
+            <label className="block text-sm text-fonte-escura font-semibold mb-1">
               ID do Time
             </label>
             <input
@@ -132,14 +140,13 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
               name="id"
               value={formData.id}
               onChange={handleChange}
-              className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
+              className="w-full border border-borda rounded p-2 text-branco bg-preto focus:outline-none"
               disabled
             />
           </div>
 
-          {/* Nome do Time */}
           <div className="mb-4">
-            <label className="block text-sm text-fonte-escura font-semibold mb-2">
+            <label className="block text-sm text-fonte-escura font-semibold mb-1">
               Nome do Time <span className="text-vermelho-claro">*</span>
             </label>
             <input
@@ -147,25 +154,30 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
               name="nome"
               value={formData.nome}
               onChange={handleChange}
-              className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
-              required
+              className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
+                errors.nome
+                  ? "border-vermelho-claro focus:border-vermelho-claro"
+                  : "border-borda focus:border-azul-claro"
+              }`}
             />
+            {errors.nome && (
+              <p className="text-vermelho-claro text-sm mt-1">{errors.nome}</p>
+            )}
           </div>
 
-          {/* Foto do Time (com ImageCropper) */}
           <div className="mb-4">
-            <label className="block text-sm text-fonte-escura font-semibold mb-2">
+            <label className="block text-sm text-fonte-escura font-semibold mb-1">
               Foto do Time <span className="text-vermelho-claro">*</span>
             </label>
             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-azul-claro rounded-lg cursor-pointer hover:bg-cinza-escuro/50 transition-colors">
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                {fotoCropped ? (
+                {fotoCropped || time.foto ? (
                   <RiImageEditLine className="w-8 h-8 text-azul-claro mb-2" />
                 ) : (
                   <RiImageAddLine className="w-8 h-8 text-azul-claro mb-2" />
                 )}
                 <p className="text-sm text-fonte-escura">
-                  {fotoCropped ? "Alterar imagem" : "Clique para enviar"}
+                  {fotoCropped || time.foto ? "Alterar imagem" : "Clique para enviar"}
                 </p>
                 <p className="text-xs text-fonte-escura/50 mt-1">
                   PNG, JPG ou JPEG (Max. 5MB)
@@ -181,41 +193,35 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
                 className="hidden"
               />
             </label>
-            {fotoCropped && (
+            {errors.foto && (
+              <p className="text-vermelho-claro text-sm mt-1">{errors.foto}</p>
+            )}
+            {(fotoCropped || time.foto) && (
               <div className="mt-4 flex justify-center">
                 <div className="relative w-24 h-24">
                   <img
-                    src={fotoCropped}
+                    src={fotoCropped || time.foto}
                     alt="Preview da foto"
                     className="w-full h-full rounded object-cover border border-cinza-escuro"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setFotoCropped(null)}
-                    className="absolute -top-2 -right-2 bg-vermelho-claro text-branco rounded-full w-6 h-6 flex items-center justify-center hover:bg-vermelho-escuro transition-colors"
-                    title="Remover imagem"
-                  >
-                    <RiCloseFill className="w-4 h-4" />
-                  </button>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Logo do Jogo (SEM ImageCropper) */}
           <div className="mb-4">
-            <label className="block text-sm text-fonte-escura font-semibold mb-2">
+            <label className="block text-sm text-fonte-escura font-semibold mb-1">
               Logo do Jogo <span className="text-vermelho-claro">*</span>
             </label>
             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-azul-claro rounded-lg cursor-pointer hover:bg-cinza-escuro/50 transition-colors">
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                {jogoPreview ? (
+                {jogoPreview || time.jogo ? (
                   <RiImageEditLine className="w-8 h-8 text-azul-claro mb-2" />
                 ) : (
                   <RiImageAddLine className="w-8 h-8 text-azul-claro mb-2" />
                 )}
                 <p className="text-sm text-fonte-escura">
-                  {jogoPreview ? "Alterar logo" : "Clique para enviar"}
+                  {jogoPreview || time.jogo ? "Alterar logo" : "Clique para enviar"}
                 </p>
                 <p className="text-xs text-fonte-escura/50 mt-1">
                   PNG, JPG ou JPEG (Max. 5MB)
@@ -228,22 +234,17 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
                 className="hidden"
               />
             </label>
-            {jogoPreview && (
+            {errors.jogo && (
+              <p className="text-vermelho-claro text-sm mt-1">{errors.jogo}</p>
+            )}
+            {(jogoPreview || time.jogo) && (
               <div className="mt-4 flex justify-center">
                 <div className="relative w-24 h-24">
                   <img
-                    src={jogoPreview}
+                    src={jogoPreview || time.jogo}
                     alt="Preview do logo"
                     className="w-full h-full rounded object-cover border border-cinza-escuro"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setJogoPreview(null)}
-                    className="absolute -top-2 -right-2 bg-vermelho-claro text-branco rounded-full w-6 h-6 flex items-center justify-center hover:bg-vermelho-escuro transition-colors"
-                    title="Remover imagem"
-                  >
-                    <RiCloseFill className="w-4 h-4" />
-                  </button>
                 </div>
               </div>
             )}

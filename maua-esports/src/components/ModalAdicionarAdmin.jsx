@@ -16,18 +16,19 @@ const ModalAdicionarAdmin = ({ onClose, onSave }) => {
     twitter: "",
     twitch: "",
   });
+  const [errors, setErrors] = useState({});
   const [fotoPreview, setFotoPreview] = useState(FotoPadrao);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    setIsVisible(true); // Ativa a animação quando o modal é montado
+    setIsVisible(true);
   }, []);
 
   const handleClose = () => {
-    setIsVisible(false); // Inicia a animação de saída
+    setIsVisible(false);
     setTimeout(() => {
-      onClose(); // Chama onClose após a animação (300ms)
+      onClose();
     }, 300);
   };
 
@@ -36,19 +37,20 @@ const ModalAdicionarAdmin = ({ onClose, onSave }) => {
     if (file) {
       const tiposPermitidos = ["image/jpeg", "image/jpg", "image/png"];
       if (!tiposPermitidos.includes(file.type)) {
-        throw new Error(
-          "Formato de imagem inválido. Use apenas JPG, JPEG ou PNG."
-        );
+        setErrors({ foto: "Formato de imagem inválido. Use apenas JPG, JPEG ou PNG." });
+        return;
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        throw new Error("A imagem deve ter no máximo 5MB");
+        setErrors({ foto: "A imagem deve ter no máximo 5MB" });
+        return;
       }
 
       const reader = new FileReader();
       reader.onloadend = () => {
         setFotoPreview(reader.result);
         setFormData({ ...formData, foto: file });
+        setErrors({ ...errors, foto: null });
       };
       reader.readAsDataURL(file);
     }
@@ -64,45 +66,61 @@ const ModalAdicionarAdmin = ({ onClose, onSave }) => {
     setFormData({ ...formData, foto: null });
   };
 
-  const validarLinks = () => {
-    const { instagram, twitter, twitch } = formData;
-
-    const validarLink = (url, rede) => {
-      if (url && !url.startsWith("https://")) {
-        throw new Error(`O link do ${rede} deve começar com https://`);
-      }
-      return true;
-    };
-
-    return (
-      validarLink(instagram, "Instagram") &&
-      validarLink(twitter, "Twitter") &&
-      validarLink(twitch, "Twitch")
-    );
+  const validate = () => {
+    const newErrors = {};
+    
+    if (!formData.nome) {
+      newErrors.nome = "Nome é obrigatório";
+    }
+    
+    if (!formData.titulo) {
+      newErrors.titulo = "Título é obrigatório";
+    }
+    
+    if (!formData.descricao) {
+      newErrors.descricao = "Descrição é obrigatória";
+    }
+    
+    if (!formData.foto) {
+      newErrors.foto = "Foto é obrigatória";
+    }
+    
+    if (formData.instagram && !formData.instagram.startsWith("https://")) {
+      newErrors.instagram = "O link do Instagram deve começar com https://";
+    }
+    
+    if (formData.twitter && !formData.twitter.startsWith("https://")) {
+      newErrors.twitter = "O link do Twitter deve começar com https://";
+    }
+    
+    if (formData.twitch && !formData.twitch.startsWith("https://")) {
+      newErrors.twitch = "O link do Twitch deve começar com https://";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-
-    if (!formData.nome || !formData.titulo || !formData.descricao) {
-      throw new Error("Preencha todos os campos obrigatórios!");
-    }
-
-    validarLinks();
-
-    try {
-      await onSave({
-        nome: formData.nome.trim(),
-        titulo: formData.titulo.trim(),
-        descricao: formData.descricao.trim(),
-        foto: formData.foto,
-        instagram: formData.instagram.trim() || null,
-        twitter: formData.twitter.trim() || null,
-        twitch: formData.twitch.trim() || null,
-      });
-    } finally {
-      setIsSubmitting(false);
+    if (validate()) {
+      setIsSubmitting(true);
+      try {
+        await onSave({
+          nome: formData.nome.trim(),
+          titulo: formData.titulo.trim(),
+          descricao: formData.descricao.trim(),
+          foto: formData.foto,
+          instagram: formData.instagram.trim() || null,
+          twitter: formData.twitter.trim() || null,
+          twitch: formData.twitch.trim() || null,
+        });
+        handleClose();
+      } catch (error) {
+        setErrors({ submit: error.message });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -118,9 +136,7 @@ const ModalAdicionarAdmin = ({ onClose, onSave }) => {
         }`}
       >
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-branco">
-            Adicionar Administrador
-          </h2>
+          <h2 className="text-xl font-bold text-branco">Adicionar Administrador</h2>
           <button
             onClick={handleClose}
             className="text-fonte-escura hover:text-vermelho-claro hover:cursor-pointer"
@@ -129,9 +145,15 @@ const ModalAdicionarAdmin = ({ onClose, onSave }) => {
           </button>
         </div>
 
+        {errors.submit && (
+          <div className="mb-4 p-2 bg-vermelho-claro/20 text-vermelho-claro rounded text-sm">
+            {errors.submit}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-sm text-fonte-escura font-semibold mb-2">
+            <label className="block text-sm text-fonte-escura font-semibold mb-1">
               Foto <span className="text-vermelho-claro">*</span>
             </label>
             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-azul-claro rounded-lg cursor-pointer hover:bg-cinza-escuro/50 transition-colors">
@@ -149,6 +171,9 @@ const ModalAdicionarAdmin = ({ onClose, onSave }) => {
                 className="hidden"
               />
             </label>
+            {errors.foto && (
+              <p className="text-vermelho-claro text-sm mt-1">{errors.foto}</p>
+            )}
             {fotoPreview !== FotoPadrao && (
               <div className="mt-4 flex justify-center">
                 <div className="relative w-24 h-24">
@@ -171,7 +196,7 @@ const ModalAdicionarAdmin = ({ onClose, onSave }) => {
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm text-fonte-escura font-semibold mb-2">
+            <label className="block text-sm text-fonte-escura font-semibold mb-1">
               Nome <span className="text-vermelho-claro">*</span>
             </label>
             <input
@@ -179,13 +204,19 @@ const ModalAdicionarAdmin = ({ onClose, onSave }) => {
               name="nome"
               value={formData.nome}
               onChange={handleChange}
-              className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
-              required
+              className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
+                errors.nome
+                  ? "border-vermelho-claro focus:border-vermelho-claro"
+                  : "border-borda focus:border-azul-claro"
+              }`}
             />
+            {errors.nome && (
+              <p className="text-vermelho-claro text-sm mt-1">{errors.nome}</p>
+            )}
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm text-fonte-escura font-semibold mb-2">
+            <label className="block text-sm text-fonte-escura font-semibold mb-1">
               Título <span className="text-vermelho-claro">*</span>
             </label>
             <input
@@ -193,23 +224,35 @@ const ModalAdicionarAdmin = ({ onClose, onSave }) => {
               name="titulo"
               value={formData.titulo}
               onChange={handleChange}
-              className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
-              required
+              className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
+                errors.titulo
+                  ? "border-vermelho-claro focus:border-vermelho-claro"
+                  : "border-borda focus:border-azul-claro"
+              }`}
             />
+            {errors.titulo && (
+              <p className="text-vermelho-claro text-sm mt-1">{errors.titulo}</p>
+            )}
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm text-fonte-escura font-semibold mb-2">
+            <label className="block text-sm text-fonte-escura font-semibold mb-1">
               Descrição <span className="text-vermelho-claro">*</span>
             </label>
             <textarea
               name="descricao"
               value={formData.descricao}
               onChange={handleChange}
-              className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
+              className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
+                errors.descricao
+                  ? "border-vermelho-claro focus:border-vermelho-claro"
+                  : "border-borda focus:border-azul-claro"
+              }`}
               rows="3"
-              required
-            ></textarea>
+            />
+            {errors.descricao && (
+              <p className="text-vermelho-claro text-sm mt-1">{errors.descricao}</p>
+            )}
           </div>
 
           <div className="mb-4">
@@ -218,7 +261,7 @@ const ModalAdicionarAdmin = ({ onClose, onSave }) => {
             </h3>
             <div className="flex items-center mb-2">
               <div className="bg-fonte-escura rounded-l-md px-2 py-2 flex items-center justify-center">
-                <FaInstagram className="text-2xl text-preto" />
+                <FaInstagram className="text-2xl" />
               </div>
               <input
                 type="text"
@@ -226,12 +269,20 @@ const ModalAdicionarAdmin = ({ onClose, onSave }) => {
                 placeholder="Instagram URL"
                 value={formData.instagram}
                 onChange={handleChange}
-                className="w-full border border-borda border-l-0 text-branco bg-preto p-2 rounded-r-md focus:outline-none"
+                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
+                  errors.instagram
+                    ? "border-vermelho-claro focus:border-vermelho-claro"
+                    : "border-borda focus:border-azul-claro"
+                }`}
               />
             </div>
+            {errors.instagram && (
+              <p className="text-vermelho-claro text-sm mt-1">{errors.instagram}</p>
+            )}
+
             <div className="flex items-center mb-2">
               <div className="bg-fonte-escura rounded-l-md px-2 py-2 flex items-center justify-center">
-                <FaTwitter className="text-2xl text-preto" />
+                <FaTwitter className="text-2xl" />
               </div>
               <input
                 type="text"
@@ -239,12 +290,20 @@ const ModalAdicionarAdmin = ({ onClose, onSave }) => {
                 placeholder="Twitter URL"
                 value={formData.twitter}
                 onChange={handleChange}
-                className="w-full border border-borda border-l-0 text-branco bg-preto p-2 rounded-r-md focus:outline-none"
+                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
+                  errors.twitter
+                    ? "border-vermelho-claro focus:border-vermelho-claro"
+                    : "border-borda focus:border-azul-claro"
+                }`}
               />
             </div>
+            {errors.twitter && (
+              <p className="text-vermelho-claro text-sm mt-1">{errors.twitter}</p>
+            )}
+
             <div className="flex items-center">
               <div className="bg-fonte-escura rounded-l-md px-2 py-2 flex items-center justify-center">
-                <FaTwitch className="text-2xl text-preto" />
+                <FaTwitch className="text-2xl" />
               </div>
               <input
                 type="text"
@@ -252,9 +311,16 @@ const ModalAdicionarAdmin = ({ onClose, onSave }) => {
                 placeholder="Twitch URL"
                 value={formData.twitch}
                 onChange={handleChange}
-                className="w-full border border-borda border-l-0 text-branco bg-preto p-2 rounded-r-md focus:outline-none"
+                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
+                  errors.twitch
+                    ? "border-vermelho-claro focus:border-vermelho-claro"
+                    : "border-borda focus:border-azul-claro"
+                }`}
               />
             </div>
+            {errors.twitch && (
+              <p className="text-vermelho-claro text-sm mt-1">{errors.twitch}</p>
+            )}
           </div>
 
           <div className="flex justify-end space-x-2 mt-6">

@@ -36,6 +36,9 @@ const EditarJogador = ({
     twitch: twitchInicial || "",
   });
 
+  const [errors, setErrors] = useState({});
+  const [isVisible, setIsVisible] = useState(false);
+
   const {
     image: fotoImage,
     croppedImage: fotoCropped,
@@ -46,16 +49,14 @@ const EditarJogador = ({
     setCroppedImage: setFotoCropped,
   } = UseImageCrop(fotoInicial || null);
 
-  const [isVisible, setIsVisible] = useState(false);
-
   useEffect(() => {
-    setIsVisible(true); // Ativa a animação de entrada
+    setIsVisible(true);
   }, []);
 
   const handleClose = () => {
-    setIsVisible(false); // Inicia a animação de saída
+    setIsVisible(false);
     setTimeout(() => {
-      onClose(); // Chama onClose após a animação
+      onClose();
     }, 300);
   };
 
@@ -71,33 +72,57 @@ const EditarJogador = ({
     setFotoCropped(null);
   };
 
+  const validate = () => {
+    const newErrors = {};
+    
+    if (!formData.nome) {
+      newErrors.nome = "Nome é obrigatório";
+    }
+    
+    if (!formData.titulo) {
+      newErrors.titulo = "Título é obrigatório";
+    }
+    
+    if (!formData.descricao) {
+      newErrors.descricao = "Descrição é obrigatória";
+    }
+    
+    if (!fotoCropped && !fotoInicial) {
+      newErrors.foto = "Foto do Jogador é obrigatória";
+    }
+    
+    if (formData.instagram && !formData.instagram.startsWith("https://")) {
+      newErrors.instagram = "O link do Instagram deve começar com https://";
+    }
+    
+    if (formData.twitter && !formData.twitter.startsWith("https://")) {
+      newErrors.twitter = "O link do Twitter deve começar com https://";
+    }
+    
+    if (formData.twitch && !formData.twitch.startsWith("https://")) {
+      newErrors.twitch = "O link do Twitch deve começar com https://";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
+    if (validate()) {
+      try {
+        const jogadorAtualizado = {
+          id: jogadorId,
+          ...formData,
+          foto: fotoCropped || fotoInicial,
+        };
 
-    if (!formData.nome || !formData.titulo || !formData.descricao) {
-      throw new Error("Preencha todos os campos obrigatórios!");
+        await onSave(jogadorAtualizado);
+        handleClose();
+      } catch (error) {
+        setErrors({ submit: error.message });
+      }
     }
-
-    if (formData.instagram && !formData.instagram.startsWith("https://")) {
-      throw new Error("O link do Instagram deve começar com https://");
-    }
-
-    if (formData.twitter && !formData.twitter.startsWith("https://")) {
-      throw new Error("O link do Twitter deve começar com https://");
-    }
-
-    if (formData.twitch && !formData.twitch.startsWith("https://")) {
-      throw new Error("O link do Twitch deve começar com https://");
-    }
-
-    const jogadorAtualizado = {
-      id: jogadorId,
-      ...formData,
-      foto: fotoCropped || fotoInicial,
-    };
-
-    await onSave(jogadorAtualizado);
-    handleClose(); // Fecha o modal após salvar
   };
 
   return (
@@ -132,21 +157,27 @@ const EditarJogador = ({
           </button>
         </div>
 
+        {errors.submit && (
+          <div className="mb-4 p-2 bg-vermelho-claro/20 text-vermelho-claro rounded text-sm">
+            {errors.submit}
+          </div>
+        )}
+
         <form onSubmit={handleSave}>
           <div className="space-y-4">
             <div className="mb-4">
-              <label className="block text-sm text-fonte-escura font-semibold mb-2">
+              <label className="block text-sm text-fonte-escura font-semibold mb-1">
                 Foto do Jogador <span className="text-vermelho-claro">*</span>
               </label>
               <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-azul-claro rounded-lg cursor-pointer hover:bg-cinza-escuro/50 transition-colors">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  {fotoCropped ? (
+                  {fotoCropped || fotoInicial ? (
                     <RiImageEditLine className="w-8 h-8 text-azul-claro mb-2" />
                   ) : (
                     <RiImageAddLine className="w-8 h-8 text-azul-claro mb-2" />
                   )}
                   <p className="text-sm text-fonte-escura">
-                    {fotoCropped ? "Alterar imagem" : "Clique para enviar"}
+                    {fotoCropped || fotoInicial ? "Alterar imagem" : "Clique para enviar"}
                   </p>
                   <p className="text-xs text-fonte-escura/50 mt-1">
                     PNG, JPG ou JPEG (Max. 5MB)
@@ -160,25 +191,19 @@ const EditarJogador = ({
                     setFotoCropped(null);
                   }}
                   className="hidden"
-                  required={!fotoInicial && !fotoCropped}
                 />
               </label>
-              {fotoCropped && (
+              {errors.foto && (
+                <p className="text-vermelho-claro text-sm mt-1">{errors.foto}</p>
+              )}
+              {(fotoCropped || fotoInicial) && (
                 <div className="mt-4 flex justify-center">
                   <div className="relative w-24 h-24">
                     <img
-                      src={fotoCropped}
+                      src={fotoCropped || fotoInicial}
                       alt="Preview da foto"
                       className="w-full h-full object-cover border border-cinza-escuro"
                     />
-                    <button
-                      type="button"
-                      onClick={handleRemoveFoto}
-                      className="absolute -top-2 -right-2 bg-vermelho-claro text-branco rounded-full w-6 h-6 flex items-center justify-center hover:bg-vermelho-escuro transition-colors"
-                      title="Remover imagem"
-                    >
-                      <RiCloseFill className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
               )}
@@ -193,9 +218,15 @@ const EditarJogador = ({
                 name="nome"
                 value={formData.nome}
                 onChange={handleChange}
-                className="w-full border border-borda rounded p-2 text-branco bg-preto focus:border-azul-claro focus:outline-none"
-                required
+                className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
+                  errors.nome
+                    ? "border-vermelho-claro focus:border-vermelho-claro"
+                    : "border-borda focus:border-azul-claro"
+                }`}
               />
+              {errors.nome && (
+                <p className="text-vermelho-claro text-sm mt-1">{errors.nome}</p>
+              )}
             </div>
 
             <div>
@@ -207,9 +238,15 @@ const EditarJogador = ({
                 name="titulo"
                 value={formData.titulo}
                 onChange={handleChange}
-                className="w-full border border-borda rounded p-2 text-branco bg-preto focus:border-azul-claro focus:outline-none"
-                required
+                className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
+                  errors.titulo
+                    ? "border-vermelho-claro focus:border-vermelho-claro"
+                    : "border-borda focus:border-azul-claro"
+                }`}
               />
+              {errors.titulo && (
+                <p className="text-vermelho-claro text-sm mt-1">{errors.titulo}</p>
+              )}
             </div>
 
             <div>
@@ -220,10 +257,16 @@ const EditarJogador = ({
                 name="descricao"
                 value={formData.descricao}
                 onChange={handleChange}
-                className="w-full border border-borda rounded p-2 text-branco bg-preto focus:border-azul-claro focus:outline-none"
+                className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
+                  errors.descricao
+                    ? "border-vermelho-claro focus:border-vermelho-claro"
+                    : "border-borda focus:border-azul-claro"
+                }`}
                 rows="3"
-                required
               />
+              {errors.descricao && (
+                <p className="text-vermelho-claro text-sm mt-1">{errors.descricao}</p>
+              )}
             </div>
 
             <div>
@@ -241,9 +284,16 @@ const EditarJogador = ({
                   value={formData.instagram}
                   onChange={handleChange}
                   placeholder="https://instagram.com/usuario"
-                  className="w-full border border-borda border-l-0 rounded-r-md p-2 focus:border-azul-claro text-branco bg-preto focus:outline-none"
+                  className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
+                    errors.instagram
+                      ? "border-vermelho-claro focus:border-vermelho-claro"
+                      : "border-borda focus:border-azul-claro"
+                  }`}
                 />
               </div>
+              {errors.instagram && (
+                <p className="text-vermelho-claro text-sm mt-1">{errors.instagram}</p>
+              )}
 
               <div className="flex items-center mb-2">
                 <div className="bg-fonte-escura rounded-l-md px-2 py-2 flex items-center justify-center">
@@ -255,9 +305,16 @@ const EditarJogador = ({
                   value={formData.twitter}
                   onChange={handleChange}
                   placeholder="https://twitter.com/usuario"
-                  className="w-full border border-borda border-l-0 rounded-r-md p-2 focus:border-azul-claro text-branco bg-preto focus:outline-none"
+                  className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
+                    errors.twitter
+                      ? "border-vermelho-claro focus:border-vermelho-claro"
+                      : "border-borda focus:border-azul-claro"
+                  }`}
                 />
               </div>
+              {errors.twitter && (
+                <p className="text-vermelho-claro text-sm mt-1">{errors.twitter}</p>
+              )}
 
               <div className="flex items-center">
                 <div className="bg-fonte-escura rounded-l-md px-2 py-2 flex items-center justify-center">
@@ -269,9 +326,16 @@ const EditarJogador = ({
                   value={formData.twitch}
                   onChange={handleChange}
                   placeholder="https://twitch.tv/usuario"
-                  className="w-full border border-borda border-l-0 rounded-r-md p-2 focus:border-azul-claro text-branco bg-preto focus:outline-none"
+                  className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
+                    errors.twitch
+                      ? "border-vermelho-claro focus:border-vermelho-claro"
+                      : "border-borda focus:border-azul-claro"
+                  }`}
                 />
               </div>
+              {errors.twitch && (
+                <p className="text-vermelho-claro text-sm mt-1">{errors.twitch}</p>
+              )}
             </div>
           </div>
 
@@ -299,5 +363,4 @@ EditarJogador.propTypes = {
   onSave: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,
 };
-
 export default EditarJogador;
