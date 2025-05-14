@@ -886,7 +886,7 @@ const NavBar = () => {
                         />
                       </div>
 
-                      {/* Discord ID (editável) */}
+                      {/* Discord ID */}
                       <div>
                         <label className="block text-sm text-fonte-escura font-semibold mb-1">
                           Discord ID
@@ -898,6 +898,7 @@ const NavBar = () => {
                           <input
                             type="text"
                             value={editFormData.discordID}
+                            readOnly={!["Administrador Geral", "Administrador"].includes(userType)}
                             onChange={(e) =>
                               setEditFormData({
                                 ...editFormData,
@@ -905,13 +906,15 @@ const NavBar = () => {
                               })
                             }
                             placeholder="Exemplo:123456789012345678"
-                            className="w-full border border-borda border-l-0 rounded-r-md p-2 focus:border-azul-claro text-branco bg-preto focus:outline-none"
+                            className={`w-full border border-borda border-l-0 rounded-r-md p-2 focus:border-azul-claro text-branco bg-preto focus:outline-none ${!["Administrador Geral", "Administrador"].includes(userType)
+                              ? "cursor-not-allowed"
+                              : ""
+                              }`}
                             pattern="\d{18}|^$"
                           />
                         </div>
                         <p className="text-xs text-fonte-escura mt-1">
-                          Deixe vazio para remover o Discord ID (deve ser um
-                          número de 18 dígitos)
+                          Deixe vazio para remover o Discord ID (deve ser um número de 18 dígitos)
                         </p>
                         <p
                           className="text-xs text-fonte-escura mt-1 hover:cursor-pointer hover:text-azul-claro transform transition-all duration-200"
