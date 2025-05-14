@@ -48,6 +48,7 @@ const NavBar = () => {
     userId: "",
   });
   const [isLoadingUserData, setIsLoadingUserData] = useState(false);
+
   const [editError, setEditError] = useState("");
   const [userDataLoaded, setUserDataLoaded] = useState(false);
   const [userType, setUserType] = useState<string>("");
@@ -129,12 +130,11 @@ const NavBar = () => {
   }, [instance]);
 
   const loadUserData = async (email: string) => {
+    if (userDataLoaded) return; // Evita chamadas repetidas
     setIsLoadingUserData(true);
     try {
       const response = await fetch(
-        `http://localhost:3000/usuarios/por-email?email=${encodeURIComponent(
-          email
-        )}`
+        `http://localhost:3000/usuarios/por-email?email=${encodeURIComponent(email)}`
       );
       if (!response.ok) throw new Error("Erro ao buscar usuário");
 
@@ -163,7 +163,7 @@ const NavBar = () => {
           }
         }
       }
-      setUserDataLoaded(true);
+      setUserDataLoaded(true); // Marca os dados como carregados
     } catch (error) {
       console.error("Erro ao carregar dados do usuário:", error);
       setEditError("Erro ao carregar dados do usuário");
@@ -428,9 +428,9 @@ const NavBar = () => {
     const searchParams = new URLSearchParams(location.search);
     const discordLinked = searchParams.get("discordLinked");
     if (discordLinked === "true" && activeAccount?.username) {
-      loadUserData(activeAccount.username); // Recarrega os dados do usuário
+      setUserDataLoaded(false); // Permite recarregar os dados após vinculação
+      //loadUserData(activeAccount.username); \\ TAVA CAUSANDO LOOP INFINITO APOS AUTENTICACAO
       setSuccessMessage("Conta do Discord vinculada com sucesso!");
-      // Limpar a query string
       window.history.replaceState({}, document.title, location.pathname);
     }
   }, [location, activeAccount]);
