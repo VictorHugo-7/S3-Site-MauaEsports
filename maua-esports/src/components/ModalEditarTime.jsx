@@ -10,7 +10,6 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
   const [formData, setFormData] = useState({
     id: time.id,
     nome: time.nome,
-    rota: time.rota,
   });
   const [erro, setErro] = useState("");
   const [isVisible, setIsVisible] = useState(false);
@@ -63,6 +62,10 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
     try {
       if (!formData.nome) {
         throw new Error("Nome é obrigatório!");
+      }
+      
+      if (!fotoCropped || !jogoPreview) {
+        throw new Error("Foto do time e logo do jogo são obrigatórios!");
       }
       
       const dataToSave = {
@@ -152,7 +155,7 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
           {/* Foto do Time (com ImageCropper) */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
-              Foto do Time
+              Foto do Time <span className="text-vermelho-claro">*</span>
             </label>
             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-azul-claro rounded-lg cursor-pointer hover:bg-cinza-escuro/50 transition-colors">
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -202,7 +205,7 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
           {/* Logo do Jogo (SEM ImageCropper) */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-2">
-              Logo do Jogo
+              Logo do Jogo <span className="text-vermelho-claro">*</span>
             </label>
             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-azul-claro rounded-lg cursor-pointer hover:bg-cinza-escuro/50 transition-colors">
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -260,9 +263,8 @@ ModalEditarTime.propTypes = {
   time: PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     nome: PropTypes.string.isRequired,
-    rota: PropTypes.string.isRequired,
-    foto: PropTypes.string,
-    jogo: PropTypes.string,
+    foto: PropTypes.string.isRequired,
+    jogo: PropTypes.string.isRequired,
   }).isRequired,
   onSave: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,
