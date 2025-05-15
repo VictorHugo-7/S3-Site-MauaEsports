@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="26" failures="0" errors="0" time="7.696">
+  <testsuite name="Rotas de Usuário" errors="0" failures="0" skipped="0" timestamp="2025-05-15T03:20:17" time="3.139" tests="11">
+    <testcase classname="Rotas de Usuário POST /usuarios deve criar um novo usuário" name="Rotas de Usuário POST /usuarios deve criar um novo usuário" time="0.082">
+    </testcase>
+    <testcase classname="Rotas de Usuário POST /usuarios deve falhar ao criar usuário com email duplicado" name="Rotas de Usuário POST /usuarios deve falhar ao criar usuário com email duplicado" time="0.053">
+    </testcase>
+    <testcase classname="Rotas de Usuário POST /usuarios deve aceitar upload de foto de perfil" name="Rotas de Usuário POST /usuarios deve aceitar upload de foto de perfil" time="0.059">
+    </testcase>
+    <testcase classname="Rotas de Usuário GET /usuarios deve listar todos os usuários" name="Rotas de Usuário GET /usuarios deve listar todos os usuários" time="0.05">
+    </testcase>
+    <testcase classname="Rotas de Usuário GET /usuarios/:id deve retornar um usuário específico" name="Rotas de Usuário GET /usuarios/:id deve retornar um usuário específico" time="0.028">
+    </testcase>
+    <testcase classname="Rotas de Usuário GET /usuarios/:id deve retornar 404 para usuário não encontrado" name="Rotas de Usuário GET /usuarios/:id deve retornar 404 para usuário não encontrado" time="0.025">
+    </testcase>
+    <testcase classname="Rotas de Usuário PUT /usuarios/:id deve atualizar um usuário" name="Rotas de Usuário PUT /usuarios/:id deve atualizar um usuário" time="0.033">
+    </testcase>
+    <testcase classname="Rotas de Usuário PUT /usuarios/:id deve atualizar a foto de perfil" name="Rotas de Usuário PUT /usuarios/:id deve atualizar a foto de perfil" time="0.035">
+    </testcase>
+    <testcase classname="Rotas de Usuário GET /usuarios/:id/foto deve retornar a foto de perfil" name="Rotas de Usuário GET /usuarios/:id/foto deve retornar a foto de perfil" time="0.042">
+    </testcase>
+    <testcase classname="Rotas de Usuário GET /usuarios/:id/foto deve retornar 404 se não houver foto" name="Rotas de Usuário GET /usuarios/:id/foto deve retornar 404 se não houver foto" time="0.025">
+    </testcase>
+    <testcase classname="Rotas de Usuário DELETE /usuarios/:id deve remover um usuário" name="Rotas de Usuário DELETE /usuarios/:id deve remover um usuário" time="0.032">
+    </testcase>
+  </testsuite>
+  <testsuite name="Modelo Usuario" errors="0" failures="0" skipped="0" timestamp="2025-05-15T03:20:20" time="1.202" tests="8">
+    <testcase classname="Modelo Usuario deve criar um usuário válido com email @maua.br" name="Modelo Usuario deve criar um usuário válido com email @maua.br" time="0.1">
+    </testcase>
+    <testcase classname="Modelo Usuario deve falhar ao criar usuário com email inválido" name="Modelo Usuario deve falhar ao criar usuário com email inválido" time="0.023">
+    </testcase>
+    <testcase classname="Modelo Usuario deve falhar ao criar usuário com email não @maua.br" name="Modelo Usuario deve falhar ao criar usuário com email não @maua.br" time="0.011">
+    </testcase>
+    <testcase classname="Modelo Usuario deve validar Discord ID com 18 dígitos" name="Modelo Usuario deve validar Discord ID com 18 dígitos" time="0.018">
+    </testcase>
+    <testcase classname="Modelo Usuario deve falhar com Discord ID inválido" name="Modelo Usuario deve falhar com Discord ID inválido" time="0.014">
+    </testcase>
+    <testcase classname="Modelo Usuario deve aceitar tipos de usuário válidos" name="Modelo Usuario deve aceitar tipos de usuário válidos" time="0.031">
+    </testcase>
+    <testcase classname="Modelo Usuario deve falhar com tipo de usuário inválido" name="Modelo Usuario deve falhar com tipo de usuário inválido" time="0.013">
+    </testcase>
+    <testcase classname="Modelo Usuario deve garantir que o email é único" name="Modelo Usuario deve garantir que o email é único" time="0.018">
+    </testcase>
+  </testsuite>
+  <testsuite name="Upload de Imagens" errors="0" failures="0" skipped="0" timestamp="2025-05-15T03:20:21" time="1.141" tests="2">
+    <testcase classname="Upload de Imagens deve fazer upload de imagem para perfil de usuário" name="Upload de Imagens deve fazer upload de imagem para perfil de usuário" time="0.037">
+    </testcase>
+    <testcase classname="Upload de Imagens deve atualizar foto de perfil existente" name="Upload de Imagens deve atualizar foto de perfil existente" time="0.031">
+    </testcase>
+  </testsuite>
+  <testsuite name="Autenticação" errors="0" failures="0" skipped="0" timestamp="2025-05-15T03:20:23" time="1.138" tests="4">
+    <testcase classname="Autenticação Middleware authenticate deve bloquear requisição sem token (trains)" name="Autenticação Middleware authenticate deve bloquear requisição sem token (trains)" time="0.018">
+    </testcase>
+    <testcase classname="Autenticação Middleware authenticate deve permitir requisição com token válido(trains)" name="Autenticação Middleware authenticate deve permitir requisição com token válido(trains)" time="0.02">
+    </testcase>
+    <testcase classname="Autenticação Middleware authenticate deve bloquear requisição sem token (trains)" name="Autenticação Middleware authenticate deve bloquear requisição sem token (trains)" time="0.013">
+    </testcase>
+    <testcase classname="Autenticação Middleware authenticate deve permitir requisição com token válido(trains)" name="Autenticação Middleware authenticate deve permitir requisição com token válido(trains)" time="0.02">
+    </testcase>
+  </testsuite>
+  <testsuite name="Middleware CORS" errors="0" failures="0" skipped="0" timestamp="2025-05-15T03:20:24" time="0.989" tests="1">
+    <testcase classname="Middleware CORS deve configurar CORS corretamente" name="Middleware CORS deve configurar CORS corretamente" time="0.033">
+    </testcase>
+  </testsuite>
+</testsuites>

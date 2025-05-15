@@ -4,14 +4,21 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "start": "node backend.cjs",
     "server": "nodemon backend.cjs",
-    "client": "vite"
+    "client": "vite",
+    "test": "cross-env NODE_ENV=test jest --config=package.json --detectOpenHandles",
+    "test:unit": "cross-env NODE_ENV=test jest --config=package.json --testPathPattern=tests/unit",
+    "test:integration": "cross-env NODE_ENV=test jest --config=package.json --testPathPattern=tests/integration",
+    "test:watch": "cross-env NODE_ENV=test jest --config=package.json --watch",
+    "test:coverage": "cross-env NODE_ENV=test jest --config=package.json --coverage",
+    "test:ci": "cross-env NODE_ENV=test jest --config=package.json --ci --runInBand --coverage",
+    "prepare": "husky install",
+    "precommit": "lint-staged"
   },
   "dependencies": {
     "@azure/msal-browser": "^4.11.1",
@@ -44,16 +51,60 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.14",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
+    "@types/supertest": "^6.0.3",
     "@vitejs/plugin-react": "^4.2.1",
     "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "jest": "^29.7.0",
+    "jest-junit": "^16.0.0",
+    "mongodb-memory-server": "^10.1.4",
     "nodemon": "^3.1.9",
+    "sinon": "^20.0.0",
+    "supertest": "^7.1.1",
     "vite": "^5.1.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": ["./tests/setup.cjs"],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/client/"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/tests/",
+      "/client/"
+    ],
+    "collectCoverageFrom": [
+      "backend.cjs",
+      "models/**/*.cjs",
+      "controllers/**/*.cjs",
+      "routes/**/*.cjs"
+    ],
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "clover"
+    ],
+    "reporters": [
+      "default",
+      ["jest-junit", {
+        "outputDirectory": "test-results",
+        "outputName": "junit.xml"
+      }]
+    ],
+    "testMatch": [
+      "**/tests/**/*.test.cjs",
+      "**/tests/**/*.spec.cjs"
+    ],
+    "verbose": true
   },
   "main": "backend.cjs",
   "keywords": [],
