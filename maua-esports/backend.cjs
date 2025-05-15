@@ -3,9 +3,6 @@ const app = express();
 const cors = require("cors");
 const mongoose = require("mongoose");
 const uniqueValidator = require("mongoose-unique-validator");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const bodyParser = require("body-parser");
 const multer = require("multer");
 const path = require("path");
 const axios = require("axios");
@@ -38,7 +35,14 @@ app.use((req, res, next) => {
 });
 
 async function conectarAoMongoDB() {
-  await mongoose.connect(process.env.MONGO_URL);
+  const url = process.env.NODE_ENV === 'test'
+    ? process.env.MONGO_TEST_URL
+    : process.env.MONGO_URL;
+
+  await mongoose.connect(url, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+  });
 }
 
 // Configuração do Multer
@@ -237,22 +241,25 @@ app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
       },
       message: "Usuário criado com sucesso",
     });
-  } catch (error) {
+  } // Adicione no bloco catch da rota POST /usuarios
+  catch (error) {
     console.error("Erro ao criar usuário:", error);
 
+    // Captura erros de validação do Mongoose (incluindo unique)
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({ success: false, message: messages.join(', ') });
+    }
+
+    // No bloco catch da rota POST /usuarios
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
-        message: "Email já está em uso",
-        field: "email",
+        message: "Email já está em uso"
       });
     }
 
-    res.status(500).json({
-      success: false,
-      message: "Erro ao criar usuário",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
+    res.status(500).json({ success: false, message: "Erro interno do servidor" });
   }
 });
 
@@ -331,7 +338,55 @@ app.get("/usuarios/por-email", async (req, res) => {
     });
   }
 });
+// GET - Buscar usuário por ID
+app.get("/usuarios/:id", async (req, res) => {
+  try {
+    const usuario = await Usuario.findById(req.params.id).select(
+      "-fotoPerfil.data -__v"
+    );
 
+    if (!usuario) {
+      return res.status(404).json({
+        success: false,
+        message: "Usuário não encontrado",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: usuario,
+    });
+  } catch (error) {
+    console.error("Erro ao buscar usuário:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erro ao buscar usuário",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+});
+
+app.get("/usuarios/:id/foto", async (req, res) => {
+  try {
+    const usuario = await Usuario.findById(req.params.id);
+    
+    if (!usuario || !usuario.fotoPerfil || !usuario.fotoPerfil.data) {
+      return res.status(404).json({
+        success: false,
+        message: "Imagem não encontrada"
+      });
+    }
+
+    res.set('Content-Type', usuario.fotoPerfil.contentType);
+    res.send(usuario.fotoPerfil.data);
+  } catch (error) {
+    console.error("Erro ao buscar foto:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erro ao carregar imagem"
+    });
+  }
+});
 // GET - Listar todos os usuários
 app.get("/usuarios", async (req, res) => {
   try {
@@ -435,91 +490,9 @@ app.delete("/usuarios/:id", async (req, res) => {
   }
 });
 
-// GET - Obter foto de perfil
-app.get("/usuarios/:id/foto", async (req, res) => {
-  try {
-    // Validar se o ID é um ObjectId válido
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      console.error(`ID inválido fornecido: ${req.params.id}`);
-      return res.status(400).json({
-        success: false,
-        message: "ID de usuário inválido",
-      });
-    }
 
-    // Buscar o usuário
-    const usuario = await Usuario.findById(req.params.id);
-    if (!usuario) {
-      console.log(`Usuário não encontrado para ID: ${req.params.id}`);
-      return res.status(404).json({
-        success: false,
-        message: "Usuário não encontrado",
-      });
-    }
 
-    // Verificar se fotoPerfil e fotoPerfil.data existem
-    if (!usuario.fotoPerfil || !usuario.fotoPerfil.data) {
-      console.log(
-        `Foto de perfil não encontrada para usuário: ${usuario.email}`
-      );
-      return res.status(404).json({
-        success: false,
-        message: "Imagem não encontrada",
-      });
-    }
 
-    // Verificar se contentType é válido
-    if (!usuario.fotoPerfil.contentType) {
-      console.error(`ContentType ausente para usuário: ${usuario.email}`);
-      return res.status(500).json({
-        success: false,
-        message: "Formato de imagem inválido",
-      });
-    }
-
-    // Enviar a imagem
-    res.set("Content-Type", usuario.fotoPerfil.contentType);
-    res.send(usuario.fotoPerfil.data);
-  } catch (error) {
-    console.error(
-      `Erro ao buscar foto de perfil para ID ${req.params.id}:`,
-      error.stack
-    );
-    res.status(500).json({
-      success: false,
-      message: "Erro ao carregar imagem",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-});
-
-// GET - Buscar usuário por ID
-app.get("/usuarios/:id", async (req, res) => {
-  try {
-    const usuario = await Usuario.findById(req.params.id).select(
-      "-fotoPerfil.data -__v"
-    );
-
-    if (!usuario) {
-      return res.status(404).json({
-        success: false,
-        message: "Usuário não encontrado",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: usuario,
-    });
-  } catch (error) {
-    console.error("Erro ao buscar usuário:", error);
-    res.status(500).json({
-      success: false,
-      message: "Erro ao buscar usuário",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-});
 ///////////////////////////////////////////////AREA DE RAANKING/////////////////////////////////////////////////////////////////
 // POST - Criar novo ranking com upload de imagem
 app.post("/rankings", upload.single("image"), async (req, res) => {
@@ -1599,11 +1572,6 @@ app.get("/admins/:id/foto", async (req, res) => {
 });
 /////////////////////////////////////////////////////////////////////    API   ///////////////////////////////////////////////////////////////////////////////////////////////
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-  console.log(`CORS configurado para: http://localhost:5173`);
-});
 function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || authHeader !== "Bearer frontendmauaesports") {
@@ -1611,27 +1579,17 @@ function authenticate(req, res, next) {
   }
   next();
 }
-app.get("/trains/all", authenticate, (req, res) => {
-  let filteredTrains = trains;
-  const startTimestampGt = req.query["StartTimestamp>"];
-  const startTimestampLt = req.query["StartTimestamp<"];
-  const status = req.query["Status"];
 
-  if (startTimestampGt) {
-    filteredTrains = filteredTrains.filter(
-      (t) => t.StartTimestamp > Number(startTimestampGt)
-    );
-  }
-  if (startTimestampLt) {
-    filteredTrains = filteredTrains.filter(
-      (t) => t.StartTimestamp < Number(startTimestampLt)
-    );
-  }
-  if (status) {
-    filteredTrains = filteredTrains.filter((t) => t.Status === status);
-  }
+const PORT = process.env.PORT || 3001;
 
-  res.json(filteredTrains);
+const trains = []; // Array vazio ou com dados de teste
+const modality = [];
+
+app.get('/trains/all', authenticate, (req, res) => {
+  res.json(trains); // Retorna array vazio ou dados de teste
+});
+app.get('/modality/all', authenticate, (req, res) => {
+  res.json(modality); // Retorna array vazio ou dados de teste
 });
 
 /////////////////////////////////////////////////////////////////////////  RELATORIOS  //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1817,15 +1775,36 @@ app.get("/auth/discord/callback", async (req, res) => {
   }
 });
 
-app.listen(3005, () => {
-  console.log("Discord API rodando na porta 3005");
-});
-/////////////////////////////////////////////////////////////////////////  PORTA  //////////////////////////////////////////////////////////////////////////////////////////////////
-app.listen(3000, () => {
-  try {
-    conectarAoMongoDB();
-    console.log("up and running");
-  } catch (e) {
-    console.log("Erro", e);
-  }
-});
+
+// Exporte o que os testes precisam
+module.exports = {
+  app,
+  Usuario,
+  Jogador,
+  Time,
+  Tournament,
+  Admin,
+  Ranking,
+  mongoose
+};
+
+// Só inicia os servidores se NÃO estiver em ambiente de teste
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+    console.log(`CORS configurado para: http://localhost:5173`);
+  });
+
+  app.listen(3005, () => {
+    console.log("Discord API rodando na porta 3005");
+  });
+
+  app.listen(3000, () => {
+    try {
+      conectarAoMongoDB();
+      console.log("up and running");
+    } catch (e) {
+      console.log("Erro", e);
+    }
+  });
+}
