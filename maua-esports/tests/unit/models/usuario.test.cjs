@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { Usuario } = require('../../backend.cjs');
+const { Usuario } = require('../../../backend.cjs');
 
 describe('Modelo Usuario', () => {
   beforeAll(async () => {
