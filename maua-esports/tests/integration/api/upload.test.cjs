@@ -5,7 +5,6 @@ const path = require('path');
 
 describe('Upload de Imagens', () => {
   const testImagePath = path.join(__dirname, '../../../src/assets/images/cs2.jpg');
-  const testImagePath2 = path.join(__dirname, '../../../src/assets/images/RL.jpg');
   let testUser;
 
   beforeEach(async () => {

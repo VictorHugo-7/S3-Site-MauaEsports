@@ -599,6 +599,22 @@ app.post("/jogadores", upload.single("foto"), async (req, res) => {
     res.status(500).json({ message: "Erro ao criar jogador", error });
   }
 });
+app.get("/jogadores/:id/imagem", async (req, res) => {
+  try {
+    const jogador = await Jogador.findById(req.params.id);
+
+    if (!jogador || !jogador.foto || !jogador.foto.data) {
+      return res.status(404).json({ message: "Imagem não encontrada" });
+    }
+
+    res.set("Content-Type", jogador.foto.contentType);
+    res.send(jogador.foto.data);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao recuperar imagem", error });
+  }
+});
+
+
 
 app.get("/jogadores", async (req, res) => {
   try {
@@ -645,36 +661,7 @@ app.delete("/jogadores/:id", async (req, res) => {
   }
 });
 
-app.get("/jogadores/:id/imagem", async (req, res) => {
-  try {
-    const jogador = await Jogador.findById(req.params.id);
 
-    if (!jogador || !jogador.foto || !jogador.foto.data) {
-      return res.status(404).json({ message: "Imagem não encontrada" });
-    }
-
-    res.set("Content-Type", jogador.foto.contentType);
-    res.send(jogador.foto.data);
-  } catch (error) {
-    res.status(500).json({ message: "Erro ao recuperar imagem", error });
-  }
-});
-
-app.get("/jogadores/:id", async (req, res) => {
-  try {
-    const jogador = await Jogador.findById(req.params.id)
-      .select("-foto.data")
-      .populate("time", "nome -id");
-
-    if (!jogador) {
-      return res.status(404).json({ message: "Jogador não encontrado" });
-    }
-
-    res.status(200).json(jogador);
-  } catch (error) {
-    res.status(500).json({ message: "Erro ao buscar jogador", error });
-  }
-});
 
 app.put("/jogadores/:id", upload.single("foto"), async (req, res) => {
   try {
