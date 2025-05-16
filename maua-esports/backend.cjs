@@ -150,11 +150,12 @@ const usuarioSchema = new mongoose.Schema({
     required: true,
     unique: true,
     validate: {
-      validator: function (v) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(v) && v.endsWith("@maua.br");
+      validator: function(v) {
+        // Regex para o formato específico: XX.XXXXX-Y@maua.br
+        const emailRegex = /^[0-9]{2}\.[0-9]{5}-[0-9]{1}@maua\.br$/;
+        return emailRegex.test(v);
       },
-      message: (props) => `${props.value} não é um email válido!`,
+      message: props => `${props.value} não é um email válido! O formato deve ser XX.XXXXX-Y@maua.br (ex: 24.00086-8@maua.br)`
     },
   },
   discordID: {
@@ -414,7 +415,7 @@ app.get("/usuarios", async (req, res) => {
 
 app.put("/usuarios/:id", upload.single("fotoPerfil"), async (req, res) => {
   try {
-    const { removeFoto, ...updateData } = req.body; // Inclui time se vier no body
+    const { removeFoto, ...updateData } = req.body;
 
     // Se foi solicitado para remover a foto
     if (removeFoto === "true") {
@@ -449,16 +450,33 @@ app.put("/usuarios/:id", upload.single("fotoPerfil"), async (req, res) => {
   } catch (error) {
     console.error("Erro ao atualizar usuário:", error);
 
-    if (error.name === "ValidationError") {
-      return res.status(400).json({
-        success: false,
-        message: "Erro de validação",
-        errors: Object.values(error.errors).map((e) => e.message),
+    // Captura erros de validação do Mongoose (incluindo unique)
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({ 
+        success: false, 
+        message: messages.join(', ') 
       });
     }
 
-    res.status(500).json({
-      success: false,
+    // Trata erros de duplicidade (unique)
+    if (error.code === 11000) {
+      if (error.keyValue.email) {
+        return res.status(400).json({
+          success: false,
+          message: "Email já está em uso"
+        });
+      }
+      if (error.keyValue.discordID) {
+        return res.status(400).json({
+          success: false,
+          message: "Discord ID já está em uso"
+        });
+      }
+    }
+
+    res.status(500).json({ 
+      success: false, 
       message: "Erro ao atualizar usuário",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
