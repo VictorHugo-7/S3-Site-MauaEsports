@@ -160,6 +160,8 @@ const usuarioSchema = new mongoose.Schema({
   discordID: {
     type: String,
     required: false,
+    unique: true,
+    sparse: true, // Esta é a chave para resolver o problema
     validate: {
       validator: function (v) {
         if (!v) return true;
@@ -369,7 +371,7 @@ app.get("/usuarios/:id", async (req, res) => {
 app.get("/usuarios/:id/foto", async (req, res) => {
   try {
     const usuario = await Usuario.findById(req.params.id);
-    
+
     if (!usuario || !usuario.fotoPerfil || !usuario.fotoPerfil.data) {
       return res.status(404).json({
         success: false,
