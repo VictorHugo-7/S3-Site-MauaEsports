@@ -3,8 +3,13 @@ import { useState } from "react";
 import PropTypes from "prop-types";
 import NovoTime from "./ModalNovoTime";
 
-const AdicionarTime = ({ onAdicionarTime }) => {
+const AdicionarTime = ({ onAdicionarTime, userRole }) => {
   const [modalAberto, setModalAberto] = useState(false);
+
+  // Only render if user is Administrador or Administrador Geral
+  if (userRole !== "Administrador" && userRole !== "Administrador Geral") {
+    return null;
+  }
 
   const handleAdicionarClick = (e) => {
     e.preventDefault();
@@ -44,6 +49,7 @@ const AdicionarTime = ({ onAdicionarTime }) => {
 
 AdicionarTime.propTypes = {
   onAdicionarTime: PropTypes.func.isRequired,
+  userRole: PropTypes.string, // Add userRole to propTypes
 };
 
 export default AdicionarTime;

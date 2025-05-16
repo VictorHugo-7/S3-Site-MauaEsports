@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import ReactDOM from "react-dom";
 import { FaInstagram } from "react-icons/fa";
 import { RiTwitterXFill } from "react-icons/ri";
 import { IoLogoTwitch } from "react-icons/io";
@@ -20,40 +19,75 @@ const CardJogador = ({
   onDelete,
   onEdit,
   logoTime,
+  userRole,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [error, setError] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const hasSocialMedia = instagram || twitter || twitch;
+  const isAdmin = ["Administrador", "Administrador Geral"].includes(userRole);
+  const defaultFoto = "/path/to/default-player.jpg"; // Substitua pelo caminho real
+  const defaultLogo = "/path/to/default-logo.png"; // Substitua pelo caminho real
 
-  const handleEdit = (updatedData) => {
-    onEdit(jogadorId, updatedData);
-    setIsModalOpen(false);
+  const normalizeSocialLink = (link, platform) => {
+    if (!link) return null;
+    if (link.startsWith("http")) return link;
+    switch (platform) {
+      case "instagram":
+        return `https://instagram.com/${link.replace(/^@/, "")}`;
+      case "twitter":
+        return `https://twitter.com/${link.replace(/^@/, "")}`;
+      case "twitch":
+        return `https://twitch.tv/${link.replace(/^@/, "")}`;
+      default:
+        return link;
+    }
+  };
+
+  const handleEdit = async (updatedData) => {
+    try {
+      await onEdit(jogadorId, updatedData);
+      setIsModalOpen(false);
+    } catch (err) {
+      setError(err.message || "Erro ao editar jogador");
+    }
   };
 
   const handleDelete = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    setShowConfirmModal(true);
+  };
 
-    const isConfirmed = window.confirm(
-      `Tem certeza que deseja deletar o jogador ${nome}?`
-    );
-
-    if (isConfirmed && onDelete) {
-      onDelete(jogadorId);
+  const confirmDelete = async () => {
+    try {
+      await onDelete(jogadorId);
+      setShowConfirmModal(false);
+    } catch (err) {
+      setError(err.message || "Erro ao deletar jogador");
     }
   };
 
   return (
     <>
       <div className="border-2 border-borda relative w-[300px] h-[450px] bg-fundo shadow-lg flex flex-col items-center hover:scale-110 transition-transform duration-300 cursor-pointer animate-fadeInUp rounded-md">
+        {error && (
+          <div className="absolute top-2 left-2 bg-red-500 text-white p-2 rounded">
+            {error}
+          </div>
+        )}
         <h1 className="text-xl font-bold font-blinker bg-azul-claro rounded-tr-md rounded-bl-md px-2 py-1 inline-block absolute top-0.1 right-0 z-10 opacity-70">
           {titulo}
         </h1>
 
         <div className="w-full h-full relative">
           <img
-            src={foto}
+            src={foto || defaultFoto}
             alt={`Foto de ${nome}`}
             className="w-full h-[90%] object-cover rounded-t-md"
+            onError={(e) => {
+              e.target.src = defaultFoto;
+            }}
           />
         </div>
 
@@ -63,9 +97,12 @@ const CardJogador = ({
               {nome}
             </h1>
             <img
-              src={logoTime}
+              src={logoTime || defaultLogo}
               alt="Logo do Time"
               className="w-6 h-6 mr-4 text-azul-claro"
+              onError={(e) => {
+                e.target.src = defaultLogo;
+              }}
             />
           </div>
 
@@ -75,59 +112,97 @@ const CardJogador = ({
             </p>
           </div>
 
-          <div
-            className={`flex items-center my-4 text-xl w-full text-fonte-escura ${
-              hasSocialMedia ? "justify-between" : "justify-center"
-            }`}
-          >
-            <div className="flex space-x-4 ml-4">
-              {instagram && (
-                <a href={instagram} target="_blank" rel="noopener noreferrer">
-                  <FaInstagram className="cursor-pointer hover:scale-110 hover:text-azul-escuro transition-transform duration-300" />
-                </a>
-              )}
-              {twitter && (
-                <a href={twitter} target="_blank" rel="noopener noreferrer">
-                  <RiTwitterXFill className="cursor-pointer hover:scale-110 hover:text-azul-escuro transition-transform duration-300" />
-                </a>
-              )}
-              {twitch && (
-                <a href={twitch} target="_blank" rel="noopener noreferrer">
-                  <IoLogoTwitch className="cursor-pointer hover:scale-110 hover:text-azul-escuro transition-transform duration-300" />
-                </a>
+          {(hasSocialMedia || isAdmin) && (
+            <div className="flex items-center my-4 text-xl w-full text-fonte-escura justify-between">
+              <div className="flex space-x-4 ml-4">
+                {instagram && (
+                  <a
+                    href={normalizeSocialLink(instagram, "instagram")}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Visitar Instagram de ${nome}`}
+                  >
+                    <FaInstagram className="cursor-pointer hover:scale-110 hover:text-azul-escuro transition-transform duration-300" />
+                  </a>
+                )}
+                {twitter && (
+                  <a
+                    href={normalizeSocialLink(twitter, "twitter")}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Visitar Twitter de ${nome}`}
+                  >
+                    <RiTwitterXFill className="cursor-pointer hover:scale-110 hover:text-azul-escuro transition-transform duration-300" />
+                  </a>
+                )}
+                {twitch && (
+                  <a
+                    href={normalizeSocialLink(twitch, "twitch")}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Visitar Twitch de ${nome}`}
+                  >
+                    <IoLogoTwitch className="cursor-pointer hover:scale-110 hover:text-azul-escuro transition-transform duration-300" />
+                  </a>
+                )}
+              </div>
+              {isAdmin && (
+                <div className="flex space-x-2 mr-4">
+                  <EditarBtn
+                    onClick={() => setIsModalOpen(true)}
+                    role="button"
+                    aria-label={`Editar jogador ${nome}`}
+                  />
+                  <DeletarBtn
+                    itemId={jogadorId}
+                    onDelete={handleDelete}
+                    tipo="jogador"
+                    role="button"
+                    aria-label={`Deletar jogador ${nome}`}
+                  />
+                </div>
               )}
             </div>
-
-            <div className="flex space-x-2 mr-4">
-              <EditarBtn onClick={() => setIsModalOpen(true)} />
-              <DeletarBtn
-                jogadorId={jogadorId}
-                onDelete={handleDelete}
-                tipo="jogador"
-              />
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
-      {isModalOpen &&
-        ReactDOM.createPortal(
-          <EditarJogador
-            jogador={{
-              _id: jogadorId,
-              nome,
-              titulo,
-              descricao,
-              fotoUrl: foto,
-              insta: instagram,
-              twitter,
-              twitch,
-            }}
-            onSave={handleEdit}
-            onClose={() => setIsModalOpen(false)}
-          />,
-          document.body
-        )}
+      {isModalOpen && (
+        <EditarJogador
+          jogador={{
+            _id: jogadorId,
+            nome,
+            titulo,
+            descricao,
+            fotoUrl: foto,
+            insta: instagram,
+            twitter,
+            twitch,
+          }}
+          onSave={handleEdit}
+          onClose={() => setIsModalOpen(false)}
+        />
+      )}
+
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-4 rounded">
+            <p>Tem certeza que deseja deletar o jogador {nome}?</p>
+            <button
+              onClick={confirmDelete}
+              className="bg-red-500 text-white p-2 mr-2"
+            >
+              Confirmar
+            </button>
+            <button
+              onClick={() => setShowConfirmModal(false)}
+              className="bg-gray-500 text-white p-2"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 };
@@ -144,6 +219,12 @@ CardJogador.propTypes = {
   onDelete: PropTypes.func.isRequired,
   onEdit: PropTypes.func.isRequired,
   logoTime: PropTypes.string,
+  userRole: PropTypes.oneOf([
+    "Jogador",
+    "Administrador",
+    "Administrador Geral",
+    null,
+  ]),
 };
 
 export default CardJogador;

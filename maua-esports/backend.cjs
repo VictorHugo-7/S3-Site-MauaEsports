@@ -162,7 +162,7 @@ const usuarioSchema = new mongoose.Schema({
     type: String,
     required: false,
     unique: true,
-    sparse: true, // Esta é a chave para resolver o problema
+    sparse: true,
     validate: {
       validator: function (v) {
         if (!v) return true;
