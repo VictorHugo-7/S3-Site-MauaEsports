@@ -5,6 +5,10 @@ import AdicionarAdmin from "../components/AdicionarAdmin";
 import PageBanner from "../components/PageBanner";
 import AlertaErro from "../components/AlertaErro";
 import AlertaOk from "../components/AlertaOk";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useMsal } from "@azure/msal-react";
+import PropTypes from "prop-types";
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -15,6 +19,36 @@ const Admins = () => {
   const [adminEditando, setAdminEditando] = useState(null);
   const [erro, setErro] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const { instance } = useMsal();
+  const [userRole, setUserRole] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const account = instance.getActiveAccount();
+        if (!account) {
+          setUserRole(null); // Non-logged-in user
+          return;
+        }
+
+        const response = await axios.get(
+          `${API_BASE_URL}/usuarios/por-email?email=${encodeURIComponent(
+            account.username
+          )}`,
+          { headers: { Accept: "application/json" } }
+        );
+        const userData = response.data.usuario;
+
+        setUserRole(userData.tipoUsuario);
+      } catch (error) {
+        console.error("Erro ao carregar dados do usuário:", error);
+        setUserRole(null); // Treat error as non-logged-in user
+      }
+    };
+
+    loadUserData();
+  }, [instance]);
 
   const carregarAdmins = async () => {
     try {
@@ -25,36 +59,16 @@ const Admins = () => {
         throw new Error("URL da API não configurada");
       }
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-      const response = await fetch(`${API_BASE_URL}/admins`, {
-        headers: {
-          Accept: "application/json",
-        },
-        signal: controller.signal,
+      const response = await axios.get(`${API_BASE_URL}/admins`, {
+        headers: { Accept: "application/json" },
+        timeout: 8000, // 8-second timeout
       });
-      clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        let errorMsg = `Erro ${response.status}`;
-        try {
-          const errorData = await response.json();
-          errorMsg = errorData.message || errorMsg;
-        } catch (e) {
-          const errorText = await response.text();
-          if (errorText) errorMsg = errorText;
-        }
-        throw new Error(errorMsg);
-      }
-
-      const data = await response.json();
-
-      if (!Array.isArray(data)) {
+      if (!Array.isArray(response.data)) {
         throw new Error("Formato de dados inválido do servidor");
       }
 
-      const adminsComUrls = data.map((admin) => ({
+      const adminsComUrls = response.data.map((admin) => ({
         ...admin,
         fotoUrl: admin.foto
           ? `${API_BASE_URL}/admins/${admin._id}/foto?${Date.now()}`
@@ -64,18 +78,15 @@ const Admins = () => {
       setAdmins(adminsComUrls);
     } catch (error) {
       console.error("Erro ao carregar admins:", error);
-
-      let mensagemErro = "Erro ao carregar administradores";
-      if (error.name === "AbortError") {
-        mensagemErro = "Tempo de conexão excedido. Verifique sua internet.";
-      } else if (error.message.includes("Failed to fetch")) {
-        mensagemErro =
-          "Não foi possível conectar ao servidor. Verifique:\n1. Se o servidor está rodando\n2. Se a URL está correta\n3. Se não há problemas de CORS";
-      } else {
-        mensagemErro = error.message;
-      }
-
-      setErroCarregamento(mensagemErro);
+      setErroCarregamento(
+        error.code === "ECONNABORTED"
+          ? "Tempo de conexão excedido. Verifique sua internet."
+          : error.response
+          ? error.response.data.message || "Erro ao carregar administradores"
+          : error.message.includes("Network Error")
+          ? "Servidor não responde. Verifique sua conexão ou tente novamente."
+          : error.message
+      );
       setAdmins([]);
     } finally {
       setCarregando(false);
@@ -88,19 +99,16 @@ const Admins = () => {
 
   const handleDeleteAdmin = async (adminId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/admins/${adminId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Falha ao deletar admin");
-      }
-
+      await axios.delete(`${API_BASE_URL}/admins/${adminId}`);
       setAdmins((prev) => prev.filter((a) => a._id !== adminId));
       setSuccessMessage("Administrador deletado com sucesso!");
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Erro ao deletar admin:", error);
-      setErro(`Erro ao deletar administrador: ${error.message}`);
+      setErro(
+        error.response?.data?.message || "Erro ao deletar administrador"
+      );
+      setTimeout(() => setErro(null), 3000);
     }
   };
 
@@ -132,48 +140,38 @@ const Admins = () => {
         formData.append("removeFoto", "true");
       }
 
-      const response = await fetch(
+      const response = await axios.put(
         `${API_BASE_URL}/admins/${adminAtualizado._id}`,
-        {
-          method: "PUT",
-          body: formData,
-        }
+        formData
       );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Falha ao atualizar admin");
-      }
-
-      const data = await response.json();
 
       setAdmins((prev) =>
         prev.map((admin) =>
           admin._id === adminAtualizado._id
             ? {
-              ...admin,
-              nome: data.nome,
-              titulo: data.titulo,
-              descricao: data.descricao,
-              insta: data.insta,
-              twitter: data.twitter,
-              twitch: data.twitch,
-              // Força o recarregamento da imagem
-              fotoUrl: data.foto
-                ? `${API_BASE_URL}/admins/${data._id}/foto?${Date.now()}`
-                : null,
-            }
+                ...admin,
+                nome: response.data.nome,
+                titulo: response.data.titulo,
+                descricao: response.data.descricao,
+                insta: response.data.insta,
+                twitter: response.data.twitter,
+                twitch: response.data.twitch,
+                fotoUrl: response.data.foto
+                  ? `${API_BASE_URL}/admins/${response.data._id}/foto?${Date.now()}`
+                  : null,
+              }
             : admin
         )
       );
 
       setAdminEditando(null);
-      carregarAdmins();
       setSuccessMessage("Administrador atualizado com sucesso!");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Erro na edição:", error);
-      setErro(error.message || "Erro ao atualizar administrador");
+      setErro(
+        error.response?.data?.message || "Erro ao atualizar administrador"
+      );
       setTimeout(() => setErro(null), 3000);
     }
   };
@@ -185,41 +183,33 @@ const Admins = () => {
       formData.append("titulo", novoAdmin.titulo.trim());
       formData.append("descricao", novoAdmin.descricao.trim());
 
-      if (novoAdmin.instagram)
-        formData.append("insta", novoAdmin.instagram.trim());
-      if (novoAdmin.twitter)
-        formData.append("twitter", novoAdmin.twitter.trim());
+      if (novoAdmin.instagram) formData.append("insta", novoAdmin.instagram.trim());
+      if (novoAdmin.twitter) formData.append("twitter", novoAdmin.twitter.trim());
       if (novoAdmin.twitch) formData.append("twitch", novoAdmin.twitch.trim());
       if (novoAdmin.foto instanceof File) {
         formData.append("foto", novoAdmin.foto);
       }
 
-      const response = await fetch(`${API_BASE_URL}/admins`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Erro ao criar administrador");
-      }
-
-      const data = await response.json();
+      const response = await axios.post(`${API_BASE_URL}/admins`, formData);
 
       setAdmins((prev) => [
         ...prev,
         {
-          ...data.admin,
-          fotoUrl: data.admin.foto
-            ? `${API_BASE_URL}/admins/${data.admin._id}/foto?${Date.now()}`
+          ...response.data.admin,
+          fotoUrl: response.data.admin.foto
+            ? `${API_BASE_URL}/admins/${response.data.admin._id}/foto?${Date.now()}`
             : null,
         },
       ]);
 
       setSuccessMessage("Administrador criado com sucesso!");
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Erro ao criar admin:", error);
-      setErro(error.message || "Erro ao criar administrador");
+      setErro(
+        error.response?.data?.message || "Erro ao criar administrador"
+      );
+      setTimeout(() => setErro(null), 3000);
     }
   };
 
@@ -241,7 +231,10 @@ const Admins = () => {
 
   if (carregando) {
     return (
-      <div className="w-full min-h-screen bg-fundo flex items-center justify-center">
+      <div
+        className="w-full min-h-screen bg-fundo flex items-center justify-center"
+        aria-live="polite"
+      >
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
         <p className="text-branco ml-4">Carregando administradores...</p>
       </div>
@@ -260,12 +253,14 @@ const Admins = () => {
             <button
               onClick={carregarAdmins}
               className="bg-azul-claro text-branco px-4 py-2 rounded hover:bg-azul-escuro"
+              aria-label="Tentar carregar administradores novamente"
             >
               Tentar novamente
             </button>
             <button
               onClick={() => window.location.reload()}
               className="bg-cinza-escuro text-branco px-4 py-2 rounded hover:bg-cinza-claro"
+              aria-label="Recarregar a página"
             >
               Recarregar página
             </button>
@@ -279,11 +274,8 @@ const Admins = () => {
     <div className="w-full min-h-screen bg-fundo">
       {erro && <AlertaErro mensagem={erro} />}
       {successMessage && <AlertaOk mensagem={successMessage} />}
-
-      <div className="bg-[#010409] h-[104px]">.</div>
-
+      <div className="bg-[#010409] h-[104px]"></div>
       <PageBanner pageName="Administradores" />
-
       <div className="bg-fundo w-full flex justify-center items-center overflow-auto scrollbar-hidden">
         <div className="w-full flex flex-wrap py-16 justify-center gap-8">
           {admins.length > 0 ? (
@@ -300,6 +292,7 @@ const Admins = () => {
                 twitch={admin.twitch}
                 onDelete={handleDeleteAdmin}
                 onEditClick={handleEditClick}
+                userRole={userRole}
               />
             ))
           ) : (
@@ -307,10 +300,9 @@ const Admins = () => {
               <p className="text-xl mb-4">Nenhum administrador encontrado</p>
             </div>
           )}
-          <AdicionarAdmin onAdicionarAdmin={handleCreateAdmin} />
+          <AdicionarAdmin onAdicionarAdmin={handleCreateAdmin} userRole={userRole} />
         </div>
       </div>
-
       {adminEditando && (
         <ModalEditarAdmin
           admin={adminEditando}
@@ -320,6 +312,15 @@ const Admins = () => {
       )}
     </div>
   );
+};
+
+Admins.propTypes = {
+  userRole: PropTypes.oneOf([
+    "Jogador",
+    "Administrador",
+    "Administrador Geral",
+    null,
+  ]),
 };
 
 export default Admins;

@@ -7,11 +7,12 @@ import AlertaErro from "../components/AlertaErro";
 import AlertaOk from "../components/AlertaOk";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { useMsal } from "@azure/msal-react"; // Importar useMsal
+import { useMsal } from "@azure/msal-react";
+import PropTypes from "prop-types";
 
 const API_BASE_URL = "http://localhost:3000";
 
-const Times = ({  }) => {
+const Times = () => {
   const [times, setTimes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState(null);
@@ -19,69 +20,63 @@ const Times = ({  }) => {
   const [timeEditando, setTimeEditando] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const navigate = useNavigate();
-  const { instance } = useMsal(); // Obter instance do useMsal
+  const { instance } = useMsal();
 
-  // Verifica autenticação e carrega dados do usuário
+  // Verifica autenticação e carrega dados do usuário, se logado
   useEffect(() => {
     const loadUserData = async () => {
       try {
         const account = instance.getActiveAccount();
         if (!account) {
-          navigate("/");
+          setUserRole(null); // Usuário não logado
           return;
         }
 
         const response = await axios.get(
-          `http://localhost:3000/usuarios/por-email?email=${encodeURIComponent(
+          `${API_BASE_URL}/usuarios/por-email?email=${encodeURIComponent(
             account.username
-          )}`
+          )}`,
+          { headers: { Accept: "application/json" } }
         );
         const userData = response.data.usuario;
 
         setUserRole(userData.tipoUsuario);
       } catch (error) {
         console.error("Erro ao carregar dados do usuário:", error);
-        navigate("/nao-autorizado");
+        setUserRole(null); // Tratar erro como usuário não logado
       }
     };
 
     loadUserData();
-  }, [instance, navigate]);
+  }, [instance]);
 
   const carregarTimes = async () => {
     try {
       setCarregando(true);
       setErroCarregamento(null);
 
-      const response = await fetch(`${API_BASE_URL}/times`, {
-        headers: {
-          Accept: "application/json",
-        },
+      const response = await axios.get(`${API_BASE_URL}/times`, {
+        headers: { Accept: "application/json" },
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || `Erro ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (!Array.isArray(data)) {
+      if (!Array.isArray(response.data)) {
         throw new Error("Formato de dados inválido do servidor");
       }
 
-      const timesComUrls = data.map((time) => ({
+      const timesComUrls = response.data.map((time) => ({
         ...time,
         fotoUrl: `${API_BASE_URL}/times/${time.id}/foto?${Date.now()}`,
-        jogoUrl: `${API_BASE_URL}/times/${time.id}/jogo? lossless=1${Date.now()}`,
+        jogoUrl: `${API_BASE_URL}/times/${time.id}/jogo?lossless=1&${Date.now()}`,
       }));
 
       setTimes(timesComUrls.sort((a, b) => a.id - b.id));
     } catch (error) {
       console.error("Erro ao carregar times:", error);
       setErroCarregamento(
-        error.message.includes("JSON") || error.message.includes("<!DOCTYPE")
-          ? "Erro no formato dos dados recebidos do servidor"
+        error.response
+          ? error.response.data.message || "Erro ao carregar times"
+          : error.message.includes("Network Error")
+          ? "Servidor não responde. Verifique sua conexão ou tente novamente."
           : error.message
       );
       setTimes([]);
@@ -96,27 +91,14 @@ const Times = ({  }) => {
 
   const handleDeleteTime = async (timeId) => {
     const time = times.find((t) => t.id === timeId);
-    if (
-      !window.confirm(`Tem certeza que deseja excluir o time "${time.nome}"?`)
-    ) {
-      return;
-    }
-
     try {
-      const response = await fetch(`${API_BASE_URL}/times/${timeId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Falha ao excluir time");
-      }
-
+      await axios.delete(`${API_BASE_URL}/times/${timeId}`);
       setTimes(times.filter((time) => time.id !== timeId));
       setSuccessMessage("Time excluído com sucesso!");
     } catch (error) {
       console.error("Erro ao deletar time:", error);
       setErroCarregamento(
-        error.message ||
+        error.response?.data?.message ||
           "Não foi possível excluir o time. Verifique se não há jogadores associados."
       );
     }
@@ -152,28 +134,18 @@ const Times = ({  }) => {
         formData.append("removeJogo", "true");
       }
 
-      const response = await fetch(
+      const response = await axios.put(
         `${API_BASE_URL}/times/${timeAtualizado.id}`,
-        {
-          method: "PUT",
-          body: formData,
-        }
+        formData
       );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Falha ao atualizar time");
-      }
-
-      const data = await response.json();
 
       setTimes(
         times.map((time) =>
           time.id === timeAtualizado.id
             ? {
-                ...data,
-                fotoUrl: `${API_BASE_URL}/times/${data.id}/foto?${Date.now()}`,
-                jogoUrl: `${API_BASE_URL}/times/${data.id}/jogo?${Date.now()}`,
+                ...response.data,
+                fotoUrl: `${API_BASE_URL}/times/${response.data.id}/foto?${Date.now()}`,
+                jogoUrl: `${API_BASE_URL}/times/${response.data.id}/jogo?${Date.now()}`,
               }
             : time
         )
@@ -184,7 +156,9 @@ const Times = ({  }) => {
       return true;
     } catch (error) {
       console.error("Erro ao atualizar time:", error);
-      setErroCarregamento(error.message || "Erro ao atualizar time");
+      setErroCarregamento(
+        error.response?.data?.message || "Erro ao atualizar time"
+      );
       throw error;
     }
   };
@@ -215,25 +189,15 @@ const Times = ({  }) => {
         formData.append("jogo", jogoBlob, `jogo-${Date.now()}.jpg`);
       }
 
-      const response = await fetch(`${API_BASE_URL}/times`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Falha ao criar time");
-      }
-
-      const data = await response.json();
+      const response = await axios.post(`${API_BASE_URL}/times`, formData);
 
       setTimes(
         [
           ...times,
           {
-            ...data,
-            fotoUrl: `${API_BASE_URL}/times/${data.id}/foto?${Date.now()}`,
-            jogoUrl: `${API_BASE_URL}/times/${data.id}/jogo?${Date.now()}`,
+            ...response.data,
+            fotoUrl: `${API_BASE_URL}/times/${response.data.id}/foto?${Date.now()}`,
+            jogoUrl: `${API_BASE_URL}/times/${response.data.id}/jogo?${Date.now()}`,
           },
         ].sort((a, b) => a.id - b.id)
       );
@@ -242,7 +206,9 @@ const Times = ({  }) => {
       return true;
     } catch (error) {
       console.error("Erro ao criar time:", error);
-      setErroCarregamento(error.message || "Erro ao criar time");
+      setErroCarregamento(
+        error.response?.data?.message || "Erro ao criar time"
+      );
       throw error;
     }
   };
@@ -258,7 +224,10 @@ const Times = ({  }) => {
 
   if (carregando) {
     return (
-      <div className="w-full min-h-screen bg-fundo flex items-center justify-center">
+      <div
+        className="w-full min-h-screen bg-fundo flex items-center justify-center"
+        aria-live="polite"
+      >
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
         <p className="text-branco ml-4">Carregando times...</p>
       </div>
@@ -269,7 +238,7 @@ const Times = ({  }) => {
     <div className="w-full min-h-screen bg-fundo">
       {erroCarregamento && <AlertaErro mensagem={erroCarregamento} />}
       {successMessage && <AlertaOk mensagem={successMessage} />}
-      <div className="bg-[#010409] h-[104px]">.</div>
+      <div className="bg-[#010409] h-[104px]"></div>
       <PageBanner pageName="Escolha seu time!" />
       <div className="bg-fundo w-full flex justify-center items-center overflow-auto scrollbar-hidden">
         <div className="w-full flex flex-wrap py-16 justify-center gap-8">
@@ -283,7 +252,7 @@ const Times = ({  }) => {
                 jogo={`${API_BASE_URL}/times/${time.id}/jogo?${Date.now()}`}
                 onDelete={handleDeleteTime}
                 onEditClick={handleEditClick}
-                userRole={userRole} // Pass userRole to CardTime
+                userRole={userRole}
               />
             ))
           ) : (
@@ -291,10 +260,7 @@ const Times = ({  }) => {
               <p className="text-xl mb-4">Nenhum time encontrado</p>
             </div>
           )}
-          <AdicionarTime
-            onAdicionarTime={handleCreateTime}
-            userRole={userRole} //passa o tipo de usuario pro componente
-          />
+          <AdicionarTime onAdicionarTime={handleCreateTime} userRole={userRole} />
         </div>
       </div>
       {timeEditando && (
@@ -306,6 +272,15 @@ const Times = ({  }) => {
       )}
     </div>
   );
+};
+
+Times.propTypes = {
+  userRole: PropTypes.oneOf([
+    "Jogador",
+    "Administrador",
+    "Administrador Geral",
+    null,
+  ]),
 };
 
 export default Times;

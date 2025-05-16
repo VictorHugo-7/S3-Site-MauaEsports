@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { IoMdAddCircleOutline } from "react-icons/io";
 import ModalAdicionarAdmin from "./ModalAdicionarAdmin";
 
-const AdicionarAdmin = ({ onAdicionarAdmin }) => {
+const AdicionarAdmin = ({ onAdicionarAdmin, userRole }) => {
   const [modalAberto, setModalAberto] = useState(false);
   const [erro, setErro] = useState("");
 
@@ -26,12 +26,15 @@ const AdicionarAdmin = ({ onAdicionarAdmin }) => {
     setModalAberto(false);
     setErro("");
   };
-
+// Only render if user is Administrador or Administrador Geral
+if (userRole !== "Administrador" && userRole !== "Administrador Geral") {
+  return null;
+}
   return (
     <>
       <div
         onClick={handleAdicionarClick}
-        className="border-2 border-dotted rounded-tl-2xl rounded-br-2xl border-fonte-escura relative w-[300px] h-[450px] bg-fundo shadow-lg flex flex-col items-center 
+        className="border-2 border-dotted rounded-tl-2xl rounded-br-2xl border-borda relative w-[300px] h-[450px] bg-fundo shadow-lg flex flex-col items-center 
           hover:scale-110 transition-transform duration-300 cursor-pointer animate-fadeInUp text-center justify-center"
       >
         <IoMdAddCircleOutline className="w-50 h-40 text-fonte-escura" />
@@ -53,6 +56,7 @@ const AdicionarAdmin = ({ onAdicionarAdmin }) => {
 
 AdicionarAdmin.propTypes = {
   onAdicionarAdmin: PropTypes.func.isRequired,
+  userRole: PropTypes.string,
 };
 
 export default AdicionarAdmin;

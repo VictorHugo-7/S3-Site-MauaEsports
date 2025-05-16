@@ -6,9 +6,9 @@ import PageBanner from "../components/PageBanner";
 import AlertaErro from "../components/AlertaErro";
 import AlertaOk from "../components/AlertaOk";
 import axios from "axios";
-
 import { useNavigate } from "react-router-dom";
-import { useMsal } from "@azure/msal-react"; // Importar useMsal
+import { useMsal } from "@azure/msal-react";
+import PropTypes from "prop-types";
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -20,69 +20,71 @@ const Membros = () => {
   const [erro, setErro] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [userRole, setUserRole] = useState(null);
-
   const navigate = useNavigate();
-
-  const { instance } = useMsal(); // Obter instance do useMsal
-
+  const { instance } = useMsal();
 
   const carregarDados = async () => {
     try {
       setCarregando(true);
       setErro(null);
 
-      const responseTime = await fetch(`${API_BASE_URL}/times/${timeId}`);
-      if (!responseTime.ok)
-        throw new Error("Falha ao carregar dados do time");
-      const timeData = await responseTime.json();
-      setTime(timeData);
+      const [responseTime, responseJogadores] = await Promise.all([
+        axios.get(`${API_BASE_URL}/times/${timeId}`, {
+          headers: { Accept: "application/json" },
+        }),
+        axios.get(`${API_BASE_URL}/times/${timeId}/jogadores`, {
+          headers: { Accept: "application/json" },
+        }),
+      ]);
 
-      const responseJogadores = await fetch(
-        `${API_BASE_URL}/times/${timeId}/jogadores`
-      );
-      if (!responseJogadores.ok)
-        throw new Error("Falha ao carregar jogadores");
-      const jogadoresData = await responseJogadores.json();
+      setTime(responseTime.data);
 
       setJogadores(
-        jogadoresData.map((j) => ({
+        responseJogadores.data.map((j) => ({
           ...j,
           fotoUrl: `${API_BASE_URL}/jogadores/${j._id}/imagem?${Date.now()}`,
         }))
       );
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
-      setErro(error.message || "Erro ao carregar dados");
+      setErro(
+        error.response
+          ? error.response.data.message || "Erro ao carregar dados"
+          : error.message.includes("Network Error")
+          ? "Servidor não responde. Verifique sua conexão ou tente novamente."
+          : error.message
+      );
     } finally {
       setCarregando(false);
     }
   };
-// Verifica autenticação e carrega dados do usuário
-useEffect(() => {
-  const loadUserData = async () => {
-    try {
-      const account = instance.getActiveAccount();
-      if (!account) {
-        navigate("/");
-        return;
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const account = instance.getActiveAccount();
+        if (!account) {
+          setUserRole(null); // Usuário não logado
+          return;
+        }
+
+        const response = await axios.get(
+          `${API_BASE_URL}/usuarios/por-email?email=${encodeURIComponent(
+            account.username
+          )}`,
+          { headers: { Accept: "application/json" } }
+        );
+        const userData = response.data.usuario;
+
+        setUserRole(userData.tipoUsuario);
+      } catch (error) {
+        console.error("Erro ao carregar dados do usuário:", error);
+        setUserRole(null); // Tratar erro como usuário não logado
       }
+    };
 
-      const response = await axios.get(
-        `http://localhost:3000/usuarios/por-email?email=${encodeURIComponent(
-          account.username
-        )}`
-      );
-      const userData = response.data.usuario;
-
-      setUserRole(userData.tipoUsuario);
-    } catch (error) {
-      console.error("Erro ao carregar dados do usuário:", error);
-      navigate("/nao-autorizado");
-    }
-  };
-
-  loadUserData();
-}, [instance, navigate]);
+    loadUserData();
+  }, [instance]);
 
   useEffect(() => {
     carregarDados();
@@ -90,19 +92,16 @@ useEffect(() => {
 
   const handleDeleteJogador = async (jogadorId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/jogadores/${jogadorId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Falha ao deletar jogador");
-      }
-
+      await axios.delete(`${API_BASE_URL}/jogadores/${jogadorId}`);
       setJogadores((prev) => prev.filter((j) => j._id !== jogadorId));
       setSuccessMessage("Jogador deletado com sucesso!");
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Erro ao deletar jogador:", error);
-      setErro(error.message || "Erro ao deletar jogador");
+      setErro(
+        error.response?.data?.message || "Erro ao deletar jogador"
+      );
+      setTimeout(() => setErro(null), 3000);
     }
   };
 
@@ -116,49 +115,41 @@ useEffect(() => {
       formData.append("twitter", updatedData.twitter || "");
       formData.append("twitch", updatedData.twitch || "");
 
-      // Adiciona a foto se for um arquivo novo
       if (updatedData.foto instanceof File) {
         formData.append("foto", updatedData.foto);
       } else if (updatedData.foto === null) {
-        // Se for null, indica para remover a foto
         formData.append("removeFoto", "true");
       }
 
-      const response = await fetch(`${API_BASE_URL}/jogadores/${jogadorId}`, {
-        method: "PUT",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Erro ao atualizar jogador");
-      }
-
-      const data = await response.json();
+      const response = await axios.put(
+        `${API_BASE_URL}/jogadores/${jogadorId}`,
+        formData
+      );
 
       setJogadores((prev) =>
         prev.map((jogador) =>
           jogador._id === jogadorId
             ? {
-              ...jogador,
-              nome: data.nome,
-              titulo: data.titulo,
-              descricao: data.descricao,
-              insta: data.insta,
-              twitter: data.twitter,
-              twitch: data.twitch,
-              // Força o recarregamento da imagem com timestamp
-              fotoUrl: `${API_BASE_URL}/jogadores/${data._id}/imagem?${Date.now()}`,
-            }
+                ...jogador,
+                nome: response.data.nome,
+                titulo: response.data.titulo,
+                descricao: response.data.descricao,
+                insta: response.data.insta,
+                twitter: response.data.twitter,
+                twitch: response.data.twitch,
+                fotoUrl: `${API_BASE_URL}/jogadores/${response.data._id}/imagem?${Date.now()}`,
+              }
             : jogador
         )
       );
-      carregarDados(); 
+
       setSuccessMessage("Jogador atualizado com sucesso!");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Erro ao atualizar jogador:", error);
-      setErro(error.message || "Erro ao atualizar jogador");
+      setErro(
+        error.response?.data?.message || "Erro ao atualizar jogador"
+      );
       setTimeout(() => setErro(null), 3000);
     }
   };
@@ -171,47 +162,45 @@ useEffect(() => {
       formData.append("descricao", novoJogador.descricao);
       formData.append("time", novoJogador.time);
 
-      if (novoJogador.insta !== null)
-        formData.append("insta", novoJogador.insta);
-      if (novoJogador.twitter !== null)
-        formData.append("twitter", novoJogador.twitter);
-      if (novoJogador.twitch !== null)
-        formData.append("twitch", novoJogador.twitch);
+      if (novoJogador.insta) formData.append("insta", novoJogador.insta);
+      if (novoJogador.twitter) formData.append("twitter", novoJogador.twitter);
+      if (novoJogador.twitch) formData.append("twitch", novoJogador.twitch);
 
-      if (novoJogador.foto.startsWith("data:")) {
+      if (novoJogador.foto && novoJogador.foto.startsWith("data:")) {
         const response = await fetch(novoJogador.foto);
         const blob = await response.blob();
         formData.append("foto", blob, "foto-jogador.jpg");
       }
 
-      const response = await fetch(`${API_BASE_URL}/jogadores`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error("Falha ao criar jogador");
-
-      const data = await response.json();
+      const response = await axios.post(`${API_BASE_URL}/jogadores`, formData);
 
       setJogadores((prev) => [
         ...prev,
         {
-          ...data,
-          fotoUrl: `${API_BASE_URL}/jogadores/${data._id}/imagem?${Date.now()}`,
+          ...response.data,
+          fotoUrl: `${API_BASE_URL}/jogadores/${response.data._id}/imagem?${Date.now()}`,
         },
       ]);
 
       setSuccessMessage("Jogador adicionado com sucesso!");
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Erro ao adicionar jogador:", error);
-      setErro(error.message || "Erro ao adicionar jogador");
+      setErro(
+        error.response?.data?.message || "Erro ao adicionar jogador"
+      );
+      setTimeout(() => setErro(null), 3000);
     }
   };
 
   if (carregando) {
     return (
-      <div className="w-full min-h-screen bg-fundo flex items-center justify-center">
+      <div
+        className="w-full min-h-screen bg-fundo flex items-center justify-center"
+        aria-live="polite"
+      >
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
+        <p className="text-branco ml-4">Carregando membros...</p>
       </div>
     );
   }
@@ -220,43 +209,53 @@ useEffect(() => {
     <div className="w-full min-h-screen bg-fundo">
       {erro && <AlertaErro mensagem={erro} />}
       {successMessage && <AlertaOk mensagem={successMessage} />}
-
-      <div className="bg-[#010409] h-[104px]">.</div>
-
+      <div className="bg-[#010409] h-[104px]"></div>
       <PageBanner
         pageName={time?.nome ? `Membros do ${time.nome}` : "Membros do Time"}
       />
-
       <div className="bg-fundo w-full flex justify-center items-center overflow-auto scrollbar-hidden">
         <div className="w-full flex flex-wrap py-16 justify-center gap-8">
-          {jogadores.map((jogador) => (
-            <CardJogador
-              key={jogador._id}
-              jogadorId={jogador._id}
-              nome={jogador.nome}
-              titulo={jogador.titulo}
-              descricao={jogador.descricao}
-              foto={jogador.fotoUrl}
-              instagram={jogador.insta}
-              twitter={jogador.twitter}
-              twitch={jogador.twitch}
-              onDelete={handleDeleteJogador}
-              onEdit={handleEditJogador}
-              logoTime={time?.logoUrl}
-              userRole={userRole} // Pass userRole to CardTime
-
-            />
-          ))}
+          {jogadores.length > 0 ? (
+            jogadores.map((jogador) => (
+              <CardJogador
+                key={jogador._id}
+                jogadorId={jogador._id}
+                nome={jogador.nome}
+                titulo={jogador.titulo}
+                descricao={jogador.descricao}
+                foto={jogador.fotoUrl}
+                instagram={jogador.insta}
+                twitter={jogador.twitter}
+                twitch={jogador.twitch}
+                onDelete={handleDeleteJogador}
+                onEdit={handleEditJogador}
+                logoTime={time?.logoUrl}
+                userRole={userRole}
+              />
+            ))
+          ) : (
+            <div className="text-center p-8 text-branco">
+              <p className="text-xl mb-4">Nenhum jogador encontrado</p>
+            </div>
+          )}
           <AdicionarMembro
             onAdicionarMembro={handleAdicionarMembro}
             timeId={timeId}
-            userRole={userRole} // Pass userRole to CardTime
-
+            userRole={userRole}
           />
         </div>
       </div>
     </div>
   );
+};
+
+Membros.propTypes = {
+  userRole: PropTypes.oneOf([
+    "Jogador",
+    "Administrador",
+    "Administrador Geral",
+    null,
+  ]),
 };
 
 export default Membros;
