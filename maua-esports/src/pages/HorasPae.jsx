@@ -44,12 +44,6 @@ function HorasPaePage() {
     fetchRanks();
   }, []);
 
-  const extractRAFromEmail = (email) => {
-    if (!email) return '';
-    const atIndex = email.indexOf('@');
-    return atIndex !== -1 ? email.substring(0, atIndex) : email;
-  };
-
   const getCurrentSemesterStart = () => {
     const now = new Date();
     const year = now.getFullYear();
@@ -112,9 +106,10 @@ function HorasPaePage() {
       link.href = url;
       link.setAttribute(
         "download",
-        `relatorio_pae_${selectedModalityId === "all"
-          ? "todas_modalidades"
-          : currentModality.Name
+        `relatorio_pae_${
+          selectedModalityId === "all"
+            ? "todas_modalidades"
+            : currentModality.Name
         }_${getCurrentSemester()}.pdf`
       );
       document.body.appendChild(link);
@@ -178,9 +173,10 @@ function HorasPaePage() {
       link.href = url;
       link.setAttribute(
         "download",
-        `relatorio_pae_${selectedModalityId === "all"
-          ? "todas_modalidades"
-          : currentModality.Name
+        `relatorio_pae_${
+          selectedModalityId === "all"
+            ? "todas_modalidades"
+            : currentModality.Name
         }_${getCurrentSemester()}.xlsx`
       );
       document.body.appendChild(link);
@@ -223,22 +219,9 @@ function HorasPaePage() {
     loadUserData();
   }, [instance, navigate]);
 
-  const processPlayerHours = async (trainsData, modalities) => {
+  const processPlayerHours = (trainsData, modalities) => {
     const playerHours = {};
     const semesterStart = getCurrentSemesterStart();
-
-    // Primeiro, vamos buscar todos os usuários para mapear discordID para email
-    let usersMap = {};
-    try {
-      const usersResponse = await axios.get('http://localhost:3000/usuarios');
-      usersResponse.data.data.forEach(user => {
-        if (user.discordID) {
-          usersMap[user.discordID] = user.email;
-        }
-      });
-    } catch (error) {
-      console.error("Erro ao buscar usuários:", error);
-    }
 
     trainsData.forEach((train) => {
       if (
@@ -263,14 +246,9 @@ function HorasPaePage() {
         const durationHours =
           (player.ExitTimestamp - player.EntranceTimestamp) / (1000 * 60 * 60);
 
-        // Obter o RA do jogador
-        const playerEmail = usersMap[player.PlayerId] || '';
-        const playerRA = extractRAFromEmail(playerEmail) || player.PlayerId;
-
         if (!playerHours[player.PlayerId]) {
           playerHours[player.PlayerId] = {
-            name: playerRA, // Usar o RA em vez do DiscordID
-            originalId: player.PlayerId, // Manter o DiscordID original para referência
+            name: player.PlayerId,
             totalHours: 0,
             teams: {},
           };
@@ -283,7 +261,8 @@ function HorasPaePage() {
           };
         }
 
-        playerHours[player.PlayerId].teams[train.ModalityId].hours += durationHours;
+        playerHours[player.PlayerId].teams[train.ModalityId].hours +=
+          durationHours;
         playerHours[player.PlayerId].totalHours += durationHours;
       });
     });
@@ -338,8 +317,9 @@ function HorasPaePage() {
         ]);
 
         const mods = modResponse.data;
+        console.log("Modalidades recebidas:", mods);
 
-        const processedPlayers = await processPlayerHours(trainsResponse.data, mods);
+        const processedPlayers = processPlayerHours(trainsResponse.data, mods);
 
         setModalidades(mods);
         setModalityPlayers(processedPlayers);
@@ -518,18 +498,19 @@ function HorasPaePage() {
   const allPlayers =
     selectedModalityId === "all"
       ? Object.values(modalityPlayers)
-        .flat()
-        .sort((a, b) => b.totalHours - a.totalHours)
+          .flat()
+          .sort((a, b) => b.totalHours - a.totalHours)
       : modalityPlayers[selectedModalityId] || [];
 
   return (
     <div className="min-h-screen bg-[#0D1117] text-white">
       <div className="bg-[#010409] h-[104px]"></div>
       <PageBanner
-        pageName={`Horas PAEs - ${selectedModalityId === "all"
-          ? "Todas as Modalidades"
-          : currentModality.Name || ""
-          }`}
+        pageName={`Horas PAEs - ${
+          selectedModalityId === "all"
+            ? "Todas as Modalidades"
+            : currentModality.Name || ""
+        }`}
       />
 
       <div className="flex flex-col gap-6 px-6 pb-8 md:px-14 md:py-15">
@@ -542,7 +523,7 @@ function HorasPaePage() {
               Modalidade:
             </label>
             {userRole === "Administrador" ||
-              userRole === "Administrador Geral" ? (
+            userRole === "Administrador Geral" ? (
               <select
                 id="modality-select"
                 className="block w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -566,8 +547,8 @@ function HorasPaePage() {
             )}
           </div>
           {userRole === "Administrador" ||
-            userRole === "Administrador Geral" ||
-            userRole === "Capitão de Time" ? (
+          userRole === "Administrador Geral" ||
+          userRole === "Capitão de Time" ? (
             <div className="flex gap-4">
               <button
                 onClick={generateExcel}
@@ -646,21 +627,21 @@ function HorasPaePage() {
                         let color = isEmpty
                           ? "bg-gray-700"
                           : isCompleted
-                            ? getColor(currentRank)
-                            : isActive
-                              ? getColor(currentRank)
-                              : "bg-gray-700";
+                          ? getColor(currentRank)
+                          : isActive
+                          ? getColor(currentRank)
+                          : "bg-gray-700";
 
                         const fill = isActive
                           ? fillPercentage
                           : isCompleted
-                            ? 100
-                            : 0;
+                          ? 100
+                          : 0;
 
                         return (
                           <div key={rankIndex} className="relative h-10">
                             <div
-                              className="absolute inset-0 bg-gray-700 "
+                              className="absolute inset-0 bg-gray-700"
                               style={{
                                 clipPath:
                                   "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)",
