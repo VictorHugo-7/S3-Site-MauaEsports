@@ -3,17 +3,50 @@ import CardTime from "../components/CardTime";
 import EditarTime from "../components/ModalEditarTime";
 import AdicionarTime from "../components/AdicionarTime";
 import PageBanner from "../components/PageBanner";
-import AlertaErro from "../components/AlertaErro"; // Novo
-import AlertaOk from "../components/AlertaOk"; // Novo
+import AlertaErro from "../components/AlertaErro";
+import AlertaOk from "../components/AlertaOk";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { useMsal } from "@azure/msal-react"; // Importar useMsal
 
 const API_BASE_URL = "http://localhost:3000";
 
-const Times = () => {
+const Times = ({  }) => {
   const [times, setTimes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null); // Novo
+  const [successMessage, setSuccessMessage] = useState(null);
   const [timeEditando, setTimeEditando] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const navigate = useNavigate();
+  const { instance } = useMsal(); // Obter instance do useMsal
+
+  // Verifica autenticação e carrega dados do usuário
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const account = instance.getActiveAccount();
+        if (!account) {
+          navigate("/");
+          return;
+        }
+
+        const response = await axios.get(
+          `http://localhost:3000/usuarios/por-email?email=${encodeURIComponent(
+            account.username
+          )}`
+        );
+        const userData = response.data.usuario;
+
+        setUserRole(userData.tipoUsuario);
+      } catch (error) {
+        console.error("Erro ao carregar dados do usuário:", error);
+        navigate("/nao-autorizado");
+      }
+    };
+
+    loadUserData();
+  }, [instance, navigate]);
 
   const carregarTimes = async () => {
     try {
@@ -40,7 +73,7 @@ const Times = () => {
       const timesComUrls = data.map((time) => ({
         ...time,
         fotoUrl: `${API_BASE_URL}/times/${time.id}/foto?${Date.now()}`,
-        jogoUrl: `${API_BASE_URL}/times/${time.id}/jogo?${Date.now()}`,
+        jogoUrl: `${API_BASE_URL}/times/${time.id}/jogo? lossless=1${Date.now()}`,
       }));
 
       setTimes(timesComUrls.sort((a, b) => a.id - b.id));
@@ -79,7 +112,7 @@ const Times = () => {
       }
 
       setTimes(times.filter((time) => time.id !== timeId));
-      setSuccessMessage("Time excluído com sucesso!"); // Novo
+      setSuccessMessage("Time excluído com sucesso!");
     } catch (error) {
       console.error("Erro ao deletar time:", error);
       setErroCarregamento(
@@ -147,11 +180,11 @@ const Times = () => {
       );
 
       setTimeEditando(null);
-      setSuccessMessage("Time atualizado com sucesso!"); // Novo
+      setSuccessMessage("Time atualizado com sucesso!");
       return true;
     } catch (error) {
       console.error("Erro ao atualizar time:", error);
-      setErroCarregamento(error.message || "Erro ao atualizar time"); // Novo
+      setErroCarregamento(error.message || "Erro ao atualizar time");
       throw error;
     }
   };
@@ -205,11 +238,11 @@ const Times = () => {
         ].sort((a, b) => a.id - b.id)
       );
 
-      setSuccessMessage("Time criado com sucesso!"); // Novo
+      setSuccessMessage("Time criado com sucesso!");
       return true;
     } catch (error) {
       console.error("Erro ao criar time:", error);
-      setErroCarregamento(error.message || "Erro ao criar time"); // Novo
+      setErroCarregamento(error.message || "Erro ao criar time");
       throw error;
     }
   };
@@ -234,9 +267,8 @@ const Times = () => {
 
   return (
     <div className="w-full min-h-screen bg-fundo">
-      {erroCarregamento && <AlertaErro mensagem={erroCarregamento} />}{" "}
-      {/* Novo */}
-      {successMessage && <AlertaOk mensagem={successMessage} />} {/* Novo */}
+      {erroCarregamento && <AlertaErro mensagem={erroCarregamento} />}
+      {successMessage && <AlertaOk mensagem={successMessage} />}
       <div className="bg-[#010409] h-[104px]">.</div>
       <PageBanner pageName="Escolha seu time!" />
       <div className="bg-fundo w-full flex justify-center items-center overflow-auto scrollbar-hidden">
@@ -251,6 +283,7 @@ const Times = () => {
                 jogo={`${API_BASE_URL}/times/${time.id}/jogo?${Date.now()}`}
                 onDelete={handleDeleteTime}
                 onEditClick={handleEditClick}
+                userRole={userRole} // Pass userRole to CardTime
               />
             ))
           ) : (
@@ -258,7 +291,10 @@ const Times = () => {
               <p className="text-xl mb-4">Nenhum time encontrado</p>
             </div>
           )}
-          <AdicionarTime onAdicionarTime={handleCreateTime} />
+          <AdicionarTime
+            onAdicionarTime={handleCreateTime}
+            userRole={userRole} //passa o tipo de usuario pro componente
+          />
         </div>
       </div>
       {timeEditando && (

@@ -27,7 +27,7 @@ function App() {
           {/* Rotas públicas */}
           <Route path="/" element={<Home />} />
           <Route path="/times" element={<Times />} />
-          <Route path="/times/:timeId/membros" element={<Membros />} />
+          <Route path="/times/:timeId/membros" element={<Membros />}/>
           <Route path="/admins" element={<Admins />} />
           <Route path="/politicas" element={<Politicas />} />
           <Route path="/campeonatos" element={<Campeonatos />} />

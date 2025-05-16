@@ -5,6 +5,10 @@ import AdicionarMembro from "../components/AdicionarMembro";
 import PageBanner from "../components/PageBanner";
 import AlertaErro from "../components/AlertaErro";
 import AlertaOk from "../components/AlertaOk";
+import axios from "axios";
+
+import { useNavigate } from "react-router-dom";
+import { useMsal } from "@azure/msal-react"; // Importar useMsal
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -15,6 +19,11 @@ const Membros = () => {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+
+  const navigate = useNavigate();
+
+  const { instance } = useMsal(); // Obter instance do useMsal
 
 
   const carregarDados = async () => {
@@ -48,7 +57,32 @@ const Membros = () => {
       setCarregando(false);
     }
   };
+// Verifica autenticação e carrega dados do usuário
+useEffect(() => {
+  const loadUserData = async () => {
+    try {
+      const account = instance.getActiveAccount();
+      if (!account) {
+        navigate("/");
+        return;
+      }
 
+      const response = await axios.get(
+        `http://localhost:3000/usuarios/por-email?email=${encodeURIComponent(
+          account.username
+        )}`
+      );
+      const userData = response.data.usuario;
+
+      setUserRole(userData.tipoUsuario);
+    } catch (error) {
+      console.error("Erro ao carregar dados do usuário:", error);
+      navigate("/nao-autorizado");
+    }
+  };
+
+  loadUserData();
+}, [instance, navigate]);
 
   useEffect(() => {
     carregarDados();
@@ -209,11 +243,15 @@ const Membros = () => {
               onDelete={handleDeleteJogador}
               onEdit={handleEditJogador}
               logoTime={time?.logoUrl}
+              userRole={userRole} // Pass userRole to CardTime
+
             />
           ))}
           <AdicionarMembro
             onAdicionarMembro={handleAdicionarMembro}
             timeId={timeId}
+            userRole={userRole} // Pass userRole to CardTime
+
           />
         </div>
       </div>

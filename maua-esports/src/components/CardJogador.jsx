@@ -20,6 +20,7 @@ const CardJogador = ({
   onDelete,
   onEdit,
   logoTime,
+  userRole,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const hasSocialMedia = instagram || twitter || twitch;
@@ -41,6 +42,7 @@ const CardJogador = ({
       onDelete(jogadorId);
     }
   };
+  const isAdmin = userRole === "Administrador" || userRole === "Administrador Geral";
 
   return (
     <>
@@ -97,7 +99,7 @@ const CardJogador = ({
                 </a>
               )}
             </div>
-
+              {isAdmin &&
             <div className="flex space-x-2 mr-4">
               <EditarBtn onClick={() => setIsModalOpen(true)} />
               <DeletarBtn
@@ -106,6 +108,7 @@ const CardJogador = ({
                 tipo="jogador"
               />
             </div>
+}
           </div>
         </div>
       </div>
@@ -144,6 +147,8 @@ CardJogador.propTypes = {
   onDelete: PropTypes.func.isRequired,
   onEdit: PropTypes.func.isRequired,
   logoTime: PropTypes.string,
+  userRole: PropTypes.string, // Add userRole to propTypes
+
 };
 
 export default CardJogador;

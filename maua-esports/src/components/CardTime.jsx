@@ -4,7 +4,7 @@ import EditarBtn from "./EditarBtn";
 import DeletarBtn from "./DeletarBtn";
 import PropTypes from "prop-types";
 
-const CardTime = ({ timeId, nome, foto, jogo, onDelete, onEditClick }) => {
+const CardTime = ({ timeId, nome, foto, jogo, onDelete, onEditClick, userRole }) => {
   const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
   const [jogoError, setJogoError] = useState(false);
@@ -24,6 +24,8 @@ const CardTime = ({ timeId, nome, foto, jogo, onDelete, onEditClick }) => {
   const handleCardClick = () => {
     navigate(`/times/${timeId}/membros`);
   };
+
+  const isAdmin = userRole === "Administrador" || userRole === "Administrador Geral";
 
   return (
     <div className="relative group">
@@ -71,10 +73,12 @@ const CardTime = ({ timeId, nome, foto, jogo, onDelete, onEditClick }) => {
               )}
             </div>
 
-            <div className="flex justify-center space-x-4">
-              <EditarBtn onClick={handleEditClick} />
-              <DeletarBtn onDelete={handleDeleteClick} />
-            </div>
+            {isAdmin && (
+              <div className="flex justify-center space-x-4">
+                <EditarBtn onClick={handleEditClick} />
+                <DeletarBtn onDelete={handleDeleteClick} />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -89,6 +93,7 @@ CardTime.propTypes = {
   jogo: PropTypes.string.isRequired,
   onDelete: PropTypes.func.isRequired,
   onEditClick: PropTypes.func.isRequired,
+  userRole: PropTypes.string, // Add userRole to propTypes
 };
 
 export default CardTime;

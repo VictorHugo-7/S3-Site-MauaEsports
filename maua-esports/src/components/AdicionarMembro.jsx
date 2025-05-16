@@ -3,7 +3,7 @@ import { useState } from "react";
 import ModalAdicionarMembro from "./ModalAdicionarJogador";
 import PropTypes from "prop-types";
 
-const AdicionarMembro = ({ onAdicionarMembro, timeId }) => {
+const AdicionarMembro = ({ onAdicionarMembro, timeId, userRole }) => {
   const [modalAberto, setModalAberto] = useState(false);
 
   const handleAdicionarClick = (e) => {
@@ -20,7 +20,10 @@ const AdicionarMembro = ({ onAdicionarMembro, timeId }) => {
   const handleFecharModal = () => {
     setModalAberto(false);
   };
-
+// Only render if user is Administrador or Administrador Geral
+if (userRole !== "Administrador" && userRole !== "Administrador Geral") {
+  return null;
+}
   return (
     <>
       <div
@@ -46,6 +49,7 @@ const AdicionarMembro = ({ onAdicionarMembro, timeId }) => {
 AdicionarMembro.propTypes = {
   onAdicionarMembro: PropTypes.func.isRequired,
   timeId: PropTypes.string.isRequired,
+  userRole: PropTypes.string, // Add userRole to propTypes
 };
 
 export default AdicionarMembro;
