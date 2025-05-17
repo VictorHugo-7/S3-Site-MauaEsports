@@ -25,6 +25,7 @@ const Agendamento = ({
   status,
   onEditar,
   onExcluir,
+  userRole, // Nova prop adicionada
 }) => {
   const diasDaSemana = [
     "Domingo",
@@ -57,26 +58,29 @@ const Agendamento = ({
           <p className="font-semibold text-white font-blinker">{time}</p>
         </div>
       </div>
-      <div className="flex flex-row justify-center items-center sm:w-1/4 mt-2 sm:mt-0">
-        <button
-          onClick={onEditar}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          className="text-azul-claro text-2xl cursor-pointer mx-2"
-        >
-          <MdEdit
-            className="w-6 h-6"
-            style={{
-              animation: isHovered ? "shake 0.7s ease-in-out" : "none",
-              transformOrigin: "center center",
-            }}
+
+      {userRole !== "Jogador" && ( // Usa a prop userRole diretamente
+        <div className="flex flex-row justify-center items-center sm:w-1/4 mt-2 sm:mt-0">
+          <button
+            onClick={onEditar}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            className="text-azul-claro text-2xl cursor-pointer mx-2"
+          >
+            <MdEdit
+              className="w-6 h-6"
+              style={{
+                animation: isHovered ? "shake 0.7s ease-in-out" : "none",
+                transformOrigin: "center center",
+              }}
+            />
+          </button>
+          <DeletarBtn
+            onDelete={onExcluir}
+            className="text-vermelho-claro text-2xl cursor-pointer mx-2 hover:text-red-500"
           />
-        </button>
-        <DeletarBtn
-          onDelete={onExcluir}
-          className="text-vermelho-claro text-2xl cursor-pointer mx-2 hover:text-red-500"
-        />
-      </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -295,7 +299,7 @@ const TreinosAdmin = () => {
         }
       } catch (error) {
         console.error("Erro ao buscar dados:", error);
-        setHouErro("Erro ao carregar dados dos treinos");
+        setAlertaErro("Erro ao carregar dados dos treinos");
       } finally {
         setCarregando(false);
       }
@@ -678,26 +682,6 @@ const TreinosAdmin = () => {
     );
   }
 
-  // Verificação de permissão
-  if (userRole === "Jogador") {
-    return (
-      <div className="min-h-screen bg-[#0D1117] text-white flex items-center justify-center">
-        <div className="text-center p-6 max-w-md bg-gray-800 rounded-lg border border-gray-700">
-          <h2 className="text-2xl font-bold mb-4">Acesso restrito</h2>
-          <p className="mb-6">
-            Esta página é apenas para capitães e administradores.
-          </p>
-          <Link
-            to="/"
-            className="px-6 py-3 bg-azul-claro rounded-lg hover:bg-azul-escuro transition-colors inline-block"
-          >
-            Voltar para a página inicial
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   if (
     Object.keys(modalidades).length === 0 &&
     !(userRole === "Administrador" || userRole === "Administrador Geral")
@@ -820,14 +804,18 @@ const TreinosAdmin = () => {
       </div>
 
       {/* Botões de Criar */}
-      <div className="flex justify-end mb-4 w-[95%] sm:w-4/5 lg:w-3/4">
-        <button
-          onClick={iniciarCriacao}
-          className="bg-verde-claro text-white px-4 py-2 rounded flex items-center text-sm sm:text-base hover:bg-green-700 mr-2 hover:cursor-pointer"
-        >
-          <MdAdd className="mr-1" /> Criar Treino
-        </button>
-      </div>
+      {userRole && userRole !== "Jogador" && (
+        <div className="flex justify-end mb-4 w-[95%] sm:w-4/5 lg:w-3/4">
+          <button
+            type="button"
+            onClick={iniciarCriacao}
+            className="bg-verde-claro text-white px-4 py-2 rounded flex items-center text-sm sm:text-base hover:bg-green-700 mr-2 hover:cursor-pointer"
+            aria-label="Criar novo treino"
+          >
+            <MdAdd className="mr-1" /> Criar Treino
+          </button>
+        </div>
+      )}
 
       {/* Container principal centralizado */}
       <div className="flex flex-col lg:flex-row w-[95%] sm:w-4/5 lg:w-3/4 h-auto lg:h-[calc(100vh-180px)] gap-4 sm:gap-6 md:gap-8 mb-10">
@@ -838,7 +826,9 @@ const TreinosAdmin = () => {
               <span className="w-1/4">Horário</span>
               <span className="w-1/4">Dia da Semana</span>
               <span className="w-2/4">Time</span>
-              <span className="w-1/4 text-center">Ações</span>
+              {userRole !== "Jogador" && (
+                <span className="w-1/4 text-center">Ações</span>
+              )}
             </div>
             <div className="sm:hidden font-blinker text-base text-branco text-center">
               Lista de Treinos
@@ -1010,6 +1000,7 @@ const TreinosAdmin = () => {
                       time={agendamento.NomeModalidade}
                       onEditar={() => iniciarEdicao(agendamento)}
                       onExcluir={() => excluirTreino(agendamento)}
+                      userRole={userRole} // Passa userRole como prop
                     />
                   )}
                 </div>
