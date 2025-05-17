@@ -1795,6 +1795,95 @@ module.exports = {
   mongoose
 };
 
+///////////////////////////////////////////////////////////////////////// NOVIDADE //////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Modelo da Novidade
+const novidadeSchema = new mongoose.Schema({
+  imagem: { type: Buffer, required: false }, // Armazena a imagem como Buffer
+  imagemType: { type: String, required: false }, // Tipo MIME da imagem
+  titulo: { type: String, required: true },
+  subtitulo: { type: String, required: false },
+  descricao: { type: String, required: true },
+  nomeBotao: { type: String, required: false },
+  urlBotao: { type: String, required: false },
+});
+
+novidadeSchema.plugin(uniqueValidator);
+const Novidade = mongoose.model("Novidade", novidadeSchema);
+
+// Endpoint para buscar a novidade
+app.get("/api/homeNovidade", async (req, res) => {
+  try {
+    const novidade = await Novidade.findOne(); // Busca a primeira novidade
+    if (!novidade) {
+      return res.status(404).json({ message: "Nenhuma novidade encontrada" });
+    }
+
+    // Converte a imagem para base64, se existir
+    const imagemBase64 = novidade.imagem
+      ? `data:${novidade.imagemType};base64,${novidade.imagem.toString("base64")}`
+      : null;
+
+    res.json({
+      ...novidade._doc,
+      imagem: imagemBase64,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao buscar novidade", error });
+  }
+});
+
+// Endpoint para criar ou atualizar a novidade
+app.post("/api/homeNovidade", upload.single("imagem"), async (req, res) => {
+  try {
+    const { titulo, subtitulo, descricao, nomeBotao, urlBotao } = req.body;
+
+    // Validação básica
+    if (!titulo || !descricao) {
+      return res
+        .status(400)
+        .json({ message: "Título e descrição são obrigatórios" });
+    }
+
+    // Verifica se já existe uma novidade
+    let novidade = await Novidade.findOne();
+
+    const novidadeData = {
+      titulo,
+      subtitulo: subtitulo || null,
+      descricao,
+      nomeBotao: nomeBotao || null,
+      urlBotao: urlBotao || null,
+      imagem: req.file ? req.file.buffer : novidade ? novidade.imagem : null,
+      imagemType: req.file ? req.file.mimetype : novidade ? novidade.imagemType : null,
+    };
+
+    if (novidade) {
+      // Atualiza a novidade existente
+      novidade = await Novidade.findOneAndUpdate({}, novidadeData, {
+        new: true,
+      });
+    } else {
+      // Cria uma nova novidade
+      novidade = new Novidade(novidadeData);
+      await novidade.save();
+    }
+
+    // Converte a imagem para base64 para retorno
+    const imagemBase64 = novidade.imagem
+      ? `data:${novidade.imagemType};base64,${novidade.imagem.toString("base64")}`
+      : null;
+
+    res.status(200).json({
+      ...novidade._doc,
+      imagem: imagemBase64,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao salvar novidade", error });
+  }
+});
+
+
 // Só inicia os servidores se NÃO estiver em ambiente de teste
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {

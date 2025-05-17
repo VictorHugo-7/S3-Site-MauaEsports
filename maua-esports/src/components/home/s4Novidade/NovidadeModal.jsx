@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import PropTypes from 'prop-types';
+import PropTypes from "prop-types";
 import { RiImageAddLine, RiCloseFill } from "react-icons/ri";
 import FotoPadrao from "../../../assets/images/Foto.svg";
 import SalvarBtn from "../../SalvarBtn";
@@ -20,16 +20,9 @@ const NovidadeModal = ({ isOpen, onClose, onSave, initialData, erro }) => {
   const [erroLocal, setErroLocal] = useState(erro || "");
 
   useEffect(() => {
-    if (isOpen) {
-      const savedData = localStorage.getItem("novidadeData");
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        setFormData(parsedData);
-        setImagePreview(parsedData.imagem || FotoPadrao);
-      } else if (initialData) {
-        setFormData(initialData);
-        setImagePreview(initialData.imagem || FotoPadrao);
-      }
+    if (isOpen && initialData) {
+      setFormData(initialData);
+      setImagePreview(initialData.imagem || FotoPadrao);
     }
   }, [isOpen, initialData]);
 
@@ -62,7 +55,6 @@ const NovidadeModal = ({ isOpen, onClose, onSave, initialData, erro }) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
-        setFormData((prev) => ({ ...prev, imagem: reader.result }));
       };
       reader.readAsDataURL(file);
     }
@@ -100,16 +92,17 @@ const NovidadeModal = ({ isOpen, onClose, onSave, initialData, erro }) => {
     }
 
     try {
-      const updatedData = {
-        ...formData,
-        imagem: imageFile ? formData.imagem : null,
-        subtitulo: formData.subtitulo.trim() || null,
-        nomeBotao: formData.nomeBotao.trim() || null,
-        urlBotao: formData.urlBotao.trim() || null,
-      };
+      const formDataToSend = new FormData();
+      formDataToSend.append("titulo", formData.titulo);
+      formDataToSend.append("subtitulo", formData.subtitulo.trim() || "");
+      formDataToSend.append("descricao", formData.descricao);
+      formDataToSend.append("nomeBotao", formData.nomeBotao.trim() || "");
+      formDataToSend.append("urlBotao", formData.urlBotao.trim() || "");
+      if (imageFile) {
+        formDataToSend.append("imagem", imageFile);
+      }
 
-      localStorage.setItem("novidadeData", JSON.stringify(updatedData));
-      await onSave(updatedData);
+      await onSave(formDataToSend);
       onClose();
     } catch (error) {
       setErroLocal(error.message || "Erro ao salvar novidade");
