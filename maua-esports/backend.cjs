@@ -151,8 +151,8 @@ const usuarioSchema = new mongoose.Schema({
     unique: true,
     validate: {
       validator: function(v) {
-        // Regex para o formato específico: XX.XXXXX-Y@maua.br
-        const emailRegex = /^[0-9]{2}\.[0-9]{5}-[0-9]{1}@maua\.br$/;
+        // Regex para o formato específico: XX.XXXXX-Y@maua.br OU esports@maua.br
+        const emailRegex = /^([0-9]{2}\.[0-9]{5}-[0-9]{1}|esports)@maua\.br$/;
         return emailRegex.test(v);
       },
       message: props => `${props.value} não é um email válido! O formato deve ser XX.XXXXX-Y@maua.br (ex: 24.00086-8@maua.br)`
