@@ -160,6 +160,7 @@ const usuarioSchema = new mongoose.Schema({
   discordID: {
     type: String,
     required: false,
+    unique: true,
     validate: {
       validator: function (v) {
         if (!v) return true;
@@ -610,7 +611,29 @@ app.get("/jogadores/:id/imagem", async (req, res) => {
     res.set("Content-Type", jogador.foto.contentType);
     res.send(jogador.foto.data);
   } catch (error) {
-    res.status(500).json({ message: "Erro ao recuperar imagem", error });
+    console.error("Erro ao criar jogador:", error);
+
+    // Tratamento de erros específicos (igual ao PUT)
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        message: "Erro de validação",
+        errors: Object.values(error.errors).map((e) => e.message),
+      });
+    }
+
+    if (error.code === 11000) {
+      const campo = Object.keys(error.keyPattern)[0];
+      const valor = error.keyValue[campo];
+      return res.status(400).json({
+        message: `${campo} "${valor}" já está em uso`,
+        campo: campo,
+      });
+    }
+
+    res.status(500).json({ 
+      message: "Erro ao criar jogador",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 });
 
