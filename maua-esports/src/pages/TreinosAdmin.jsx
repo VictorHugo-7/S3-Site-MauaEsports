@@ -678,10 +678,7 @@ const TreinosAdmin = () => {
 
   if (carregando) {
     return (
-      <div className="w-full min-h-screen bg-fundo flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
-        <p className="text-branco ml-4">Carregando dados...</p>
-      </div>
+      <div className="text-white text-center py-8">Carregando dados...</div>
     );
   }
 
@@ -1021,6 +1018,8 @@ const TreinosAdmin = () => {
           <Calendario />
         </div>
       </div>
+
+      <Rodape />
     </div>
   );
 };
