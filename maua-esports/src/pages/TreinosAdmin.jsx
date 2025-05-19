@@ -182,34 +182,45 @@ const TreinosAdmin = () => {
     };
   };
 
-  // Função para determinar a modalidade do usuário
   const determineUserModality = (mods, trainsData) => {
     if (userRole === "Administrador" || userRole === "Administrador Geral") {
       return null; // Admins podem ver tudo
     }
 
-    let userModalityId = null;
-    let captainModalityId = null;
+    const modalityHours = {};
 
-    Object.keys(mods).forEach((modId) => {
-      const modalityTrains = trainsData.filter((t) => t.ModalityId === modId);
+    trainsData.forEach((train) => {
+      if (train.Status !== "ENDED" || !train.AttendedPlayers) return;
 
-      // Verifica se é capitão (pelo nome no título da modalidade)
-      if (userData?.nome && mods[modId].Name.includes(userData.nome)) {
-        captainModalityId = modId;
+      const modalityId = train.ModalityId;
+      if (!mods[modalityId]) return;
+
+      if (!modalityHours[modalityId]) {
+        modalityHours[modalityId] = 0;
       }
 
-      // Verifica se participou de algum treino
-      for (const train of modalityTrains) {
-        if (train.AttendedPlayers?.some((p) => p.PlayerId === discordId)) {
-          userModalityId = modId;
-          break;
-        }
+      const playerAttendance = train.AttendedPlayers.find(
+        (p) => p.PlayerId === discordId
+      );
+
+      if (playerAttendance && playerAttendance.EntranceTimestamp && playerAttendance.ExitTimestamp) {
+        const durationHours =
+          (playerAttendance.ExitTimestamp - playerAttendance.EntranceTimestamp) / (1000 * 60 * 60);
+        modalityHours[modalityId] += durationHours;
       }
     });
 
-    setIsCaptain(!!captainModalityId);
-    return captainModalityId || userModalityId;
+    let maxHours = 0;
+    let userModalityId = null;
+
+    Object.entries(modalityHours).forEach(([modalityId, hours]) => {
+      if (hours > maxHours) {
+        maxHours = hours;
+        userModalityId = modalityId;
+      }
+    });
+
+    return userModalityId;
   };
 
   useEffect(() => {
@@ -232,7 +243,8 @@ const TreinosAdmin = () => {
         // Se não for admin e não tiver modalidade, não mostra nada
         if (
           !(
-            userRole === "Administrador" || userRole === "Administrador Geral"
+            userRole === "Administrador" ||
+            userRole === "Administrador Geral"
           ) &&
           !userModalityId
         ) {
@@ -250,7 +262,8 @@ const TreinosAdmin = () => {
           // Se não for admin, filtra apenas a modalidade do usuário
           if (
             !(
-              userRole === "Administrador" || userRole === "Administrador Geral"
+              userRole === "Administrador" ||
+              userRole === "Administrador Geral"
             ) &&
             modId !== userModalityId
           ) {
@@ -428,13 +441,13 @@ const TreinosAdmin = () => {
       const updatedAgendamentos = agendamentosOriginais.map((a) =>
         a.id === editandoTreino.id
           ? {
-              ...a,
-              inicio: formEdicao.inicio,
-              fim: formEdicao.fim,
-              diaSemana: parseInt(formEdicao.diaSemana),
-              cronInicio: novaCronInicio,
-              cronFim: novaCronFim,
-            }
+            ...a,
+            inicio: formEdicao.inicio,
+            fim: formEdicao.fim,
+            diaSemana: parseInt(formEdicao.diaSemana),
+            cronInicio: novaCronInicio,
+            cronFim: novaCronFim,
+          }
           : a
       );
 
@@ -655,10 +668,9 @@ const TreinosAdmin = () => {
                   setFiltroDataAtivo(true);
                 }}
                 className={`h-6 sm:h-8 text-xs sm:text-sm rounded-full flex items-center justify-center
-                  ${
-                    isSelecionado
-                      ? "bg-azul-claro text-white"
-                      : isHoje
+                  ${isSelecionado
+                    ? "bg-azul-claro text-white"
+                    : isHoje
                       ? "border-2 border-azul-claro text-white"
                       : "hover:bg-fundo/70 text-white"
                   }`}
@@ -722,10 +734,9 @@ const TreinosAdmin = () => {
         <div className="flex flex-col items-center gap-1 sm:gap-2">
           <h3 className="text-white font-bold text-sm sm:text-base text-center">
             {filtroDataAtivo
-              ? `Treinos na ${
-                  diasDaSemana.find((d) => d.value === dataSelecionada.getDay())
-                    ?.label
-                }`
+              ? `Treinos na ${diasDaSemana.find((d) => d.value === dataSelecionada.getDay())
+                ?.label
+              }`
               : "Todos os treinos"}
             {modalidadeSelecionada &&
               ` - ${modalidades[modalidadeSelecionada]?.Name}`}
@@ -782,11 +793,10 @@ const TreinosAdmin = () => {
             </label>
             <button
               onClick={() => setFiltroDataAtivo(!filtroDataAtivo)}
-              className={`px-3 py-1 rounded ${
-                filtroDataAtivo
-                  ? "bg-azul-claro text-white"
-                  : "bg-fundo text-white border border-borda"
-              }`}
+              className={`px-3 py-1 rounded ${filtroDataAtivo
+                ? "bg-azul-claro text-white"
+                : "bg-fundo text-white border border-borda"
+                }`}
             >
               {filtroDataAtivo ? "Ativo" : "Inativo"}
             </button>
@@ -840,15 +850,13 @@ const TreinosAdmin = () => {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 gap-3 sm:gap-4 border-b border-borda">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full">
                   <div className="flex flex-col w-full sm:w-auto">
-                    <label className="text-cinza-claro text-xs sm:text-sm mb-1">
-                      Início
-                    </label>
+                    <label className="text-cinza-claro text-xs sm:text-sm mb-1">Início</label>
                     <input
                       type="time"
                       name="inicio"
                       value={formCriacao.inicio}
                       onChange={(e) => handleFormChange(e, true)}
-                      className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-32"
+                      className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-32 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-100 [color-scheme]:dark"
                     />
                   </div>
 
@@ -859,7 +867,7 @@ const TreinosAdmin = () => {
                       name="fim"
                       value={formCriacao.fim}
                       onChange={(e) => handleFormChange(e, true)}
-                      className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-32"
+                      className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-32 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-100 [color-scheme]:dark"
                     />
                   </div>
 
@@ -928,28 +936,24 @@ const TreinosAdmin = () => {
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 gap-3 sm:gap-4">
                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full">
                         <div className="flex flex-col w-full sm:w-auto">
-                          <label className="text-cinza-claro text-xs sm:text-sm mb-1">
-                            Início
-                          </label>
+                          <label className="text-cinza-claro text-xs sm:text-sm mb-1">Início</label>
                           <input
                             type="time"
                             name="inicio"
                             value={formEdicao.inicio}
                             onChange={handleFormChange}
-                            className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-32"
+                            className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-32 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-100 [color-scheme]:dark"
                           />
                         </div>
 
                         <div className="flex flex-col">
-                          <label className="text-cinza-claro text-sm mb-1">
-                            Fim
-                          </label>
+                          <label className="text-cinza-claro text-sm mb-1">Fim</label>
                           <input
                             type="time"
                             name="fim"
                             value={formEdicao.fim}
                             onChange={handleFormChange}
-                            className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-32"
+                            className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-32 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-100 [color-scheme]:dark"
                           />
                         </div>
 
