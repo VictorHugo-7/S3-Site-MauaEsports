@@ -3,7 +3,9 @@ import axios from "axios";
 import { useMsal } from "@azure/msal-react";
 import { Link, useNavigate } from "react-router-dom";
 import PageBanner from "../components/PageBanner";
-import { FaFileExcel, FaFilePdf } from "react-icons/fa";
+import { FaFileExcel, FaFilePdf, FaCrown, FaUser, FaSync, FaInfoCircle } from "react-icons/fa";
+import { motion, AnimatePresence } from "framer-motion";
+import { HiUserCircle } from "react-icons/hi2";
 
 function HorasPaePage() {
   const [generatingReport, setGeneratingReport] = useState(false);
@@ -19,20 +21,26 @@ function HorasPaePage() {
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
   const [ranks, setRanks] = useState([]);
+  const [hoveredPlayer, setHoveredPlayer] = useState(null);
+  const [imageErrors, setImageErrors] = useState({});
+  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
+
+  const API_BASE_URL = "http://localhost:3000";
 
   const getRankings = async () => {
     try {
-      const response = await axios.get(`http://localhost:3000/rankings`);
+      const response = await axios.get(`${API_BASE_URL}/rankings`);
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar rankings:", error);
       throw error;
     }
   };
+
   const extractRAFromEmail = (email) => {
     if (!email) return '';
     const raPart = email.split('@')[0];
-    return raPart
+    return raPart;
   };
 
   useEffect(() => {
@@ -76,12 +84,10 @@ function HorasPaePage() {
         }
         payload = { team };
       } else if (currentModality?.Name) {
-        payload = { team: [currentModality.Name] }; // Send as array
+        payload = { team: [currentModality.Name] };
       } else {
         throw new Error("Modalidade não selecionada ou inválida");
       }
-
-      console.log("Enviando payload para PDF:", payload);
 
       const response = await axios.post(
         "http://localhost:5000/api/generate-pdf-report",
@@ -142,12 +148,10 @@ function HorasPaePage() {
         }
         payload = { team };
       } else if (currentModality?.Name) {
-        payload = { team: [currentModality.Name] }; // Send as array
+        payload = { team: [currentModality.Name] };
       } else {
         throw new Error("Modalidade não selecionada ou inválida");
       }
-
-      console.log("Enviando payload para Excel:", payload);
 
       const response = await axios.post(
         "http://localhost:5000/api/generate-excel-report",
@@ -203,7 +207,7 @@ function HorasPaePage() {
         }
 
         const response = await axios.get(
-          `http://localhost:3000/usuarios/por-email?email=${encodeURIComponent(
+          `${API_BASE_URL}/usuarios/por-email?email=${encodeURIComponent(
             account.username
           )}`
         );
@@ -240,10 +244,10 @@ function HorasPaePage() {
     let discordToEmailMap = {};
     try {
       const discordIdsParam = Array.from(discordIds).join(',');
-      const response = await axios.get(`http://localhost:3000/usuarios/por-discord-ids?ids=${discordIdsParam}`);
+      const response = await axios.get(`${API_BASE_URL}/usuarios/por-discord-ids?ids=${discordIdsParam}`);
       discordToEmailMap = response.data.reduce((map, user) => {
         if (user.discordID) {
-          map[user.discordID] = user.email;
+          map[user.discordID] = user;
         }
         return map;
       }, {});
@@ -262,15 +266,16 @@ function HorasPaePage() {
         if (userRole === "Jogador" && player.PlayerId !== discordId) return;
 
         const durationHours = (player.ExitTimestamp - player.EntranceTimestamp) / (1000 * 60 * 60);
-        const playerEmail = discordToEmailMap[player.PlayerId] || '';
-        const displayName = playerEmail ? extractRAFromEmail(playerEmail) : player.PlayerId;
+        const userData = discordToEmailMap[player.PlayerId] || {};
+        const displayName = userData.email ? extractRAFromEmail(userData.email) : player.PlayerId;
 
         if (!playerHours[player.PlayerId]) {
           playerHours[player.PlayerId] = {
             name: player.PlayerId,
             discordId: player.PlayerId,
-            email: playerEmail,
+            email: userData.email,
             displayName: displayName,
+            userId: userData._id,
             totalHours: 0,
             teams: {},
           };
@@ -338,9 +343,6 @@ function HorasPaePage() {
         ]);
 
         const mods = modResponse.data;
-        console.log("Modalidades recebidas:", mods);
-
-        // Agora processPlayerHours é async
         const processedPlayers = await processPlayerHours(trainsResponse.data, mods);
 
         setModalidades(mods);
@@ -353,7 +355,6 @@ function HorasPaePage() {
           if (Object.keys(mods).length > 0) {
             setSelectedModalityId(Object.keys(mods)[0]);
           } else {
-            console.warn("Nenhuma modalidade disponível para seleção");
             setSelectedModalityId("all");
           }
         } else {
@@ -375,15 +376,12 @@ function HorasPaePage() {
 
           if (defaultModalityId) {
             setSelectedModalityId(defaultModalityId);
-          } else {
-            console.warn("Nenhuma modalidade associada ao usuário");
           }
         }
 
         setLoading(false);
       } catch (error) {
         console.error("Erro ao buscar dados:", error);
-        alert("Erro ao carregar dados. Tente novamente.");
         setLoading(false);
       }
     };
@@ -407,84 +405,81 @@ function HorasPaePage() {
   const getFillPercentage = (hours) => {
     const rank = getCurrentRank(hours);
     switch (rank) {
-      case 0:
-        return (hours / 10) * 100;
-      case 1:
-        return ((hours - 10) / 5) * 100;
-      case 2:
-        return ((hours - 15) / 10) * 100;
-      case 3:
-        return ((hours - 25) / 10) * 100;
-      case 4:
-        return ((hours - 35) / 15) * 100;
-      case 5:
-        return ((hours - 50) / 10) * 100;
-      case 6:
-        return ((hours - 60) / 10) * 100;
-      case 7:
-        return ((hours - 70) / 10) * 100;
-      case 8:
-        return 100;
-      default:
-        return 0;
+      case 0: return (hours / 10) * 100;
+      case 1: return ((hours - 10) / 5) * 100;
+      case 2: return ((hours - 15) / 10) * 100;
+      case 3: return ((hours - 25) / 10) * 100;
+      case 4: return ((hours - 35) / 15) * 100;
+      case 5: return ((hours - 50) / 10) * 100;
+      case 6: return ((hours - 60) / 10) * 100;
+      case 7: return ((hours - 70) / 10) * 100;
+      case 8: return 100;
+      default: return 0;
     }
   };
 
   const getColor = (rank) => {
     switch (rank) {
-      case 0:
-        return "bg-white";
-      case 1:
-        return "bg-[#5D0F01]";
-      case 2:
-        return "bg-[#7A807D]";
-      case 3:
-        return "bg-[#FCA610]";
-      case 4:
-        return "bg-[#39A0B1]";
-      case 5:
-        return "bg-[#047C21]";
-      case 6:
-        return "bg-[#60409E]";
-      case 7:
-        return "bg-[#C10146]";
-      case 8:
-        return "bg-[#FFC87F]";
-      default:
-        return "bg-gray-700";
+      case 0: return "bg-white";
+      case 1: return "bg-[#5D0F01]";
+      case 2: return "bg-[#7A807D]";
+      case 3: return "bg-[#FCA610]";
+      case 4: return "bg-[#39A0B1]";
+      case 5: return "bg-[#047C21]";
+      case 6: return "bg-[#60409E]";
+      case 7: return "bg-[#C10146]";
+      case 8: return "bg-[#FFC87F]";
+      default: return "bg-gray-700";
     }
   };
 
   const get40hPosition = () => {
-    const rankIndex = 4;
-    const segmentProgress = (40 - 35) / 15;
-    const totalProgress = rankIndex / 8 + segmentProgress / 8;
-    return `${totalProgress * 100}%`;
+    const rankWidth = 100 / 8;
+    const positionInRank = (40 - 35) / 15;
+    const totalPosition = (4 * rankWidth) + (positionInRank * rankWidth);
+    return `${totalPosition}%`;
+  };
+
+  const handleImageError = (userId) => {
+    setImageErrors((prev) => ({ ...prev, [userId]: true }));
+  };
+
+  const handleMouseMove = (e) => {
+    setHoverPosition({ x: e.clientX, y: e.clientY });
   };
 
   if (loading || !authChecked) {
     return (
-      <div className="min-h-screen bg-[#0D1117] text-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
+      <div className="min-h-screen bg-gradient-to-b from-[#0D1117] to-[#161B22] text-white flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="rounded-full h-16 w-16 border-t-4 border-b-4 border-azul-claro"
+        ></motion.div>
       </div>
     );
   }
 
   if (userRole === "Jogador" && !discordId) {
     return (
-      <div className="min-h-screen bg-[#0D1117] text-white flex items-center justify-center">
-        <div className="text-center p-6 max-w-md bg-gray-800 rounded-lg border border-gray-700">
-          <h2 className="text-2xl font-bold mb-4">Ação necessária</h2>
-          <p className="mb-6">
+      <div className="min-h-screen bg-gradient-to-b from-[#0D1117] to-[#161B22] text-white flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center p-8 max-w-md bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 shadow-2xl"
+        >
+          <h2 className="text-2xl font-bold mb-4 text-azul-claro">Ação necessária</h2>
+          <p className="mb-6 text-gray-300">
             Você precisa cadastrar seu Discord ID para visualizar as horas PAE.
           </p>
           <Link
             to="/perfil"
-            className="px-6 py-3 bg-azul-claro rounded-lg hover:bg-azul-escuro transition-colors inline-block"
+            className="px-6 py-3 bg-gradient-to-r from-azul-claro to-azul-escuro rounded-lg hover:opacity-90 transition-all inline-block font-medium shadow-lg"
           >
             Editar Perfil
           </Link>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -495,22 +490,28 @@ function HorasPaePage() {
     userRole !== "Administrador Geral"
   ) {
     return (
-      <div className="min-h-screen bg-[#0D1117] text-white flex items-center justify-center">
-        <div className="text-center p-6 max-w-md bg-gray-800 rounded-lg border border-gray-700">
-          <h2 className="text-2xl font-bold mb-4">
+      <div className="min-h-screen bg-gradient-to-b from-[#0D1117] to-[#161B22] text-white flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center p-8 max-w-md bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 shadow-2xl"
+        >
+          <h2 className="text-2xl font-bold mb-4 text-azul-claro">
             Nenhuma modalidade encontrada
           </h2>
-          <p className="mb-6">
+          <p className="mb-6 text-gray-300">
             Você não está registrado em nenhuma modalidade ou não participou de
             treinos neste semestre.
           </p>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-azul-claro rounded-lg hover:bg-azul-escuro transition-colors"
+            className="px-6 py-3 bg-gradient-to-r from-azul-claro to-azul-escuro rounded-lg font-medium shadow-lg"
           >
             Recarregar
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       </div>
     );
   }
@@ -525,8 +526,8 @@ function HorasPaePage() {
       : modalityPlayers[selectedModalityId] || [];
 
   return (
-    <div className="min-h-screen bg-[#0D1117] text-white">
-      <div className="bg-[#010409] h-[104px]"></div>
+    <div className="min-h-screen bg-gradient-to-b from-[#0D1117] to-[#161B22] text-white" onMouseMove={handleMouseMove}>
+      <div className="bg-gradient-to-r from-[#010409] to-[#0D1117] h-[104px]"></div>
       <PageBanner
         pageName={`Horas PAEs - ${selectedModalityId === "all"
           ? "Todas as Modalidades"
@@ -534,9 +535,9 @@ function HorasPaePage() {
           }`}
       />
 
-      <div className="flex flex-col gap-6 px-6 pb-8 md:px-14 md:py-15">
+      <div className="flex flex-col gap-6 px-4 sm:px-6 pb-8 md:px-8 lg:px-14">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="md:w-[30%]">
+          <div className="w-full md:w-[30%]">
             <label
               htmlFor="modality-select"
               className="block text-sm font-medium text-gray-300 mb-2"
@@ -545,163 +546,246 @@ function HorasPaePage() {
             </label>
             {userRole === "Administrador" ||
               userRole === "Administrador Geral" ? (
-              <select
-                id="modality-select"
-                className="block w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={selectedModalityId}
-                onChange={(e) => setSelectedModalityId(e.target.value)}
-              >
-                <option value="all">Todos</option>
-                {Object.keys(modalidades).map((modId) => (
-                  <option key={modId} value={modId}>
-                    {modalidades[modId].Name}
-                  </option>
-                ))}
-              </select>
+              <motion.div whileHover={{ scale: 1.01 }}>
+                <select
+                  id="modality-select"
+                  className="block w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-azul-claro focus:border-azul-claro transition-all shadow-md"
+                  value={selectedModalityId}
+                  onChange={(e) => setSelectedModalityId(e.target.value)}
+                >
+                  <option value="all">Todos</option>
+                  {Object.keys(modalidades).map((modId) => (
+                    <option key={modId} value={modId}>
+                      {modalidades[modId].Name}
+                    </option>
+                  ))}
+                </select>
+              </motion.div>
             ) : (
               <input
                 type="text"
-                className="block w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white cursor-not-allowed"
+                className="block w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white cursor-not-allowed shadow-md"
                 value={currentModality.Name || ""}
                 readOnly
               />
             )}
           </div>
-          {userRole === "Administrador" ||
+          {(userRole === "Administrador" ||
             userRole === "Administrador Geral" ||
-            userRole === "Capitão de Time" ? (
-            <div className="flex gap-4">
-              <button
-                onClick={generateExcel}
-                disabled={generatingReport}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
+            userRole === "Capitão de Time") && (
+              <motion.div
+                className="flex gap-2 sm:gap-4 flex-wrap"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
               >
-                <FaFileExcel /> Exportar Excel
-              </button>
-              <button
-                onClick={generatePDF}
-                disabled={generatingReport}
-                className="flex items-center gap-2 bg-red-600 hover:bg-red-900 text-white font-bold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
-              >
-                <FaFilePdf /> Exportar PDF
-              </button>
-            </div>
-          ) : null}
+                <motion.button
+                  whileHover={{ scale: 1.05, boxShadow: "0 0 15px rgba(16, 185, 129, 0.5)" }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={generateExcel}
+                  disabled={generatingReport}
+                  className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 text-white font-bold py-2 px-3 sm:py-3 sm:px-5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer shadow-lg text-sm sm:text-base"
+                >
+                  {generatingReport ? (
+                    <FaSync className="animate-spin" />
+                  ) : (
+                    <>
+                      <FaFileExcel className="text-xl" /> Exportar Excel
+                    </>
+                  )}
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05, boxShadow: "0 0 15px rgba(220, 38, 38, 0.5)" }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={generatePDF}
+                  disabled={generatingReport}
+                  className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-800 text-white font-bold py-2 px-3 sm:py-3 sm:px-5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer shadow-lg text-sm sm:text-base"
+                >
+                  {generatingReport ? (
+                    <FaSync className="animate-spin" />
+                  ) : (
+                    <>
+                      <FaFilePdf className="text-xl" /> Exportar PDF
+                    </>
+                  )}
+                </motion.button>
+              </motion.div>
+            )}
         </div>
 
-        <main className="xl:col-span-9">
-          <div className="w-full bg-gray-800 border-2 border-gray-700 rounded-[30px] shadow-lg p-6 overflow-x-auto">
-            <div className="flex mb-4 min-w-[800px]">
-              <div className="w-24 md:w-32"></div>
-              <div className="flex-1 grid grid-cols-8 gap-1">
-                {ranks.map((rank) => (
-                  <div key={rank._id} className="flex flex-col items-center">
+        <main className="w-full overflow-x-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="w-full min-w-[800px] bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-gray-700 rounded-2xl shadow-2xl p-4 sm:p-6"
+          >
+            <div className="flex mb-4">
+              <div className="w-48"></div>
+              <div className="flex-1 grid grid-cols-8 gap-1 relative">
+                {ranks.map((rank, index) => (
+                  <motion.div
+                    key={rank._id}
+                    className="flex flex-col items-center"
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
                     <img
                       src={`data:${rank.imageType};base64,${rank.imageData}`}
                       alt={rank.name}
                       className="w-16 h-16 md:w-20 md:h-20 object-contain mb-1"
                     />
-                  </div>
+                  </motion.div>
                 ))}
+
+                {/* 40h Marker */}
+                <div
+                  className="absolute bottom-0 flex flex-col items-center z-10"
+                  style={{ left: get40hPosition() }}
+                >
+                  <div className="relative">
+                    <div className="absolute -bottom-5 w-3 h-3 bg-azul-claro rounded-full shadow-lg animate-pulse"></div>
+                    <div className="absolute -bottom-5 w-3 h-3 bg-azul-claro rounded-full opacity-75 animate-ping"></div>
+                  </div>
+                  <div className="absolute -right-2 -bottom-4 text-azul-claro text-xs font-bold whitespace-nowrap bg-gray-900 px-2 py-1 rounded-md border border-azul-claro/30 shadow-lg">
+                    40h
+                  </div>
+                  <div className="absolute bottom-12 w-0.5 h-full bg-gradient-to-t from-azul-claro/70 via-azul-claro/30 to-transparent"></div>
+                </div>
               </div>
             </div>
 
             {allPlayers.length > 0 ? (
-              allPlayers.map((player, index) => {
-                const currentRank = getCurrentRank(player.totalHours);
-                const fillPercentage = getFillPercentage(player.totalHours);
-                const roundedHours = Math.round(player.totalHours * 10) / 10;
+              <motion.div layout className="space-y-4">
+                <AnimatePresence>
+                  {allPlayers.map((player, index) => {
+                    const currentRank = getCurrentRank(player.totalHours);
+                    const fillPercentage = getFillPercentage(player.totalHours);
+                    const roundedHours = Math.round(player.totalHours * 10) / 10;
+                    const isCurrentUser = player.discordId === discordId;
 
-                return (
-                  <div
-                    key={`${player.name}-${index}`}
-                    className="flex items-center mb-4 min-w-[800px]"
-                  >
-                    <div className="w-24 md:w-32 font-semibold truncate">
-                      {player.displayName}
-                      <div className="text-xs text-gray-400 mt-1">
-                        {player.mainTeam?.name || "Sem time principal"}
-                      </div>
-                    </div>
-
-                    <div className="flex-1 grid grid-cols-8 gap-1 relative">
-                      <div
-                        className="absolute top-0 bottom-0 w-0.5 bg-yellow-300 z-10"
-                        style={{
-                          left: `calc(${get40hPosition()} + 4px)`,
-                          boxShadow: "0 0 5px 1px rgba(255, 255, 0, 0.7)",
-                        }}
-                      ></div>
-                      <div
-                        className="absolute -top-6 text-yellow-300 text-xs font-bold whitespace-nowrap"
-                        style={{ left: `calc(${get40hPosition()} - 20px)` }}
+                    return (
+                      <motion.div
+                        key={`${player.userId || player.discordId}-${index}`}
+                        layout
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, x: -100 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        className={`flex items-center mb-4 p-2 rounded-lg ${isCurrentUser
+                          ? "bg-gradient-to-r from-blue-900/30 to-blue-800/30 border border-blue-700/50"
+                          : "hover:bg-gray-700/50"
+                          }`}
+                        onMouseEnter={() => setHoveredPlayer(player)}
+                        onMouseLeave={() => setHoveredPlayer(null)}
                       >
-                        40h
-                      </div>
-
-                      {ranks.map((_, rankIndex) => {
-                        const rankNum = rankIndex + 1;
-                        const isActive = rankNum === currentRank + 1;
-                        const isCompleted = rankNum <= currentRank;
-                        const isEmpty = currentRank === -1;
-
-                        let color = isEmpty
-                          ? "bg-gray-700"
-                          : isCompleted
-                            ? getColor(currentRank)
-                            : isActive
-                              ? getColor(currentRank)
-                              : "bg-gray-700";
-
-                        const fill = isActive
-                          ? fillPercentage
-                          : isCompleted
-                            ? 100
-                            : 0;
-
-                        return (
-                          <div key={rankIndex} className="relative h-10">
-                            <div
-                              className="absolute inset-0 bg-gray-700"
-                              style={{
-                                clipPath:
-                                  "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)",
-                              }}
-                            >
-                              <div
-                                className={`absolute inset-0 ${color}`}
-                                style={{ width: `${fill}%` }}
-                              ></div>
-                            </div>
-                            {rankNum === 8 && (
-                              <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-white">
-                                {roundedHours}h
+                        <div className="w-48 flex items-center gap-3">
+                          <div className="relative">
+                            {player.userId && !imageErrors[player.userId] ? (
+                              <img
+                                src={`${API_BASE_URL}/usuarios/${player.userId}/foto?t=${Date.now()}`}
+                                alt={`Foto de ${player.displayName}`}
+                                className="w-10 h-10 rounded-full object-cover border-2 border-gray-600"
+                                onError={() => handleImageError(player.userId)}
+                              />
+                            ) : (
+                              <HiUserCircle className="w-10 h-10 text-gray-400" />
+                            )}
+                            {index === 0 && (
+                              <div className="absolute -top-2 -right-2 bg-yellow-500 rounded-full p-1 shadow-lg">
+                                <FaCrown className="text-xs text-yellow-900" />
                               </div>
                             )}
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })
+                          <div className="min-w-0">
+                            <div className="font-semibold truncate">
+                              {player.displayName}
+                              {isCurrentUser && (
+                                <span className="ml-1 text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">
+                                  Você
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-gray-400 truncate">
+                              {player.mainTeam?.name || "Sem time principal"}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex-1 grid grid-cols-8 gap-1 relative h-12">
+                          {ranks.map((_, rankIndex) => {
+                            const rankNum = rankIndex + 1;
+                            const isActive = rankNum === currentRank + 1;
+                            const isCompleted = rankNum <= currentRank;
+                            const isEmpty = currentRank === -1;
+
+                            let color = isEmpty
+                              ? "bg-gray-700"
+                              : isCompleted
+                                ? getColor(currentRank)
+                                : isActive
+                                  ? getColor(currentRank)
+                                  : "bg-gray-700";
+
+                            const fill = isActive
+                              ? fillPercentage
+                              : isCompleted
+                                ? 100
+                                : 0;
+
+                            return (
+                              <div key={rankIndex} className="relative h-full">
+                                <div
+                                  className="absolute inset-0 bg-gray-700"
+                                  style={{
+                                    clipPath:
+                                      "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)",
+                                  }}
+                                >
+                                  <div
+                                    className={`absolute inset-0 ${color}`}
+                                    style={{ width: `${fill}%` }}
+                                  ></div>
+                                </div>
+                                {rankNum === 8 && (
+                                  <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-white">
+                                    {roundedHours}h
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </motion.div>
             ) : (
-              <div className="text-center py-8 text-gray-400">
-                {userRole === "Jogador"
-                  ? "Você não possui horas registradas neste semestre."
-                  : "Nenhum dado de jogadores encontrado para esta modalidade."}
-              </div>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-12 text-gray-400"
+              >
+                <FaInfoCircle className="mx-auto text-4xl mb-4 text-azul-claro" />
+                <p className="text-lg">
+                  {userRole === "Jogador"
+                    ? "Você não possui horas registradas neste semestre."
+                    : "Nenhum dado de jogadores encontrado para esta modalidade."}
+                </p>
+              </motion.div>
             )}
 
-            <div className="mt-8 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-2 mt-8"
+            >
               {[
                 { range: "1-9h", color: "bg-white", name: "Iniciante" },
                 { range: "10-14h", color: "bg-[#5D0F01]", name: "Novato" },
-                {
-                  range: "15-24h",
-                  color: "bg-[#7A807D]",
-                  name: "Intermediário",
-                },
+                { range: "15-24h", color: "bg-[#7A807D]", name: "Intermediário" },
                 { range: "25-34h", color: "bg-[#FCA610]", name: "Avançado" },
                 { range: "35-49h", color: "bg-[#39A0B1]", name: "Experiente" },
                 { range: "50-59h", color: "bg-[#047C21]", name: "Veterano" },
@@ -709,21 +793,61 @@ function HorasPaePage() {
                 { range: "70-79h", color: "bg-[#C10146]", name: "Mestre" },
                 { range: "80h+", color: "bg-[#FFC87F]", name: "Lenda" },
               ].map((item, idx) => (
-                <div key={idx} className="flex items-center">
+                <motion.div
+                  key={idx}
+                  className="flex items-center bg-gray-800/50 p-2 rounded-lg border border-gray-700 hover:bg-gray-700/50 transition-colors"
+                  whileHover={{ y: -3 }}
+                >
                   <div
-                    className={`w-5 h-5 mr-2 ${item.color}`}
+                    className={`w-4 h-4 mr-2 ${item.color} rounded-sm`}
                     style={{
                       clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)",
                     }}
                   ></div>
-                  <span className="text-sm">
-                    {item.range} - {item.name}
-                  </span>
-                </div>
+                  <div className="flex flex-col">
+                    <div className="text-xs font-medium whitespace-nowrap">{item.name}</div>
+                    <div className="text-[10px] text-gray-400 whitespace-nowrap">{item.range}</div>
+                  </div>
+                </motion.div>
               ))}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </main>
+
+        {hoveredPlayer && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-2xl z-50 max-w-md pointer-events-none"
+            style={{
+              left: `${hoverPosition.x + 20}px`,
+              top: `${hoverPosition.y + 20}px`,
+            }}
+          >
+            <div className="flex items-center mb-2">
+              {hoveredPlayer.userId && !imageErrors[hoveredPlayer.userId] ? (
+                <img
+                  src={`${API_BASE_URL}/usuarios/${hoveredPlayer.userId}/foto?t=${Date.now()}`}
+                  alt={`Foto de ${hoveredPlayer.displayName}`}
+                  className="w-8 h-8 rounded-full mr-2 object-cover"
+                  onError={() => handleImageError(hoveredPlayer.userId)}
+                />
+              ) : (
+                <HiUserCircle className="w-8 h-8 text-gray-400 mr-2" />
+              )}
+              <h3 className="font-bold">{hoveredPlayer.displayName}</h3>
+            </div>
+            <div className="text-sm text-gray-300 mb-1">
+              <span className="font-medium">Horas totais:</span>{" "}
+              {Math.round(hoveredPlayer.totalHours * 10) / 10}h
+            </div>
+            <div className="text-sm text-gray-300">
+              <span className="font-medium">Time principal:</span>{" "}
+              {hoveredPlayer.mainTeam?.name || "Não definido"}
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );
