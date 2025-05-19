@@ -173,3 +173,11 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
+
+.white-time-picker::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 1;
+}
+.white-time-picker {
+  color-scheme: dark;
+}
