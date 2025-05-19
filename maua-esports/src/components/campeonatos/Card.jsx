@@ -1,3 +1,4 @@
+import React, { useState } from "react"; // Adicione o useState aqui
 import PropTypes from "prop-types";
 import EditarBtn from "../EditarBtn";
 import DeletarBtn from "../DeletarBtn";
@@ -28,6 +29,33 @@ const Card = ({
     gameIconUrl,
     organizerImageUrl,
   } = data;
+
+  // Estados para o tooltip
+  const [showTooltip, setShowTooltip] = useState({ desc: false, perf: false });
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const MAX_CHARS = 130;
+
+  // Função para truncar texto
+  const truncateText = (text) => {
+    if (!text) return "";
+    return text.length > MAX_CHARS
+      ? `${text.substring(0, MAX_CHARS)}...`
+      : text;
+  };
+
+  // Manipulador de movimento do mouse para tooltip
+  const handleMouseMove = (e, type) => {
+    setTooltipPosition({
+      x: e.clientX,
+      y: e.clientY,
+    });
+    if (type === 'desc' && description && description.length > MAX_CHARS) {
+      setShowTooltip({ ...showTooltip, desc: true });
+    }
+    if (type === 'perf' && performanceDescription && performanceDescription.length > MAX_CHARS) {
+      setShowTooltip({ ...showTooltip, perf: true });
+    }
+  };
 
   const handleDragStart = (e) => {
     if (!isDraggable) {
@@ -60,9 +88,8 @@ const Card = ({
 
   return (
     <div
-      className={`bg-[#0D1117] text-white overflow-hidden h-full flex flex-col border border-gray-700 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-200 ${
-        isDraggable ? "cursor-move" : "cursor-default"
-      }`}
+      className={`bg-[#0D1117] text-white overflow-hidden h-full flex flex-col border border-gray-700 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-200 ${isDraggable ? "cursor-move" : "cursor-default"
+        }`}
       draggable={isDraggable}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
@@ -159,7 +186,13 @@ const Card = ({
               </svg>
               <span className="text-gray-300">
                 Descrição:{" "}
-                <span className="text-white font-medium">{description}</span>
+                <span
+                  className="text-white font-medium"
+                  onMouseEnter={(e) => handleMouseMove(e, 'desc')}
+                  onMouseLeave={() => setShowTooltip({ ...showTooltip, desc: false })}
+                >
+                  {truncateText(description)}
+                </span>
               </span>
             </div>
           )}
@@ -246,7 +279,7 @@ const Card = ({
                     src={iconeTrofeu}
                     alt="Ícone de troféu"
                   />
-                  <span className="text-blue-400 font-medium text-sm">
+                  <span className="text-blue-400 font-medium font-medium">
                     {teamPosition}
                   </span>
                 </div>
@@ -266,8 +299,12 @@ const Card = ({
                         clipRule="evenodd"
                       />
                     </svg>
-                    <p className="text-gray-300 text-sm">
-                      {performanceDescription}
+                    <p
+                      className="text-gray-300 font-medium"
+                      onMouseEnter={(e) => handleMouseMove(e, 'perf')}
+                      onMouseLeave={() => setShowTooltip({ ...showTooltip, perf: false })}
+                    >
+                      {truncateText(performanceDescription)}
                     </p>
                   </div>
                 </div>
@@ -312,6 +349,17 @@ const Card = ({
             >
               Inscrever-se
             </a>
+          )}
+          {(showTooltip.desc || showTooltip.perf) && (
+            <div
+              className="fixed bg-black text-white p-2 rounded text-sm max-w-xs z-50 pointer-events-none"
+              style={{
+                left: `${tooltipPosition.x + 10}px`,
+                top: `${tooltipPosition.y + 10}px`,
+              }}
+            >
+              {showTooltip.desc ? description : performanceDescription}
+            </div>
           )}
         </div>
       </div>

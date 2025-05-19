@@ -219,7 +219,7 @@ app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
       email,
       ...(discordID && { discordID }),
       tipoUsuario: tipoUsuario?.trim() || "Jogador",
-      ...(time && { time }), // Adiciona time se existir
+      ...(time && { time }), 
       ...(req.file && {
         fotoPerfil: {
           data: req.file.buffer,
@@ -239,16 +239,16 @@ app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
         email: novoUsuario.email,
         ...(novoUsuario.discordID && { discordID: novoUsuario.discordID }),
         tipoUsuario: novoUsuario.tipoUsuario,
-        ...(novoUsuario.time && { time: novoUsuario.time }), // Inclui time se existir
+        ...(novoUsuario.time && { time: novoUsuario.time }), 
         createdAt: novoUsuario.createdAt,
       },
       message: "Usuário criado com sucesso",
     });
-  } // Adicione no bloco catch da rota POST /usuarios
+  } 
   catch (error) {
     console.error("Erro ao criar usuário:", error);
 
-    // Captura erros de validação do Mongoose (incluindo unique)
+ 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
       return res.status(400).json({ success: false, message: messages.join(', ') });
@@ -300,7 +300,43 @@ app.get("/usuarios/verificar-email", async (req, res) => {
     });
   }
 });
+app.get('/usuarios/por-discord-ids', async (req, res) => {
+  try {
+    // Recebe os IDs como query parameter (ex: ?ids=123,456,789)
+    const idsString = req.query.ids;
+    
+    if (!idsString) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Parâmetro 'ids' é obrigatório" 
+      });
+    }
 
+    // Converte a string de IDs para array
+    const discordIds = idsString.split(',');
+    
+    // Verifica se há IDs válidos
+    if (!discordIds.length || discordIds.some(id => !id.trim())) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Lista de Discord IDs inválida" 
+      });
+    }
+
+    const usuarios = await Usuario.find({ 
+      discordID: { $in: discordIds } 
+    }).select('email discordID');
+
+    res.status(200).json(usuarios);
+  } catch (error) {
+    console.error("Erro ao buscar usuários por Discord IDs:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Erro ao buscar usuários",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
 // GET - Buscar usuário por email
 app.get("/usuarios/por-email", async (req, res) => {
   try {

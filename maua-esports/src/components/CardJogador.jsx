@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react"; // Adicione useRef aqui
 import { FaInstagram } from "react-icons/fa";
 import { RiTwitterXFill } from "react-icons/ri";
 import { IoLogoTwitch } from "react-icons/io";
@@ -24,10 +24,24 @@ const CardJogador = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [isTruncated, setIsTruncated] = useState(false);
+  const descRef = useRef(null);
+  const MAX_CHARACTERS = 85; // Número de caracteres antes de truncar
+
   const hasSocialMedia = instagram || twitter || twitch;
   const isAdmin = ["Administrador", "Administrador Geral"].includes(userRole);
-  const defaultFoto = "/path/to/default-player.jpg"; // Substitua pelo caminho real
-  const defaultLogo = "/path/to/default-logo.png"; // Substitua pelo caminho real
+  const defaultFoto = "/path/to/default-player.jpg";
+  const defaultLogo = "/path/to/default-logo.png";
+
+  useEffect(() => {
+    if (descricao && descricao.length > MAX_CHARACTERS) {
+      setIsTruncated(true);
+    } else {
+      setIsTruncated(false);
+    }
+  }, [descricao]);
 
   const normalizeSocialLink = (link, platform) => {
     if (!link) return null;
@@ -42,6 +56,13 @@ const CardJogador = ({
       default:
         return link;
     }
+  };
+  // Função segura para truncar o texto
+  const truncateText = (text) => {
+    if (!text) return ""; // Se text for undefined/null, retorna string vazia
+    return text.length > MAX_CHARACTERS
+      ? `${text.substring(0, MAX_CHARACTERS)}...`
+      : text;
   };
 
   const handleEdit = async (updatedData) => {
@@ -67,6 +88,15 @@ const CardJogador = ({
       setError(err.message || "Erro ao deletar jogador");
     }
   };
+
+  const handleMouseMove = (e) => {
+    setTooltipPosition({
+      x: e.clientX,
+      y: e.clientY,
+    });
+  };
+
+
 
   return (
     <>
@@ -107,8 +137,14 @@ const CardJogador = ({
           </div>
 
           <div className="w-full border-b-2 py-2 border-borda">
-            <p className="text-sm text-left mt-2 ml-4 font-blinker w-full text-fonte-escura">
-              {descricao}
+            <p
+              ref={descRef}
+              className="text-sm text-left mt-2 ml-4 font-blinker w-full text-fonte-escura"
+              onMouseEnter={() => descricao && descricao.length > MAX_CHARACTERS && setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+              onMouseMove={handleMouseMove}
+            >
+              {truncateText(descricao)}
             </p>
           </div>
 
@@ -201,6 +237,18 @@ const CardJogador = ({
               Cancelar
             </button>
           </div>
+        </div>
+      )}
+
+      {showTooltip && (
+        <div
+          className="fixed bg-black text-white p-2 rounded text-sm max-w-xs z-50 pointer-events-none"
+          style={{
+            left: `${tooltipPosition.x + 10}px`,
+            top: `${tooltipPosition.y + 10}px`,
+          }}
+        >
+          {descricao}
         </div>
       )}
     </>

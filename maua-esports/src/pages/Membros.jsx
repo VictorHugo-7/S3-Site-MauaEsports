@@ -51,8 +51,8 @@ const Membros = () => {
         error.response
           ? error.response.data.message || "Erro ao carregar dados"
           : error.message.includes("Network Error")
-          ? "Servidor não responde. Verifique sua conexão ou tente novamente."
-          : error.message
+            ? "Servidor não responde. Verifique sua conexão ou tente novamente."
+            : error.message
       );
     } finally {
       setCarregando(false);
@@ -130,19 +130,19 @@ const Membros = () => {
         prev.map((jogador) =>
           jogador._id === jogadorId
             ? {
-                ...jogador,
-                nome: response.data.nome,
-                titulo: response.data.titulo,
-                descricao: response.data.descricao,
-                insta: response.data.insta,
-                twitter: response.data.twitter,
-                twitch: response.data.twitch,
-                fotoUrl: `${API_BASE_URL}/jogadores/${response.data._id}/imagem?${Date.now()}`,
-              }
+              ...jogador,
+              nome: response.data.nome,
+              titulo: response.data.titulo,
+              descricao: response.data.descricao,
+              insta: response.data.insta,
+              twitter: response.data.twitter,
+              twitch: response.data.twitch,
+              fotoUrl: `${API_BASE_URL}/jogadores/${response.data._id}/imagem?${Date.now()}`,
+            }
             : jogador
         )
       );
-
+      carregarDados();
       setSuccessMessage("Jogador atualizado com sucesso!");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
@@ -182,6 +182,7 @@ const Membros = () => {
         },
       ]);
 
+      carregarDados();
       setSuccessMessage("Jogador adicionado com sucesso!");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
