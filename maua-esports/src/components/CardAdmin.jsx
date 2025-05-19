@@ -24,6 +24,24 @@ const CardAdmin = ({
   const hasSocialMedia = instagram || twitter || twitch;
   const isAdmin = ["Administrador", "Administrador Geral"].includes(userRole);
   const defaultFoto = "/path/to/default-admin.jpg"; // Substitua pelo caminho real
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const MAX_DESC_CHARS = 85;
+
+  const truncateText = (text) => {
+    if (!text) return "";
+    return text.length > MAX_DESC_CHARS
+      ? `${text.substring(0, MAX_DESC_CHARS)}...`
+      : text;
+  };
+
+  const handleMouseMove = (e) => {
+    setTooltipPosition({
+      x: e.clientX,
+      y: e.clientY,
+    });
+  };
+
 
   const normalizeSocialLink = (link, platform) => {
     if (!link) return null;
@@ -86,8 +104,13 @@ const CardAdmin = ({
           </div>
 
           <div className="w-full border-b-2 py-2 border-borda">
-            <p className="text-sm text-left mt-2 ml-4 font-blinker w-full text-fonte-escura">
-              {descricao}
+            <p
+              className="text-sm text-left mt-2 ml-4 font-blinker w-full text-fonte-escura"
+              onMouseEnter={() => descricao && descricao.length > MAX_DESC_CHARS && setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+              onMouseMove={handleMouseMove}
+            >
+              {truncateText(descricao)}
             </p>
           </div>
 
@@ -162,6 +185,18 @@ const CardAdmin = ({
               Cancelar
             </button>
           </div>
+        </div>
+      )}
+      {/* Adicione o tooltip no final do componente */}
+      {showTooltip && (
+        <div
+          className="fixed bg-black text-white p-2 rounded text-sm max-w-xs z-50 pointer-events-none"
+          style={{
+            left: `${tooltipPosition.x + 10}px`,
+            top: `${tooltipPosition.y + 10}px`,
+          }}
+        >
+          {descricao}
         </div>
       )}
     </>

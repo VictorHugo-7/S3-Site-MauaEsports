@@ -163,7 +163,7 @@ const Admins = () => {
             : admin
         )
       );
-
+      carregarAdmins();
       setAdminEditando(null);
       setSuccessMessage("Administrador atualizado com sucesso!");
       setTimeout(() => setSuccessMessage(null), 3000);
@@ -201,7 +201,7 @@ const Admins = () => {
             : null,
         },
       ]);
-
+      carregarAdmins();
       setSuccessMessage("Administrador criado com sucesso!");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {

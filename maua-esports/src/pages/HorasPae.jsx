@@ -29,6 +29,11 @@ function HorasPaePage() {
       throw error;
     }
   };
+  const extractRAFromEmail = (email) => {
+    if (!email) return '';
+    const raPart = email.split('@')[0];
+    return raPart
+  };
 
   useEffect(() => {
     const fetchRanks = async () => {
@@ -106,10 +111,9 @@ function HorasPaePage() {
       link.href = url;
       link.setAttribute(
         "download",
-        `relatorio_pae_${
-          selectedModalityId === "all"
-            ? "todas_modalidades"
-            : currentModality.Name
+        `relatorio_pae_${selectedModalityId === "all"
+          ? "todas_modalidades"
+          : currentModality.Name
         }_${getCurrentSemester()}.pdf`
       );
       document.body.appendChild(link);
@@ -173,10 +177,9 @@ function HorasPaePage() {
       link.href = url;
       link.setAttribute(
         "download",
-        `relatorio_pae_${
-          selectedModalityId === "all"
-            ? "todas_modalidades"
-            : currentModality.Name
+        `relatorio_pae_${selectedModalityId === "all"
+          ? "todas_modalidades"
+          : currentModality.Name
         }_${getCurrentSemester()}.xlsx`
       );
       document.body.appendChild(link);
@@ -219,36 +222,55 @@ function HorasPaePage() {
     loadUserData();
   }, [instance, navigate]);
 
-  const processPlayerHours = (trainsData, modalities) => {
+  const processPlayerHours = async (trainsData, modalities) => {
     const playerHours = {};
     const semesterStart = getCurrentSemesterStart();
 
+    const discordIds = new Set();
+    trainsData.forEach(train => {
+      if (train.Status === "ENDED" && train.AttendedPlayers && train.StartTimestamp >= semesterStart) {
+        train.AttendedPlayers.forEach(player => {
+          if (player.PlayerId) {
+            discordIds.add(player.PlayerId);
+          }
+        });
+      }
+    });
+
+    let discordToEmailMap = {};
+    try {
+      const discordIdsParam = Array.from(discordIds).join(',');
+      const response = await axios.get(`http://localhost:3000/usuarios/por-discord-ids?ids=${discordIdsParam}`);
+      discordToEmailMap = response.data.reduce((map, user) => {
+        if (user.discordID) {
+          map[user.discordID] = user.email;
+        }
+        return map;
+      }, {});
+    } catch (error) {
+      console.error("Erro ao buscar emails:", error);
+    }
+
     trainsData.forEach((train) => {
-      if (
-        train.Status !== "ENDED" ||
-        !train.AttendedPlayers ||
-        train.StartTimestamp < semesterStart
-      )
-        return;
+      if (train.Status !== "ENDED" || !train.AttendedPlayers || train.StartTimestamp < semesterStart) return;
 
       const modality = modalities[train.ModalityId];
       if (!modality) return;
 
       train.AttendedPlayers.forEach((player) => {
-        if (
-          !player.PlayerId ||
-          !player.EntranceTimestamp ||
-          !player.ExitTimestamp
-        )
-          return;
+        if (!player.PlayerId || !player.EntranceTimestamp || !player.ExitTimestamp) return;
         if (userRole === "Jogador" && player.PlayerId !== discordId) return;
 
-        const durationHours =
-          (player.ExitTimestamp - player.EntranceTimestamp) / (1000 * 60 * 60);
+        const durationHours = (player.ExitTimestamp - player.EntranceTimestamp) / (1000 * 60 * 60);
+        const playerEmail = discordToEmailMap[player.PlayerId] || '';
+        const displayName = playerEmail ? extractRAFromEmail(playerEmail) : player.PlayerId;
 
         if (!playerHours[player.PlayerId]) {
           playerHours[player.PlayerId] = {
             name: player.PlayerId,
+            discordId: player.PlayerId,
+            email: playerEmail,
+            displayName: displayName,
             totalHours: 0,
             teams: {},
           };
@@ -261,8 +283,7 @@ function HorasPaePage() {
           };
         }
 
-        playerHours[player.PlayerId].teams[train.ModalityId].hours +=
-          durationHours;
+        playerHours[player.PlayerId].teams[train.ModalityId].hours += durationHours;
         playerHours[player.PlayerId].totalHours += durationHours;
       });
     });
@@ -319,7 +340,8 @@ function HorasPaePage() {
         const mods = modResponse.data;
         console.log("Modalidades recebidas:", mods);
 
-        const processedPlayers = processPlayerHours(trainsResponse.data, mods);
+        // Agora processPlayerHours é async
+        const processedPlayers = await processPlayerHours(trainsResponse.data, mods);
 
         setModalidades(mods);
         setModalityPlayers(processedPlayers);
@@ -498,19 +520,18 @@ function HorasPaePage() {
   const allPlayers =
     selectedModalityId === "all"
       ? Object.values(modalityPlayers)
-          .flat()
-          .sort((a, b) => b.totalHours - a.totalHours)
+        .flat()
+        .sort((a, b) => b.totalHours - a.totalHours)
       : modalityPlayers[selectedModalityId] || [];
 
   return (
     <div className="min-h-screen bg-[#0D1117] text-white">
       <div className="bg-[#010409] h-[104px]"></div>
       <PageBanner
-        pageName={`Horas PAEs - ${
-          selectedModalityId === "all"
-            ? "Todas as Modalidades"
-            : currentModality.Name || ""
-        }`}
+        pageName={`Horas PAEs - ${selectedModalityId === "all"
+          ? "Todas as Modalidades"
+          : currentModality.Name || ""
+          }`}
       />
 
       <div className="flex flex-col gap-6 px-6 pb-8 md:px-14 md:py-15">
@@ -523,7 +544,7 @@ function HorasPaePage() {
               Modalidade:
             </label>
             {userRole === "Administrador" ||
-            userRole === "Administrador Geral" ? (
+              userRole === "Administrador Geral" ? (
               <select
                 id="modality-select"
                 className="block w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -547,8 +568,8 @@ function HorasPaePage() {
             )}
           </div>
           {userRole === "Administrador" ||
-          userRole === "Administrador Geral" ||
-          userRole === "Capitão de Time" ? (
+            userRole === "Administrador Geral" ||
+            userRole === "Capitão de Time" ? (
             <div className="flex gap-4">
               <button
                 onClick={generateExcel}
@@ -597,7 +618,7 @@ function HorasPaePage() {
                     className="flex items-center mb-4 min-w-[800px]"
                   >
                     <div className="w-24 md:w-32 font-semibold truncate">
-                      {player.name}
+                      {player.displayName}
                       <div className="text-xs text-gray-400 mt-1">
                         {player.mainTeam?.name || "Sem time principal"}
                       </div>
@@ -627,16 +648,16 @@ function HorasPaePage() {
                         let color = isEmpty
                           ? "bg-gray-700"
                           : isCompleted
-                          ? getColor(currentRank)
-                          : isActive
-                          ? getColor(currentRank)
-                          : "bg-gray-700";
+                            ? getColor(currentRank)
+                            : isActive
+                              ? getColor(currentRank)
+                              : "bg-gray-700";
 
                         const fill = isActive
                           ? fillPercentage
                           : isCompleted
-                          ? 100
-                          : 0;
+                            ? 100
+                            : 0;
 
                         return (
                           <div key={rankIndex} className="relative h-10">
