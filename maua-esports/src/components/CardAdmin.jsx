@@ -61,15 +61,13 @@ const CardAdmin = ({
   const handleDelete = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setShowConfirmModal(true);
-  };
 
-  const confirmDelete = async () => {
-    try {
-      await onDelete(adminId);
-      setShowConfirmModal(false);
-    } catch (err) {
-      setError(err.message || "Erro ao deletar administrador");
+    const isConfirmed = window.confirm(
+      `Tem certeza que deseja deletar o admin ${nome}?`
+    );
+
+    if (isConfirmed && onDelete) {
+      onDelete(adminId);
     }
   };
 

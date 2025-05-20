@@ -17,26 +17,19 @@ const CardTime = ({ timeId, nome, foto, jogo, onDelete, onEditClick, userRole })
   const handleDeleteClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setShowConfirmModal(true);
-  };
+    const isConfirmed = window.confirm(
+      `Tem certeza que deseja deletar o time ${nome}?`
+    );
 
-  const confirmDelete = async () => {
-    try {
-      await onDelete(timeId);
-      setShowConfirmModal(false);
-    } catch (err) {
-      setError(err.message || "Erro ao deletar time");
+    if (isConfirmed && onDelete) {
+      onDelete(timeId);
     }
   };
 
   const handleEditClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    try {
-      onEditClick(timeId);
-    } catch (err) {
-      setError(err.message || "Erro ao editar time");
-    }
+    onEditClick(timeId);
   };
 
   const handleCardClick = () => {
