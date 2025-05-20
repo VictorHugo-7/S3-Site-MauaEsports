@@ -13,8 +13,7 @@ const router = express.Router();
 
 require("dotenv").config();
 app.use(express.json());
-// Configuração EXTENDIDA do CORS
-// Configuração EXTENDIDA do CORS
+
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -47,10 +46,10 @@ async function conectarAoMongoDB() {
 }
 
 // Configuração do Multer
-const storage = multer.memoryStorage(); // Armazena na memória (para MongoDB)
+const storage = multer.memoryStorage(); 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // Limite de 10MB
+  limits: { fileSize: 10 * 1024 * 1024 }, 
   fileFilter: function (req, file, cb) {
     const filetypes = /jpeg|jpg|png|svg/;
     const mimetype = filetypes.test(file.mimetype);
@@ -588,8 +587,14 @@ app.get("/rankings/:id/image", async (req, res) => {
     if (!ranking || !ranking.image || !ranking.image.data) {
       return res.status(404).json({ message: "Imagem não encontrada" });
     }
-    res.set("Content-Type", ranking.image.contentType);
-    res.set("Cache-Control", "public, max-age=31536000"); // Cache por 1 ano
+
+    // Configura headers de cache (1 ano)
+    res.set({
+      "Content-Type": ranking.image.contentType,
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "Last-Modified": new Date(ranking.createdAt).toUTCString()
+    });
+
     res.send(ranking.image.data);
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -6,6 +6,14 @@ import PageBanner from "../components/PageBanner";
 import { FaFileExcel, FaFilePdf, FaCrown, FaUser, FaSync, FaInfoCircle } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiUserCircle } from "react-icons/hi2";
+import rank1 from '../assets/images/rank1.png';
+import rank2 from '../assets/images/rank2.png';
+import rank3 from '../assets/images/rank3.png';
+import rank4 from '../assets/images/rank4.png';
+import rank5 from '../assets/images/rank5.png';
+import rank6 from '../assets/images/rank6.png';
+import rank7 from '../assets/images/rank7.png';
+import rank8 from '../assets/images/rank8.png';
 
 function HorasPaePage() {
   const [generatingReport, setGeneratingReport] = useState(false);
@@ -44,18 +52,33 @@ function HorasPaePage() {
   };
 
   useEffect(() => {
-    const fetchRanks = async () => {
-      try {
-        const ranksData = await getRankings();
-        setRanks(ranksData);
-      } catch (error) {
-        console.error("Erro ao carregar rankings:", error);
-        setRanks([]);
-      }
-    };
-
-    fetchRanks();
+    const localRanks = [
+      { id: 1, name: "Iniciante", image: rank1 },
+      { id: 2, name: "Novato", image: rank2 },
+      { id: 3, name: "Intermediário", image: rank3 },
+      { id: 4, name: "Avançado", image: rank4 },
+      { id: 5, name: "Experiente", image: rank5 },
+      { id: 6, name: "Veterano", image: rank6 },
+      { id: 7, name: "Elite", image: rank7 },
+      { id: 8, name: "Lenda", image: rank8 }
+    ];
+    setRanks(localRanks);
   }, []);
+
+
+  // useEffect(() => {
+  //   const fetchRanks = async () => {
+  //     try {
+  //       const ranksData = await getRankings();
+  //       setRanks(ranksData);
+  //     } catch (error) {
+  //       console.error("Erro ao carregar rankings:", error);
+  //       setRanks([]);
+  //     }
+  //   };
+
+  //   fetchRanks();
+  // }, []);
 
   const getCurrentSemesterStart = () => {
     const now = new Date();
@@ -625,13 +648,13 @@ function HorasPaePage() {
               <div className="flex-1 grid grid-cols-8 gap-1 relative">
                 {ranks.map((rank, index) => (
                   <motion.div
-                    key={rank._id}
+                    key={rank.id}
                     className="flex flex-col items-center"
                     whileHover={{ scale: 1.1 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
                     <img
-                      src={`data:${rank.imageType};base64,${rank.imageData}`}
+                      src={rank.image}
                       alt={rank.name}
                       className="w-16 h-16 md:w-20 md:h-20 object-contain mb-1"
                     />
