@@ -8,13 +8,9 @@ const Novidades = () => {
 
       {/* Conteúdo da página */}
       <main className="flex-grow">
-        <PageBanner pageName="Novidades" />
+        <PageBanner pageName="Acompanhe nosso Instagram" />
 
         <section className="flex flex-col items-center px-4 py-12 max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 text-center">
-            Acompanhe nosso Instagram
-          </h2>
-
           {/* Widget Elfsight */}
           <div className="w-full max-w-4xl overflow-hidden">
             <div
