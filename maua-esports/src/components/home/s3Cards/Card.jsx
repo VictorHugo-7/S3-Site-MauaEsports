@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import EditarBtn from '../../EditarBtn';
 import CardModal from './CardModal';
 
-const Card = ({ icon, texto, titulo = 'Título', ...aosProps }) => {
+const Card = ({ id, icon, texto, titulo = 'Título', ...aosProps }) => {
     const [modalAberto, setModalAberto] = useState(false);
     const [cardTexto, setCardTexto] = useState(texto);
     const [cardIcon, setCardIcon] = useState(icon);
@@ -25,16 +25,16 @@ const Card = ({ icon, texto, titulo = 'Título', ...aosProps }) => {
 
     return (
         <div
-            className='rounded-[12px] flex flex-col h-80 w-60 border-1 border-borda hover:scale-101 hover:border-azul-claro transition-all duration-300 ease-in-out p-5'
-            {...aosProps} // Passa os atributos AOS (data-aos, data-aos-delay, etc.)
+            className="rounded-[12px] flex flex-col h-80 w-60 border-1 border-borda hover:scale-101 hover:border-azul-claro transition-all duration-300 ease-in-out p-5"
+            {...aosProps}
         >
             <div className="pb-5">
-                <img className='w-12 h-12 object-contain' src={cardIcon} alt={cardTitulo} />
+                <img className="w-12 h-12 object-contain" src={cardIcon} alt={cardTitulo} />
             </div>
 
-            <h2 className='text-lg font-semibold text-fonte-escura'>{cardTitulo}</h2>
+            <h2 className="text-lg font-semibold text-fonte-escura">{cardTitulo}</h2>
 
-            <div className='flex-grow overflow-auto my-4 scrollbar-custom pr-4 text-[13px]'>
+            <div className="flex-grow overflow-auto my-4 scrollbar-custom pr-4 text-[13px]">
                 <style>{`
                     .scrollbar-custom::-webkit-scrollbar {
                         width: 2px;
@@ -51,20 +51,20 @@ const Card = ({ icon, texto, titulo = 'Título', ...aosProps }) => {
                         background: white;
                     }
                 `}</style>
-                <p className='text-fonte-escura'>{cardTexto}</p>
+                <p className="text-fonte-escura">{cardTexto}</p>
             </div>
 
-            {/* O modal não está mais dentro da hierarquia do Card, ele será renderizado diretamente no body */}
             <CardModal
                 isOpen={modalAberto}
                 onClose={fecharModal}
                 textoAtual={cardTexto}
                 tituloAtual={cardTitulo}
                 iconAtual={cardIcon}
+                cardId={id}
                 onSave={salvarAlteracoes}
             />
 
-            <div className='flex justify-end mt-2'>
+            <div className="flex justify-end mt-2">
                 <EditarBtn onClick={abrirModal} />
             </div>
         </div>
@@ -72,11 +72,12 @@ const Card = ({ icon, texto, titulo = 'Título', ...aosProps }) => {
 };
 
 Card.propTypes = {
+    id: PropTypes.string.isRequired,
     texto: PropTypes.string,
     icon: PropTypes.string,
     titulo: PropTypes.string,
-    'data-aos': PropTypes.string, // Adiciona suporte para data-aos
-    'data-aos-delay': PropTypes.string // Adiciona suporte para data-aos-delay
+    'data-aos': PropTypes.string,
+    'data-aos-delay': PropTypes.string,
 };
 
 export default Card;

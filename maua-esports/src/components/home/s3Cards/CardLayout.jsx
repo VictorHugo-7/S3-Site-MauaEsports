@@ -1,62 +1,81 @@
-import { useEffect } from 'react';
-import PropTypes from 'prop-types';
+import { useEffect, useState } from 'react';
 import Margin from '../../padrao/Margin';
 import Card from './Card';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import s3IconAcessoSeguro from "../../../assets/images/home/s3IconAcessoSeguro.png";
-import s3IconGestaoDeTreinos from "../../../assets/images/home/s3IconGestaoDeTreinos.png";
-import s3IconHoraPaes from "../../../assets/images/home/s3IconHoraPaes.png";
-import s3IconNossaMissao from "../../../assets/images/home/s3IconNossaMissao.png";
+import axios from 'axios';
+import AlertaErro from '../../AlertaErro';
+
+const API_BASE_URL = "http://localhost:3000";
 
 const CardLayout = () => {
-    useEffect(() => {
-        AOS.init({
-            duration: 1500,
-            once: true, // Anima apenas uma vez ao rolar
-        });
-    }, []);
+  const [cards, setCards] = useState([]);
+  const [error, setError] = useState('');
 
-    return (
-        <Margin horizontal="60px">
-            <h1 data-aos-delay="100" data-aos="fade-up" className='text-3xl text-center font-bold mb-15 text-azul-claro'>Informações</h1>
-            <div className="flex flex-col lg:flex-row justify-between gap-5 items-center">
-                <Card 
-                    icon={s3IconAcessoSeguro} 
-                    texto="Digitalizar e centralizar a gestão dos e-sports na Mauá, conectando atletas, capitães e administradores em um ambiente moderno, colaborativo e acessível."
-                    titulo="Nossa Missão"
-                    data-aos="fade-up"
-                />
-                <Card 
-                    icon={s3IconGestaoDeTreinos} 
-                    texto="Organize seus horários de treino com praticidade! A plataforma oferece uma interface intuitiva para visualizar, editar e acompanhar os treinos dos times de forma eficiente."
-                    titulo="Treinos"
-                    data-aos="fade-up"
-                    data-aos-delay="200"
-                />
-                
-                <Card 
-                    icon={s3IconHoraPaes} 
-                    texto="Facilitamos o registro e a consulta das horas PAE dos alunos, garantindo um acompanhamento transparente e integrado com as atividades esportivas."
-                    titulo="Horas PAE"
-                    data-aos="fade-up"
-                    data-aos-delay="300"
-                />
-                <Card 
-                    icon={s3IconNossaMissao} 
-                    texto="Com login via conta Microsoft (@maua.br), cada perfil tem permissões específicas para uma gestão segura e organizada: administradores, capitães e atletas com acesso sob medida."
-                    titulo="Acesso Seguro"
-                    data-aos="fade-up"
-                    data-aos-delay="400"
-                />
-            </div>
-        </Margin>
-    );
-};
+  useEffect(() => {
+    AOS.init({
+      duration: 1500,
+      once: true,
+    });
 
-CardLayout.propTypes = {
-    btnName: PropTypes.string,
-    to: PropTypes.string
+    const fetchCards = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/cards`);
+
+        // LOG para debugging (pode remover depois)
+        console.log("Cards recebidos:", response.data);
+
+        if (!Array.isArray(response.data)) {
+          throw new Error("Formato inesperado de resposta da API");
+        }
+
+        setCards(response.data);
+        setError('');
+      } catch (err) {
+        console.error('Erro ao buscar cards:', err);
+        setError('Erro ao carregar os cards.');
+        setCards([]);
+      }
+    };
+
+    fetchCards();
+  }, []);
+
+  return (
+    <Margin horizontal="60px">
+      <h1
+        data-aos-delay="100"
+        data-aos="fade-up"
+        className="text-3xl text-center font-bold mb-15 text-azul-claro"
+      >
+        Informações
+      </h1>
+
+      {error && <AlertaErro mensagem={error} />}
+
+      <div className="flex flex-col lg:flex-row justify-between gap-5 items-center">
+        {Array.isArray(cards) && cards.length > 0 ? (
+          cards.map((card, index) => (
+            <Card
+              key={card._id}
+              id={card._id}
+              icon={
+                card.icone
+                  ? `data:${card.icone.contentType};base64,${card.icone.data}`
+                  : ''
+              }
+              texto={card.descricao}
+              titulo={card.titulo}
+              data-aos="fade-up"
+              data-aos-delay={`${100 * (index + 1)}`}
+            />
+          ))
+        ) : (
+          <p className="text-white">Nenhum card disponível.</p>
+        )}
+      </div>
+    </Margin>
+  );
 };
 
 export default CardLayout;

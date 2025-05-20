@@ -1,4 +1,5 @@
 const express = require("express");
+const { body, validationResult } = require('express-validator');
 const app = express();
 const cors = require("cors");
 const mongoose = require("mongoose");
@@ -1943,6 +1944,125 @@ app.post("/api/homeNovidade", upload.single("imagem"), async (req, res) => {
 
 ///////////////////////////////////////////////////////////////////////// HOME_APRESENTACAO //////////////////////////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////////HOME_INFORMACOES////////////////////////////////////////////////////////
+
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Definindo o esquema e modelo do Card
+const cardHomeSchema = mongoose.Schema({
+  titulo: { type: String, required: true },
+  descricao: { type: String, required: true },
+  icone: {
+    data: Buffer,
+    contentType: String,
+    nomeOriginal: String,
+  },
+});
+
+const CardHome = mongoose.model('Card', cardHomeSchema);
+
+// Rota para buscar todos os cards
+router.get('/', async (req, res) => {
+  try {
+    const cards = await CardHome.find().select('titulo descricao icone');
+    const formattedCards = cards.map(card => ({
+      _id: card._id,
+      titulo: card.titulo,
+      descricao: card.descricao,
+      icone: card.icone
+        ? {
+            contentType: card.icone.contentType,
+            data: card.icone.data.toString('base64'),
+            nomeOriginal: card.icone.nomeOriginal,
+          }
+        : null,
+    }));
+    res.status(200).json(formattedCards);
+  } catch (error) {
+    console.error('Erro ao buscar cards:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor.' });
+  }
+});
+
+// Rota para atualizar um card
+router.put('/:id', upload.single('icone'), [
+  body('titulo').trim().notEmpty().withMessage('O título é obrigatório'),
+  body('descricao').trim().notEmpty().withMessage('A descrição é obrigatória'),
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const { id } = req.params;
+    const updateData = {
+      titulo: req.body.titulo?.trim(),
+      descricao: req.body.descricao?.trim(),
+    };
+
+    if (req.file) {
+      updateData.icone = {
+        data: req.file.buffer,
+        contentType: req.file.mimetype,
+        nomeOriginal: req.file.originalname,
+      };
+    }
+
+    const updated = await CardHome.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Card não encontrado' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Card atualizado com sucesso!',
+      card: {
+        _id: updated._id,
+        titulo: updated.titulo,
+        descricao: updated.descricao,
+        icone: updated.icone
+          ? {
+              contentType: updated.icone.contentType,
+              nomeOriginal: updated.icone.nomeOriginal,
+              iconeUrl: `${req.protocol}://${req.get('host')}/cards/${updated._id}/icone`,
+            }
+          : undefined,
+      },
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar card:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Rota para servir a imagem do ícone
+router.get('/:id/icone', async (req, res) => {
+  try {
+    const card = await CardHome.findById(req.params.id);
+    if (!card || !card.icone) {
+      return res.status(404).json({ success: false, message: 'Ícone não encontrado' });
+    }
+
+    res.set('Content-Type', card.icone.contentType);
+    res.send(card.icone.data);
+  } catch (error) {
+    console.error('Erro ao buscar ícone:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor.' });
+  }
+});
+
+// Usando o router para as rotas com prefixo '/cards'
+app.use('/cards', router);
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Só inicia os servidores se NÃO estiver em ambiente de teste
 if (process.env.NODE_ENV !== 'test') {
