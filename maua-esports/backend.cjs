@@ -1943,6 +1943,147 @@ app.post("/api/homeNovidade", upload.single("imagem"), async (req, res) => {
 });
 
 ///////////////////////////////////////////////////////////////////////// HOME_APRESENTACAO //////////////////////////////////////////////////////////////////////////////////////////////////
+const apresentacaoSchema = new mongoose.Schema({
+  titulo1: { type: String, required: true },
+  titulo2: { type: String, required: true },
+  descricao1: { type: String, required: true },
+  descricao2: { type: String, required: true },
+  botao1Nome: { type: String, required: true },
+  botao1Link: { type: String, required: true },
+  botao2Nome: { type: String, required: true },
+  botao2Link: { type: String, required: true },
+  imagem: { type: Buffer, required: false }, // Armazena a imagem como Buffer
+  imagemType: { type: String, required: false }, // Tipo MIME da imagem
+  icones: [
+    {
+      id: { type: Number, required: true },
+      imagem: { type: Buffer, required: false }, // Imagem do ícone como Buffer
+      imagemType: { type: String, required: false }, // Tipo MIME do ícone
+      link: { type: String, required: true },
+    },
+  ],
+});
+
+apresentacaoSchema.plugin(uniqueValidator);
+const Apresentacao = mongoose.model("Apresentacao", apresentacaoSchema);
+
+
+app.get("/api/apresentacao", async (req, res) => {
+  try {
+    const apresentacao = await Apresentacao.findOne();
+    if (!apresentacao) {
+      return res.status(404).json({ message: "Nenhuma apresentação encontrada" });
+    }
+
+    // Converte a imagem principal para base64
+    const imagemBase64 = apresentacao.imagem
+      ? `data:${apresentacao.imagemType};base64,${apresentacao.imagem.toString("base64")}`
+      : null;
+
+    // Converte as imagens dos ícones para base64
+    const iconesComBase64 = apresentacao.icones.map((icone) => ({
+      ...icone._doc,
+      imagem: icone.imagem
+        ? `data:${icone.imagemType};base64,${icone.imagem.toString("base64")}`
+        : null,
+    }));
+
+    res.json({
+      ...apresentacao._doc,
+      imagem: imagemBase64,
+      icones: iconesComBase64,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao buscar apresentação", error });
+  }
+});
+
+app.post("/api/apresentacao", upload.fields([{ name: "imagem" }, { name: "icones" }]), async (req, res) => {
+  try {
+    const {
+      titulo1,
+      titulo2,
+      descricao1,
+      descricao2,
+      botao1Nome,
+      botao1Link,
+      botao2Nome,
+      botao2Link,
+      icones: iconesJson,
+    } = req.body;
+
+    // Validação básica
+    if (!titulo1 || !titulo2 || !descricao1 || !descricao2 || !botao1Nome || !botao1Link || !botao2Nome || !botao2Link) {
+      return res.status(400).json({ message: "Todos os campos são obrigatórios" });
+    }
+
+    // Parseia os ícones enviados como JSON
+    const iconesParsed = JSON.parse(iconesJson);
+
+    // Verifica se já existe uma apresentação
+    let apresentacao = await Apresentacao.findOne();
+
+    // Processa a imagem principal
+    const imagemFile = req.files["imagem"] ? req.files["imagem"][0] : null;
+    const imagemBuffer = imagemFile ? imagemFile.buffer : apresentacao ? apresentacao.imagem : null;
+    const imagemType = imagemFile ? imagemFile.mimetype : apresentacao ? apresentacao.imagemType : null;
+
+    // Processa as imagens dos ícones
+    const iconesFiles = req.files["icones"] || [];
+    const iconesData = iconesParsed.map((icone, index) => ({
+      id: icone.id,
+      imagem: iconesFiles[index] ? iconesFiles[index].buffer : apresentacao?.icones[index]?.imagem || null,
+      imagemType: iconesFiles[index] ? iconesFiles[index].mimetype : apresentacao?.icones[index]?.imagemType || null,
+      link: icone.link,
+    }));
+
+    const apresentacaoData = {
+      titulo1,
+      titulo2,
+      descricao1,
+      descricao2,
+      botao1Nome,
+      botao1Link,
+      botao2Nome,
+      botao2Link,
+      imagem: imagemBuffer,
+      imagemType,
+      icones: iconesData,
+    };
+
+    if (apresentacao) {
+      // Atualiza a apresentação existente
+      apresentacao = await Apresentacao.findOneAndUpdate({}, apresentacaoData, { new: true });
+    } else {
+      // Cria uma nova apresentação
+      apresentacao = new Apresentacao(apresentacaoData);
+      await apresentacao.save();
+    }
+
+    // Converte a imagem principal para base64 para retorno
+    const imagemBase64 = apresentacao.imagem
+      ? `data:${apresentacao.imagemType};base64,${apresentacao.imagem.toString("base64")}`
+      : null;
+
+    // Converte as imagens dos ícones para base64 para retorno
+    const iconesComBase64 = apresentacao.icones.map((icone) => ({
+      ...icone._doc,
+      imagem: icone.imagem
+        ? `data:${icone.imagemType};base64,${icone.imagem.toString("base64")}`
+        : null,
+    }));
+
+    res.status(200).json({
+      ...apresentacao._doc,
+      imagem: imagemBase64,
+      icones: iconesComBase64,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao salvar apresentação", error });
+  }
+});
+
+
 
 //////////////////////////////////////////////////////////////////////////HOME_INFORMACOES////////////////////////////////////////////////////////
 

@@ -18,7 +18,7 @@ const ApresentacaoModal = ({
     const [botao1Link, setBotao1Link] = useState(dadosIniciais?.botao1Link || '#');
     const [botao2Nome, setBotao2Nome] = useState(dadosIniciais?.botao2Nome || 'Botão 2');
     const [botao2Link, setBotao2Link] = useState(dadosIniciais?.botao2Link || '#');
-    const [imagemUrl, setImagemUrl] = useState(dadosIniciais?.imagemUrl || '/api/placeholder/400/320');
+    const [imagemUrl, setImagemUrl] = useState(dadosIniciais?.imagem || '/api/placeholder/400/320'); // Alterado de imagemUrl para imagem
     const [icones, setIcones] = useState(dadosIniciais?.icones || [
         { id: 1, imagem: '/api/placeholder/40/40', link: '#' }
     ]);
@@ -27,7 +27,7 @@ const ApresentacaoModal = ({
     
     const fileInputRef = useRef(null);
     const iconeFileInputRefs = useRef({});
-    
+
     useEffect(() => {
         if (dadosIniciais) {
             setTitulo1(dadosIniciais.titulo1 || 'Título 1');
@@ -38,7 +38,8 @@ const ApresentacaoModal = ({
             setBotao1Link(dadosIniciais.botao1Link || '#');
             setBotao2Nome(dadosIniciais.botao2Nome || 'Botão 2');
             setBotao2Link(dadosIniciais.botao2Link || '#');
-            setImagemUrl(dadosIniciais.imagemUrl || '/api/placeholder/400/320');
+            // Atualiza imagemUrl com o valor de dadosIniciais.imagem (base64 ou URL)
+            setImagemUrl(dadosIniciais.imagem || '/api/placeholder/400/320');
             setIcones(dadosIniciais.icones || [{ id: 1, imagem: '/api/placeholder/40/40', link: '#' }]);
         }
     }, [dadosIniciais]);
@@ -118,7 +119,7 @@ const ApresentacaoModal = ({
     const salvarAlteracoes = async () => {
         setIsSubmitting(true);
         setErroLocal("");
-        
+
         if (!titulo1 || !titulo2 || !descricao1 || !descricao2 || !botao1Nome || !botao2Nome) {
             setErroLocal("Preencha todos os campos obrigatórios!");
             setIsSubmitting(false);
@@ -131,7 +132,7 @@ const ApresentacaoModal = ({
         }
         
         try {
-            await onSave({
+            const novosDados = {
                 titulo1: titulo1.trim(),
                 titulo2: titulo2.trim(),
                 descricao1: descricao1.trim(),
@@ -140,9 +141,22 @@ const ApresentacaoModal = ({
                 botao1Link: botao1Link.trim(),
                 botao2Nome: botao2Nome.trim(),
                 botao2Link: botao2Link.trim(),
-                imagemUrl,
-                icones
-            });
+                // Envia o arquivo da imagem ou mantém a URL base64 existente
+                imagem: typeof imagemUrl === 'string' && imagemUrl.startsWith("data:")
+                    ? imagemUrl
+                    : (fileInputRef.current?.files[0] || imagemUrl),
+                icones: icones.map((icone) => ({
+                    id: icone.id,
+                    imagem: typeof icone.imagem === 'string' && icone.imagem.startsWith("data:")
+                        ? icone.imagem
+                        : (iconeFileInputRefs.current[icone.id]?.files[0] || icone.imagem),
+                    link: icone.link,
+                })),
+            };
+
+            await onSave(novosDados);
+            // Após salvar, atualiza o estado imagemUrl com o valor retornado (se necessário)
+            setImagemUrl(novosDados.imagem);
         } catch (error) {
             setErroLocal(error.message || "Erro ao salvar alterações");
         } finally {
@@ -300,7 +314,7 @@ const ApresentacaoModal = ({
                                     className="hidden"
                                 />
                             </label>
-                            {imagemUrl !== '/api/placeholder/400/320' && (
+                            {imagemUrl && imagemUrl !== '/api/placeholder/400/320' && (
                                 <div className="mt-4 flex justify-center">
                                     <div className="relative w-24 h-24">
                                         <img 
@@ -393,7 +407,6 @@ const ApresentacaoModal = ({
                     </div>
                 </div>
 
-                {/* Botões de Ação */}
                 <div className="flex justify-end mt-6 space-x-2">
                     <SalvarBtn onClick={salvarAlteracoes} disabled={isSubmitting} />
                     <CancelarBtn onClick={onClose} disabled={isSubmitting} />
@@ -416,7 +429,7 @@ ApresentacaoModal.propTypes = {
         botao1Link: PropTypes.string,
         botao2Nome: PropTypes.string,
         botao2Link: PropTypes.string,
-        imagemUrl: PropTypes.string,
+        imagem: PropTypes.string, // Alterado de imagemUrl para imagem
         icones: PropTypes.arrayOf(
             PropTypes.shape({
                 id: PropTypes.number.isRequired,
@@ -440,7 +453,7 @@ ApresentacaoModal.defaultProps = {
         botao1Link: '#',
         botao2Nome: 'Botão 2',
         botao2Link: '#',
-        imagemUrl: '/api/placeholder/400/320',
+        imagem: '/api/placeholder/400/320', // Alterado de imagemUrl para imagem
         icones: [{ id: 1, imagem: '/api/placeholder/40/40', link: '#' }]
     }
 };
