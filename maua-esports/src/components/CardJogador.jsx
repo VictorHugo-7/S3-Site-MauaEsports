@@ -65,29 +65,24 @@ const CardJogador = ({
       : text;
   };
 
-  const handleEdit = async (updatedData) => {
-    try {
-      await onEdit(jogadorId, updatedData);
-      setIsModalOpen(false);
-    } catch (err) {
-      setError(err.message || "Erro ao editar jogador");
-    }
+  const handleEdit = (updatedData) => {
+    onEdit(jogadorId, updatedData);
+    setIsModalOpen(false);
   };
 
   const handleDelete = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setShowConfirmModal(true);
-  };
 
-  const confirmDelete = async () => {
-    try {
-      await onDelete(jogadorId);
-      setShowConfirmModal(false);
-    } catch (err) {
-      setError(err.message || "Erro ao deletar jogador");
+    const isConfirmed = window.confirm(
+      `Tem certeza que deseja deletar o jogador ${nome}?`
+    );
+
+    if (isConfirmed && onDelete) {
+      onDelete(jogadorId);
     }
   };
+
 
   const handleMouseMove = (e) => {
     setTooltipPosition({
