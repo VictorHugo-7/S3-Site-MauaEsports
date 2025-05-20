@@ -3,14 +3,16 @@ import Margin from "../../padrao/Margin";
 import NovidadeModal from "./NovidadeModal";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import axios from "axios";
 
 const Novidade = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [novidadeData, setNovidadeData] = useState({
     imagem: "https://static.tildacdn.net/tild6639-6566-4661-b631-343234376339/matty.jpeg",
     titulo: "Título Teste",
-    subtitulo: "LOREM ISPSUM DOLOR SIT AMET CONSECTETUR",
-    descricao: "Lorem ipsum, dolor sit amet consectetur adipisicing elit. Sequi soluta voluptate nostrum provident nulla modi cumque placeat adipisci nobis delectus, amet neque inventore necessitatibus vero voluptatem consequatur quo! Perferendis, dolorum. Lorem ipsum dolor sit amet consectetur adipisicing elit. Similique officiis praesentium labore vitae excepturi sit, libero nostrum culpa molestiae aut veniam aliquid ea qui placeat officia voluptas? Numquam, iure perferendis. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Nemo iusto necessitatibus culpa natus amet labore quod praesentium eius excepturi illo. Doloribus minima quod quia eius voluptatum assumenda numquam. Animi, numquam.Doloribus minima quod quia eius voluptatum assumenda numquam. Animi, numquam.Doloribus minima quod quia eius voluptatum assumenda numquam. Animi, numquam.",
+    subtyleg: "LOREM ISPSUM DOLOR SIT AMET CONSECTETUR",
+    descricao:
+      "Lorem ipsum, dolor sit amet consectetur adipisicing elit. Sequi soluta voluptate nostrum provident nulla modi cumque placeat adipisci nobis delectus, amet neque inventore necessitatibus vero voluptatem consequatur quo! Perferendis, dolorum. Lorem ipsum dolor sit amet consectetur adipisicing elit. Similique officiis praesentium labore vitae excepturi sit, libero nostrum culpa molestiae aut veniam aliquid ea qui placeat officia voluptas? Numquam, iure perferendis. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Nemo iusto necessitatibus culpa natus amet labore quod praesentium eius excepturi illo. Doloribus minima quod quia eius voluptatum assumenda numquam. Animi, numquam.Doloribus minima quod quia eius voluptatum assumenda numquam. Animi, numquam.Doloribus minima quod quia eius voluptatum assumenda numquam. Animi, numquam.",
     nomeBotao: "VER NOTÍCIA",
     urlBotao: "#",
   });
@@ -21,16 +23,32 @@ const Novidade = () => {
       once: true,
     });
 
-    // Carregar dados do localStorage ao iniciar
-    const savedData = localStorage.getItem("novidadeData");
-    if (savedData) {
-      setNovidadeData(JSON.parse(savedData));
-    }
+    // Buscar dados do backend
+    const fetchNovidade = async () => {
+      try {
+        const response = await axios.get("http://localhost:3000/api/homeNovidade");
+        setNovidadeData(response.data);
+      } catch (error) {
+        console.error("Erro ao buscar novidade:", error);
+      }
+    };
+
+    fetchNovidade();
   }, []);
 
-  const handleSave = (formData) => {
-    setNovidadeData(formData);
-    localStorage.setItem("novidadeData", JSON.stringify(formData));
+  const handleSave = async (formData) => {
+    try {
+      const response = await axios.post(
+        "http://localhost:3000/api/homeNovidade",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+      setNovidadeData(response.data);
+    } catch (error) {
+      console.error("Erro ao salvar novidade:", error);
+    }
   };
 
   return (
@@ -55,7 +73,9 @@ const Novidade = () => {
           className="w-full lg:w-1/2 space-y-6 text-left lg:pl-8 py-8 lg:py-0 order-1 lg:order-2"
         >
           {/* Título */}
-          <h4 className="text-3xl font-bold text-gray-300 mb-4">{novidadeData.titulo}</h4>
+          <h4 className="text-3xl font-bold text-gray-300 mb-4">
+            {novidadeData.titulo}
+          </h4>
 
           {/* Subtítulo */}
           <div className="mb-4">
