@@ -115,8 +115,22 @@ const Membros = () => {
       formData.append("twitter", updatedData.twitter || "");
       formData.append("twitch", updatedData.twitch || "");
 
-      if (updatedData.foto instanceof File) {
-        formData.append("foto", updatedData.foto);
+      // Função para converter dataURL para Blob
+      const dataURLtoBlob = (dataURL) => {
+        const arr = dataURL.split(",");
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new Blob([u8arr], { type: mime });
+      };
+
+      if (updatedData.foto && updatedData.foto.startsWith("data:image")) {
+        const fotoBlob = dataURLtoBlob(updatedData.foto);
+        formData.append("foto", fotoBlob, `foto-jogador-${Date.now()}.jpg`);
       } else if (updatedData.foto === null) {
         formData.append("removeFoto", "true");
       }
@@ -147,9 +161,7 @@ const Membros = () => {
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Erro ao atualizar jogador:", error);
-      setErro(
-        error.response?.data?.message || "Erro ao atualizar jogador"
-      );
+      setErro(error.response?.data?.message || "Erro ao atualizar jogador");
       setTimeout(() => setErro(null), 3000);
     }
   };
