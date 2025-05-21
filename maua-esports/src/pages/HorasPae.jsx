@@ -3,7 +3,14 @@ import axios from "axios";
 import { useMsal } from "@azure/msal-react";
 import { Link, useNavigate } from "react-router-dom";
 import PageBanner from "../components/PageBanner";
-import { FaFileExcel, FaFilePdf, FaCrown, FaUser, FaSync, FaInfoCircle } from "react-icons/fa";
+import {
+  FaFileExcel,
+  FaFilePdf,
+  FaCrown,
+  FaUser,
+  FaSync,
+  FaInfoCircle,
+} from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiUserCircle } from "react-icons/hi2";
 
@@ -38,8 +45,8 @@ function HorasPaePage() {
   };
 
   const extractRAFromEmail = (email) => {
-    if (!email) return '';
-    const raPart = email.split('@')[0];
+    if (!email) return "";
+    const raPart = email.split("@")[0];
     return raPart;
   };
 
@@ -117,9 +124,10 @@ function HorasPaePage() {
       link.href = url;
       link.setAttribute(
         "download",
-        `relatorio_pae_${selectedModalityId === "all"
-          ? "todas_modalidades"
-          : currentModality.Name
+        `relatorio_pae_${
+          selectedModalityId === "all"
+            ? "todas_modalidades"
+            : currentModality.Name
         }_${getCurrentSemester()}.pdf`
       );
       document.body.appendChild(link);
@@ -131,6 +139,13 @@ function HorasPaePage() {
     } finally {
       setGeneratingReport(false);
     }
+  };
+
+  const getRankImage = (hours) => {
+    const rankIndex = getCurrentRank(hours);
+    if (rankIndex <= 0) return null; // Sem rank para menos de 1h
+    if (rankIndex >= ranks.length) return ranks[ranks.length - 1]; // Se ultrapassar, pega o último
+    return ranks[rankIndex -1]; // Retorna o rank correspondente
   };
 
   const generateExcel = async () => {
@@ -181,9 +196,10 @@ function HorasPaePage() {
       link.href = url;
       link.setAttribute(
         "download",
-        `relatorio_pae_${selectedModalityId === "all"
-          ? "todas_modalidades"
-          : currentModality.Name
+        `relatorio_pae_${
+          selectedModalityId === "all"
+            ? "todas_modalidades"
+            : currentModality.Name
         }_${getCurrentSemester()}.xlsx`
       );
       document.body.appendChild(link);
@@ -231,9 +247,13 @@ function HorasPaePage() {
     const semesterStart = getCurrentSemesterStart();
 
     const discordIds = new Set();
-    trainsData.forEach(train => {
-      if (train.Status === "ENDED" && train.AttendedPlayers && train.StartTimestamp >= semesterStart) {
-        train.AttendedPlayers.forEach(player => {
+    trainsData.forEach((train) => {
+      if (
+        train.Status === "ENDED" &&
+        train.AttendedPlayers &&
+        train.StartTimestamp >= semesterStart
+      ) {
+        train.AttendedPlayers.forEach((player) => {
           if (player.PlayerId) {
             discordIds.add(player.PlayerId);
           }
@@ -243,8 +263,10 @@ function HorasPaePage() {
 
     let discordToEmailMap = {};
     try {
-      const discordIdsParam = Array.from(discordIds).join(',');
-      const response = await axios.get(`${API_BASE_URL}/usuarios/por-discord-ids?ids=${discordIdsParam}`);
+      const discordIdsParam = Array.from(discordIds).join(",");
+      const response = await axios.get(
+        `${API_BASE_URL}/usuarios/por-discord-ids?ids=${discordIdsParam}`
+      );
       discordToEmailMap = response.data.reduce((map, user) => {
         if (user.discordID) {
           map[user.discordID] = user;
@@ -256,18 +278,31 @@ function HorasPaePage() {
     }
 
     trainsData.forEach((train) => {
-      if (train.Status !== "ENDED" || !train.AttendedPlayers || train.StartTimestamp < semesterStart) return;
+      if (
+        train.Status !== "ENDED" ||
+        !train.AttendedPlayers ||
+        train.StartTimestamp < semesterStart
+      )
+        return;
 
       const modality = modalities[train.ModalityId];
       if (!modality) return;
 
       train.AttendedPlayers.forEach((player) => {
-        if (!player.PlayerId || !player.EntranceTimestamp || !player.ExitTimestamp) return;
+        if (
+          !player.PlayerId ||
+          !player.EntranceTimestamp ||
+          !player.ExitTimestamp
+        )
+          return;
         if (userRole === "Jogador" && player.PlayerId !== discordId) return;
 
-        const durationHours = (player.ExitTimestamp - player.EntranceTimestamp) / (1000 * 60 * 60);
+        const durationHours =
+          (player.ExitTimestamp - player.EntranceTimestamp) / (1000 * 60 * 60);
         const userData = discordToEmailMap[player.PlayerId] || {};
-        const displayName = userData.email ? extractRAFromEmail(userData.email) : player.PlayerId;
+        const displayName = userData.email
+          ? extractRAFromEmail(userData.email)
+          : player.PlayerId;
 
         if (!playerHours[player.PlayerId]) {
           playerHours[player.PlayerId] = {
@@ -288,7 +323,8 @@ function HorasPaePage() {
           };
         }
 
-        playerHours[player.PlayerId].teams[train.ModalityId].hours += durationHours;
+        playerHours[player.PlayerId].teams[train.ModalityId].hours +=
+          durationHours;
         playerHours[player.PlayerId].totalHours += durationHours;
       });
     });
@@ -343,7 +379,10 @@ function HorasPaePage() {
         ]);
 
         const mods = modResponse.data;
-        const processedPlayers = await processPlayerHours(trainsResponse.data, mods);
+        const processedPlayers = await processPlayerHours(
+          trainsResponse.data,
+          mods
+        );
 
         setModalidades(mods);
         setModalityPlayers(processedPlayers);
@@ -405,38 +444,58 @@ function HorasPaePage() {
   const getFillPercentage = (hours) => {
     const rank = getCurrentRank(hours);
     switch (rank) {
-      case 0: return (hours / 10) * 100;
-      case 1: return ((hours - 10) / 5) * 100;
-      case 2: return ((hours - 15) / 10) * 100;
-      case 3: return ((hours - 25) / 10) * 100;
-      case 4: return ((hours - 35) / 15) * 100;
-      case 5: return ((hours - 50) / 10) * 100;
-      case 6: return ((hours - 60) / 10) * 100;
-      case 7: return ((hours - 70) / 10) * 100;
-      case 8: return 100;
-      default: return 0;
+      case 0:
+        return (hours / 10) * 100;
+      case 1:
+        return ((hours - 10) / 5) * 100;
+      case 2:
+        return ((hours - 15) / 10) * 100;
+      case 3:
+        return ((hours - 25) / 10) * 100;
+      case 4:
+        return ((hours - 35) / 15) * 100;
+      case 5:
+        return ((hours - 50) / 10) * 100;
+      case 6:
+        return ((hours - 60) / 10) * 100;
+      case 7:
+        return ((hours - 70) / 10) * 100;
+      case 8:
+        return 100;
+      default:
+        return 0;
     }
   };
 
   const getColor = (rank) => {
     switch (rank) {
-      case 0: return "bg-white";
-      case 1: return "bg-[#5D0F01]";
-      case 2: return "bg-[#7A807D]";
-      case 3: return "bg-[#FCA610]";
-      case 4: return "bg-[#39A0B1]";
-      case 5: return "bg-[#047C21]";
-      case 6: return "bg-[#60409E]";
-      case 7: return "bg-[#C10146]";
-      case 8: return "bg-[#FFC87F]";
-      default: return "bg-gray-700";
+      case 0:
+        return "bg-white";
+      case 1:
+        return "bg-[#5D0F01]";
+      case 2:
+        return "bg-[#7A807D]";
+      case 3:
+        return "bg-[#FCA610]";
+      case 4:
+        return "bg-[#39A0B1]";
+      case 5:
+        return "bg-[#047C21]";
+      case 6:
+        return "bg-[#60409E]";
+      case 7:
+        return "bg-[#C10146]";
+      case 8:
+        return "bg-[#FFC87F]";
+      default:
+        return "bg-gray-700";
     }
   };
 
   const get40hPosition = () => {
     const rankWidth = 100 / 8;
     const positionInRank = (40 - 35) / 15;
-    const totalPosition = (4 * rankWidth) + (positionInRank * rankWidth);
+    const totalPosition = 4 * rankWidth + positionInRank * rankWidth;
     return `${totalPosition}%`;
   };
 
@@ -469,7 +528,9 @@ function HorasPaePage() {
           transition={{ duration: 0.5 }}
           className="text-center p-8 max-w-md bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 shadow-2xl"
         >
-          <h2 className="text-2xl font-bold mb-4 text-azul-claro">Ação necessária</h2>
+          <h2 className="text-2xl font-bold mb-4 text-azul-claro">
+            Ação necessária
+          </h2>
           <p className="mb-6 text-gray-300">
             Você precisa cadastrar seu Discord ID para visualizar as horas PAE.
           </p>
@@ -521,21 +582,23 @@ function HorasPaePage() {
   const allPlayers =
     selectedModalityId === "all"
       ? Object.values(modalityPlayers)
-        .flat()
-        .sort((a, b) => b.totalHours - a.totalHours)
+          .flat()
+          .sort((a, b) => b.totalHours - a.totalHours)
       : modalityPlayers[selectedModalityId] || [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0D1117] to-[#161B22] text-white" onMouseMove={handleMouseMove}>
-      <div className="bg-gradient-to-r from-[#010409] to-[#0D1117] h-[104px]"></div>
+    <div className="bg-[#0D1117] min-h-screen flex flex-col  text-white"
+    onMouseMove={handleMouseMove}>
+      <div className="bg-[#010409] h-[104px]"></div>
       <PageBanner
-        pageName={`Horas PAEs - ${selectedModalityId === "all"
-          ? "Todas as Modalidades"
-          : currentModality.Name || ""
-          }`}
+        pageName={`Horas PAEs - ${
+          selectedModalityId === "all"
+            ? "Todas as Modalidades"
+            : currentModality.Name || ""
+        }`}
       />
 
-      <div className="flex flex-col gap-6 px-4 sm:px-6 pb-8 md:px-8 lg:px-14">
+      <div className="flex flex-col gap-6 px-4 sm:px-6 pb-8 md:px-8 lg:px-14 mt-5">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="w-full md:w-[30%]">
             <label
@@ -545,7 +608,7 @@ function HorasPaePage() {
               Modalidade:
             </label>
             {userRole === "Administrador" ||
-              userRole === "Administrador Geral" ? (
+            userRole === "Administrador Geral" ? (
               <motion.div whileHover={{ scale: 1.01 }}>
                 <select
                   id="modality-select"
@@ -573,44 +636,50 @@ function HorasPaePage() {
           {(userRole === "Administrador" ||
             userRole === "Administrador Geral" ||
             userRole === "Capitão de Time") && (
-              <motion.div
-                className="flex gap-2 sm:gap-4 flex-wrap"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
+            <motion.div
+              className="flex gap-2 sm:gap-4 flex-wrap"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <motion.button
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow: "0 0 15px rgba(16, 185, 129, 0.5)",
+                }}
+                whileTap={{ scale: 0.95 }}
+                onClick={generateExcel}
+                disabled={generatingReport}
+                className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 text-white font-bold py-2 px-3 sm:py-3 sm:px-5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer shadow-lg text-sm sm:text-base"
               >
-                <motion.button
-                  whileHover={{ scale: 1.05, boxShadow: "0 0 15px rgba(16, 185, 129, 0.5)" }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={generateExcel}
-                  disabled={generatingReport}
-                  className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 text-white font-bold py-2 px-3 sm:py-3 sm:px-5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer shadow-lg text-sm sm:text-base"
-                >
-                  {generatingReport ? (
-                    <FaSync className="animate-spin" />
-                  ) : (
-                    <>
-                      <FaFileExcel className="text-xl" /> Exportar Excel
-                    </>
-                  )}
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05, boxShadow: "0 0 15px rgba(220, 38, 38, 0.5)" }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={generatePDF}
-                  disabled={generatingReport}
-                  className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-800 text-white font-bold py-2 px-3 sm:py-3 sm:px-5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer shadow-lg text-sm sm:text-base"
-                >
-                  {generatingReport ? (
-                    <FaSync className="animate-spin" />
-                  ) : (
-                    <>
-                      <FaFilePdf className="text-xl" /> Exportar PDF
-                    </>
-                  )}
-                </motion.button>
-              </motion.div>
-            )}
+                {generatingReport ? (
+                  <FaSync className="animate-spin" />
+                ) : (
+                  <>
+                    <FaFileExcel className="text-xl" /> Exportar Excel
+                  </>
+                )}
+              </motion.button>
+              <motion.button
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow: "0 0 15px rgba(220, 38, 38, 0.5)",
+                }}
+                whileTap={{ scale: 0.95 }}
+                onClick={generatePDF}
+                disabled={generatingReport}
+                className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-800 text-white font-bold py-2 px-3 sm:py-3 sm:px-5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer shadow-lg text-sm sm:text-base"
+              >
+                {generatingReport ? (
+                  <FaSync className="animate-spin" />
+                ) : (
+                  <>
+                    <FaFilePdf className="text-xl" /> Exportar PDF
+                  </>
+                )}
+              </motion.button>
+            </motion.div>
+          )}
         </div>
 
         <main className="w-full overflow-x-auto">
@@ -623,7 +692,7 @@ function HorasPaePage() {
             <div className="flex mb-4">
               <div className="w-48"></div>
               <div className="flex-1 grid grid-cols-8 gap-1 relative">
-                {ranks.map((rank, index) => (
+                {ranks.map((rank) => (
                   <motion.div
                     key={rank._id}
                     className="flex flex-col items-center"
@@ -661,7 +730,8 @@ function HorasPaePage() {
                   {allPlayers.map((player, index) => {
                     const currentRank = getCurrentRank(player.totalHours);
                     const fillPercentage = getFillPercentage(player.totalHours);
-                    const roundedHours = Math.round(player.totalHours * 10) / 10;
+                    const roundedHours =
+                      Math.round(player.totalHours * 10) / 10;
                     const isCurrentUser = player.discordId === discordId;
 
                     return (
@@ -672,10 +742,11 @@ function HorasPaePage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, x: -100 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className={`flex items-center mb-4 p-2 rounded-lg ${isCurrentUser
-                          ? "bg-gradient-to-r from-blue-900/30 to-blue-800/30 border border-blue-700/50"
-                          : "hover:bg-gray-700/50"
-                          }`}
+                        className={`flex items-center mb-4 p-2 rounded-lg ${
+                          isCurrentUser
+                            ? "bg-gradient-to-r from-blue-900/30 to-blue-800/30 border border-blue-700/50"
+                            : "hover:bg-gray-700/50"
+                        }`}
                         onMouseEnter={() => setHoveredPlayer(player)}
                         onMouseLeave={() => setHoveredPlayer(null)}
                       >
@@ -683,7 +754,9 @@ function HorasPaePage() {
                           <div className="relative">
                             {player.userId && !imageErrors[player.userId] ? (
                               <img
-                                src={`${API_BASE_URL}/usuarios/${player.userId}/foto?t=${Date.now()}`}
+                                src={`${API_BASE_URL}/usuarios/${
+                                  player.userId
+                                }/foto?t=${Date.now()}`}
                                 alt={`Foto de ${player.displayName}`}
                                 className="w-10 h-10 rounded-full object-cover border-2 border-gray-600"
                                 onError={() => handleImageError(player.userId)}
@@ -722,16 +795,16 @@ function HorasPaePage() {
                             let color = isEmpty
                               ? "bg-gray-700"
                               : isCompleted
-                                ? getColor(currentRank)
-                                : isActive
-                                  ? getColor(currentRank)
-                                  : "bg-gray-700";
+                              ? getColor(currentRank)
+                              : isActive
+                              ? getColor(currentRank)
+                              : "bg-gray-700";
 
                             const fill = isActive
                               ? fillPercentage
                               : isCompleted
-                                ? 100
-                                : 0;
+                              ? 100
+                              : 0;
 
                             return (
                               <div key={rankIndex} className="relative h-full">
@@ -785,7 +858,11 @@ function HorasPaePage() {
               {[
                 { range: "1-9h", color: "bg-white", name: "Iniciante" },
                 { range: "10-14h", color: "bg-[#5D0F01]", name: "Novato" },
-                { range: "15-24h", color: "bg-[#7A807D]", name: "Intermediário" },
+                {
+                  range: "15-24h",
+                  color: "bg-[#7A807D]",
+                  name: "Intermediário",
+                },
                 { range: "25-34h", color: "bg-[#FCA610]", name: "Avançado" },
                 { range: "35-49h", color: "bg-[#39A0B1]", name: "Experiente" },
                 { range: "50-59h", color: "bg-[#047C21]", name: "Veterano" },
@@ -805,8 +882,12 @@ function HorasPaePage() {
                     }}
                   ></div>
                   <div className="flex flex-col">
-                    <div className="text-xs font-medium whitespace-nowrap">{item.name}</div>
-                    <div className="text-[10px] text-gray-400 whitespace-nowrap">{item.range}</div>
+                    <div className="text-xs font-medium whitespace-nowrap">
+                      {item.name}
+                    </div>
+                    <div className="text-[10px] text-gray-400 whitespace-nowrap">
+                      {item.range}
+                    </div>
                   </div>
                 </motion.div>
               ))}
@@ -819,32 +900,82 @@ function HorasPaePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-2xl z-50 max-w-md pointer-events-none"
+            className="fixed bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-2xl z-50 max-w-xs pointer-events-none"
             style={{
               left: `${hoverPosition.x + 20}px`,
               top: `${hoverPosition.y + 20}px`,
             }}
           >
-            <div className="flex items-center mb-2">
-              {hoveredPlayer.userId && !imageErrors[hoveredPlayer.userId] ? (
-                <img
-                  src={`${API_BASE_URL}/usuarios/${hoveredPlayer.userId}/foto?t=${Date.now()}`}
-                  alt={`Foto de ${hoveredPlayer.displayName}`}
-                  className="w-8 h-8 rounded-full mr-2 object-cover"
-                  onError={() => handleImageError(hoveredPlayer.userId)}
-                />
-              ) : (
-                <HiUserCircle className="w-8 h-8 text-gray-400 mr-2" />
-              )}
-              <h3 className="font-bold">{hoveredPlayer.displayName}</h3>
-            </div>
-            <div className="text-sm text-gray-300 mb-1">
-              <span className="font-medium">Horas totais:</span>{" "}
-              {Math.round(hoveredPlayer.totalHours * 10) / 10}h
-            </div>
-            <div className="text-sm text-gray-300">
-              <span className="font-medium">Time principal:</span>{" "}
-              {hoveredPlayer.mainTeam?.name || "Não definido"}
+            <div className="flex items-start gap-3">
+              <div>
+                {hoveredPlayer.userId && !imageErrors[hoveredPlayer.userId] ? (
+                  <img
+                    src={`${API_BASE_URL}/usuarios/${
+                      hoveredPlayer.userId
+                    }/foto?t=${Date.now()}`}
+                    alt={`Foto de ${hoveredPlayer.displayName}`}
+                    className="w-12 h-12 rounded-full mr-2 object-cover border-2 border-gray-600"
+                    onError={() => handleImageError(hoveredPlayer.userId)}
+                  />
+                ) : (
+                  <HiUserCircle className="w-12 h-12 text-gray-400 mr-2" />
+                )}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center mb-1">
+                  <h3 className="font-bold text-lg">
+                    {hoveredPlayer.displayName}
+                  </h3>
+                  {hoveredPlayer.discordId === discordId && (
+                    <span className="ml-2 text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">
+                      Você
+                    </span>
+                  )}
+                </div>
+
+                <div className="text-sm text-gray-300 mb-2">
+                  <span className="font-medium">Time principal:</span>{" "}
+                  {hoveredPlayer.mainTeam?.name || "Não definido"}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-gray-300">
+                      <span className="font-medium">Horas totais:</span>{" "}
+                      {Math.round(hoveredPlayer.totalHours * 10) / 10}h
+                    </div>
+                    <div className="text-sm text-gray-300">
+                      <span className="font-medium">Rank atual:</span>{" "}
+                      {getCurrentRank(hoveredPlayer.totalHours) === 0 ? (
+                        <span className="text-gray-400">Sem rank</span>
+                      ) : (
+                        `${getCurrentRank(hoveredPlayer.totalHours)}/8`
+                      )}
+                    </div>
+                  </div>
+
+                  {getCurrentRank(hoveredPlayer.totalHours) > 0 &&
+                  getRankImage(hoveredPlayer.totalHours) ? (
+                    <div className="ml-4">
+                      <img
+                        src={`data:${
+                          getRankImage(hoveredPlayer.totalHours).imageType
+                        };base64,${
+                          getRankImage(hoveredPlayer.totalHours).imageData
+                        }`}
+                        alt={`Rank ${getCurrentRank(hoveredPlayer.totalHours)}`}
+                        className="w-16 h-16 object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div className="ml-4 w-16 h-16 flex items-center justify-center bg-gray-700 rounded-lg">
+                      <span className="text-xs text-gray-400 text-center">
+                        Sem rank
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
