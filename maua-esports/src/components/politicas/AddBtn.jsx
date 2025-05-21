@@ -1,10 +1,8 @@
 import PropTypes from 'prop-types';
 
 const AddBtn = ({ onClick, buttonText, width, height, className }) => {
-  // Estilos base do componente
   const baseStyles = "flex flex-col items-center justify-center bg-gray-900 rounded-lg p-6 border border-gray-700 cursor-pointer hover:bg-gray-800 transition-colors duration-200 shadow-md";
   
-  // Estilos de dimensão personalizados
   const dimensionStyles = {};
   if (width) dimensionStyles.width = width;
   if (height) dimensionStyles.height = height;
@@ -41,7 +39,7 @@ AddBtn.propTypes = {
   buttonText: PropTypes.string,
   width: PropTypes.string,
   height: PropTypes.string,
-  className: PropTypes.string
+  className: PropTypes.string,
 };
 
 export default AddBtn;

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PropTypes from "prop-types";
 import EditarBtn from "../EditarBtn";
 import AddBtn from "./AddBtn";
 import DeletarBtn from "../DeletarBtn";
@@ -13,6 +14,8 @@ const Menu = ({
   isAddingSection,
   newSectionTitle,
   setNewSectionTitle,
+  newSectionDescription,
+  setNewSectionDescription,
   onSaveNewSection,
   onCancelAdd,
   setSuccessMessage,
@@ -42,6 +45,7 @@ const Menu = ({
     }
     onEdit(id, editTitle);
     setEditingId(null);
+    setEditTitle("");
     setSuccessMessage("Seção atualizada com sucesso!");
   };
 
@@ -84,7 +88,6 @@ const Menu = ({
                   {section.title}
                   <span className="ml-2"></span>
                 </button>
-
                 {isAdminMode && (
                   <div className="flex space-x-5">
                     <div></div>
@@ -123,16 +126,17 @@ const Menu = ({
               onChange={(e) => setNewSectionTitle(e.target.value)}
               className="w-full p-2 mb-4 bg-gray-800 text-white border border-gray-700 rounded"
             />
+            
             <div className="flex justify-between">
               <button
                 onClick={onSaveNewSection}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 hover:cursor-pointer"
               >
                 Salvar
               </button>
               <button
                 onClick={onCancelAdd}
-                className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800"
+                className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800 hover:cursor-pointer"
               >
                 Cancelar
               </button>
@@ -142,6 +146,29 @@ const Menu = ({
       )}
     </div>
   );
+};
+
+Menu.propTypes = {
+  sections: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      title: PropTypes.string.isRequired,
+      description: PropTypes.string,
+    })
+  ).isRequired,
+  activeSection: PropTypes.string.isRequired,
+  setActiveSection: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onAddClick: PropTypes.func.isRequired,
+  isAddingSection: PropTypes.bool.isRequired,
+  newSectionTitle: PropTypes.string.isRequired,
+  setNewSectionTitle: PropTypes.func.isRequired,
+  onSaveNewSection: PropTypes.func.isRequired,
+  onCancelAdd: PropTypes.func.isRequired,
+  setSuccessMessage: PropTypes.func.isRequired,
+  setErrorMessage: PropTypes.func.isRequired,
+  isAdminMode: PropTypes.bool.isRequired,
 };
 
 export default Menu;

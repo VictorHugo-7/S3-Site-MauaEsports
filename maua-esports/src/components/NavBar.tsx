@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { IoMdArrowDropdown, IoMdClose } from "react-icons/io";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { CgLogIn, CgLogOut } from "react-icons/cg";
-import { RiTeamFill, RiImageEditLine } from "react-icons/ri";
+import { RiTeamFill, RiImageEditLine, RiDiscordFill } from "react-icons/ri";
 import { FaUserTie, FaRegClock, FaUserCog, FaDiscord, FaTimes } from "react-icons/fa";
 import { HiUserCircle } from "react-icons/hi2";
 import { GiSwordsEmblem } from "react-icons/gi";
@@ -942,12 +942,15 @@ const NavBar = () => {
                         <p className="text-xs text-fonte-escura mt-1">
                           Deixe vazio para remover o Discord ID (deve ser um número de 18 dígitos)
                         </p>
-                        <p
-                          className="text-xs text-fonte-escura mt-1 hover:cursor-pointer hover:text-azul-claro transform transition-all duration-200"
-                          onClick={VincularContaDiscord}
-                        >
-                          Deseja vincular sua conta?
-                        </p>
+                        <button
+      className="flex items-center gap-2 bg-[#5865F2] hover:bg-[#4752C4] text-white px-4 py-2 rounded-lg text-sm font-semibold active:scale-95 transition-colors duration-200 hover:cursor-pointer sm:text-xs sm:px-3 sm:py-1.5 w-full sm:w-auto mt-2"
+      onClick={VincularContaDiscord}
+      role="button"
+      aria-label="Vincular conta do Discord"
+    >
+      <RiDiscordFill className="w-4 h-4" aria-hidden="true" />
+      Vincular conta do Discord
+    </button>
                       </div>
 
                       {/* Foto de perfil */}

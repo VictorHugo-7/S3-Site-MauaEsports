@@ -2096,6 +2096,8 @@ app.post("/api/apresentacao", upload.fields([{ name: "imagem" }, { name: "icones
 // Middleware
 app.use(cors());
 app.use(express.json());
+// Criando routers separados para cards e políticas
+const cardsRouter = express.Router();
 
 // Definindo o esquema e modelo do Card
 const cardHomeSchema = mongoose.Schema({
@@ -2111,7 +2113,7 @@ const cardHomeSchema = mongoose.Schema({
 const CardHome = mongoose.model('Card', cardHomeSchema);
 
 // Rota para buscar todos os cards
-router.get('/', async (req, res) => {
+cardsRouter.get('/', async (req, res) => {
   try {
     const cards = await CardHome.find().select('titulo descricao icone');
     const formattedCards = cards.map(card => ({
@@ -2134,7 +2136,7 @@ router.get('/', async (req, res) => {
 });
 
 // Rota para atualizar um card
-router.put('/:id', upload.single('icone'), [
+cardsRouter.put('/:id', upload.single('icone'), [
   body('titulo').trim().notEmpty().withMessage('O título é obrigatório'),
   body('descricao').trim().notEmpty().withMessage('A descrição é obrigatória'),
 ], async (req, res) => {
@@ -2191,7 +2193,7 @@ router.put('/:id', upload.single('icone'), [
 });
 
 // Rota para servir a imagem do ícone
-router.get('/:id/icone', async (req, res) => {
+cardsRouter.get('/:id/icone', async (req, res) => {
   try {
     const card = await CardHome.findById(req.params.id);
     if (!card || !card.icone) {
@@ -2207,9 +2209,134 @@ router.get('/:id/icone', async (req, res) => {
 });
 
 // Usando o router para as rotas com prefixo '/cards'
-app.use('/cards', router);
+app.use('/cards', cardsRouter);
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Definindo o esquema e modelo de politicas
+const politicasRouter = express.Router();
+const politicasSchema = mongoose.Schema({
+  titulo: { type: String, required: true },
+  descricao: { type: String},
+});
 
+const Politicas = mongoose.model('Politicas', politicasSchema);
+
+// Rota para buscar todas as politicas
+politicasRouter.get('/', async (req, res) => {
+  try {
+    const politicas = await Politicas.find().select('titulo descricao');
+    res.status(200).json({ success: true, politicas });
+  } catch (error) {
+    console.error('Erro ao buscar políticas:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor.' });
+  }
+});
+
+// Rota para atualizar uma política
+politicasRouter.put('/:id', [
+  body('titulo').trim().notEmpty().withMessage('O título é obrigatório'),
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'ID inválido' });
+    }
+
+    const updateData = {
+      titulo: req.body.titulo.trim(),
+      descricao: req.body.descricao.trim(),
+    };
+
+    const updated = await Politicas.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Política não encontrada' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Política atualizada com sucesso!',
+      politica: {
+        _id: updated._id,
+        titulo: updated.titulo,
+        descricao: updated.descricao,
+      },
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar política:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor.' });
+  }
+});
+
+// Rota para criar uma nova política
+politicasRouter.post('/', [
+  body('titulo').trim().notEmpty().withMessage('O título é obrigatório'),
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const novaPolitica = new Politicas({
+      titulo: req.body.titulo.trim(),
+      descricao: req.body.descricao.trim(),
+    });
+
+    const saved = await novaPolitica.save();
+    res.status(201).json({
+      success: true,
+      message: 'Política criada com sucesso!',
+      politica: {
+        _id: saved._id,
+        titulo: saved.titulo,
+        descricao: saved.descricao,
+      },
+    });
+  } catch (error) {
+    console.error('Erro ao criar política:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor.' });
+  }
+});
+
+
+// Rota para excluir uma política
+politicasRouter.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'ID inválido' });
+    }
+
+    const deleted = await Politicas.findByIdAndDelete(id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Política não encontrada' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Política excluída com sucesso!',
+    });
+  } catch (error) {
+    console.error('Erro ao excluir política:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor.' });
+  }
+});
+
+// Usando o router para as rotas com prefixo '/politicas'
+app.use('/politicas', politicasRouter);
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Só inicia os servidores se NÃO estiver em ambiente de teste
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
