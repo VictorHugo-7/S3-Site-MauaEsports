@@ -1653,14 +1653,14 @@ function authenticate(req, res, next) {
 
 const PORT = process.env.PORT || 3001;
 
-const trains = []; // Array vazio ou com dados de teste
+const trains = []; 
 const modality = [];
 
 app.get('/trains/all', authenticate, (req, res) => {
-  res.json(trains); // Retorna array vazio ou dados de teste
+  res.json(trains); 
 });
 app.get('/modality/all', authenticate, (req, res) => {
-  res.json(modality); // Retorna array vazio ou dados de teste
+  res.json(modality); 
 });
 
 /////////////////////////////////////////////////////////////////////////  RELATORIOS  //////////////////////////////////////////////////////////////////////////////////////////////////

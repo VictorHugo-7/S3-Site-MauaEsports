@@ -4,7 +4,7 @@ const { app, Usuario } = require('../../backend.cjs');
 describe('Autenticação', () => {
   beforeAll(async () => {
     await Usuario.create({
-      email: 'auth-test@maua.br',
+      email: '24.00086-8@maua.br',
       tipoUsuario: 'Jogador'
     });
   });

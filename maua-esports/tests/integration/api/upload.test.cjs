@@ -10,7 +10,7 @@ describe('Upload de Imagens', () => {
   beforeEach(async () => {
     // Recriar o usuário de teste antes de cada teste
     testUser = await Usuario.create({
-      email: 'test.user@maua.br',
+      email: '24.00086-8@maua.br',
       tipoUsuario: 'Jogador'
     });
   });
@@ -18,7 +18,7 @@ describe('Upload de Imagens', () => {
   beforeAll(async () => {
     // Criar usuário de teste
     testUser = await Usuario.create({
-      email: 'upload-test@maua.br',
+      email: '24.00086-7@maua.br',
       tipoUsuario: 'Jogador'
     });
     console.log('Usuário de teste criado com ID:', testUser._id);
@@ -32,7 +32,7 @@ describe('Upload de Imagens', () => {
   it('deve fazer upload de imagem para perfil de usuário', async () => {
     const response = await request(app)
       .post('/usuarios')
-      .field('email', 'upload-test2@maua.br')
+      .field('email', '24.00086-6@maua.br')
       .field('tipoUsuario', 'Jogador')
       .attach('fotoPerfil', testImagePath)
       .expect(201);

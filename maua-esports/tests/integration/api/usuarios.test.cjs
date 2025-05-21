@@ -8,13 +8,20 @@ describe('Rotas de Usuário', () => {
   const testImagePath = path.join(__dirname, '../../../src/assets/images/cs2.jpg');
   let createdUsers = [];
 
+  // Função para gerar emails válidos no formato Mauá
+  function generateMauaEmail() {
+    const randomDigits = Math.floor(10000 + Math.random() * 90000);
+    const randomDigit = Math.floor(1 + Math.random() * 9);
+    return `24.${randomDigits}-${randomDigit}@maua.br`;
+  }
+
   beforeEach(async () => {
     // Limpar todos os usuários
     await Usuario.deleteMany({});
 
     // Criar usuário de teste com email específico
     testUser = await Usuario.create({
-      email: 'test.user@maua.br', // Email usado apenas para testes que precisam deste usuário
+      email: '24.00000-0@maua.br', // Email usado apenas para testes que precisam deste usuário
       tipoUsuario: 'Jogador'
     });
   });
@@ -22,7 +29,7 @@ describe('Rotas de Usuário', () => {
   beforeAll(async () => {
     // Criar usuário de teste principal
     testUser = await Usuario.create({
-      email: 'test.user@maua.br',
+      email: '24.00000-0@maua.br',
       tipoUsuario: 'Jogador'
     });
     console.log('Usuário de teste criado com ID:', testUser._id);
@@ -43,7 +50,7 @@ describe('Rotas de Usuário', () => {
     it('deve criar um novo usuário', async () => {
       // Usar um email único para este teste específico
       const newUser = {
-        email: 'novo.usuario.unique@maua.br',
+        email: generateMauaEmail(),
         tipoUsuario: 'Jogador'
       };
 
@@ -62,13 +69,14 @@ describe('Rotas de Usuário', () => {
 
     it('deve falhar ao criar usuário com email duplicado', async () => {
       // Primeiro cria o usuário
+      const existingEmail = generateMauaEmail();
       await Usuario.create({
-        email: 'existing@maua.br',
+        email: existingEmail,
         tipoUsuario: 'Jogador'
       });
 
       const duplicateUser = {
-        email: 'existing@maua.br',
+        email: existingEmail,
         tipoUsuario: 'Jogador'
       };
 
@@ -77,7 +85,7 @@ describe('Rotas de Usuário', () => {
         .send(duplicateUser)
         .expect(400); // Agora deve retornar 400
 
-      expect(response.body.message).toBe("O email existing@maua.br já está em uso.");
+      expect(response.body.message).toBe(`O email ${existingEmail} já está em uso.`);
     });
 
     it('deve aceitar upload de foto de perfil', async () => {
@@ -88,7 +96,7 @@ describe('Rotas de Usuário', () => {
 
       const response = await request(app)
         .post('/usuarios')
-        .field('email', 'upload-test@maua.br')
+        .field('email', generateMauaEmail())
         .field('tipoUsuario', 'Jogador')
         .attach('fotoPerfil', testImagePath)
         .expect(201);
@@ -101,8 +109,8 @@ describe('Rotas de Usuário', () => {
     it('deve listar todos os usuários', async () => {
       // Criar alguns usuários de teste
       const users = [
-        { email: 'user1@maua.br', tipoUsuario: 'Jogador' },
-        { email: 'user2@maua.br', tipoUsuario: 'Administrador' }
+        { email: '24.11111-1@maua.br', tipoUsuario: 'Jogador' },
+        { email: '24.22222-2@maua.br', tipoUsuario: 'Administrador' }
       ];
 
       await Usuario.insertMany(users);
@@ -195,7 +203,7 @@ describe('Rotas de Usuário', () => {
   describe('DELETE /usuarios/:id', () => {
     it('deve remover um usuário', async () => {
       const userToDelete = await Usuario.create({
-        email: 'to.delete@maua.br',
+        email: generateMauaEmail(),
         tipoUsuario: 'Jogador'
       });
       createdUsers.push(userToDelete);
