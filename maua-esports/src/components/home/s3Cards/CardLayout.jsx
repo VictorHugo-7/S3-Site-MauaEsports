@@ -9,7 +9,7 @@ import AlertaErro from '../../AlertaErro';
 
 const API_BASE_URL = "http://localhost:3000";
 
-const CardLayout = ({ onCardSave }) => {
+const CardLayout = ({ onCardSave, onCardError }) => {
   const [cards, setCards] = useState([]);
   const [error, setError] = useState('');
 
@@ -83,6 +83,7 @@ const CardLayout = ({ onCardSave }) => {
               texto={card.descricao}
               titulo={card.titulo}
               onCardSave={onCardSave}
+              onCardError={onCardError}
               onUpdateCard={handleUpdateCard}
               data-aos="fade-up"
               data-aos-delay={`${100 * (index + 1)}`}
@@ -98,6 +99,7 @@ const CardLayout = ({ onCardSave }) => {
 
 CardLayout.propTypes = {
   onCardSave: PropTypes.func.isRequired,
+  onCardError: PropTypes.func.isRequired,
 };
 
 export default CardLayout;

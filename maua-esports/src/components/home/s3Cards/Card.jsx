@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import EditarBtn from '../../EditarBtn';
 import CardModal from './CardModal';
 
-const Card = ({ id, icon, texto, titulo = 'Título', onCardSave, onUpdateCard, ...aosProps }) => {
+const Card = ({ id, icon, texto, titulo = 'Título', onCardSave, onCardError, onUpdateCard, ...aosProps }) => {
   const [modalAberto, setModalAberto] = useState(false);
 
   const abrirModal = () => {
@@ -16,10 +16,10 @@ const Card = ({ id, icon, texto, titulo = 'Título', onCardSave, onUpdateCard, .
 
   const salvarAlteracoes = (dados) => {
     if (dados.showAlert && onCardSave) {
-      onCardSave(); // Trigger alert in Home
+      onCardSave();
     }
     if (onUpdateCard) {
-      onUpdateCard(id, dados); // Update card data in CardLayout
+      onUpdateCard(id, dados);
     }
   };
 
@@ -63,6 +63,7 @@ const Card = ({ id, icon, texto, titulo = 'Título', onCardSave, onUpdateCard, .
         cardId={id}
         onSave={salvarAlteracoes}
         onCardSave={onCardSave}
+        onCardError={onCardError}
       />
 
       <div className="flex justify-end mt-2">
@@ -78,9 +79,10 @@ Card.propTypes = {
   icon: PropTypes.string,
   titulo: PropTypes.string,
   onCardSave: PropTypes.func,
+  onCardError: PropTypes.func,
   onUpdateCard: PropTypes.func,
   'data-aos': PropTypes.string,
   'data-aos-delay': PropTypes.string,
 };
 
-export default Card;    
+export default Card;
