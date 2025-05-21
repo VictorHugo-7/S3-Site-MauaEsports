@@ -1847,17 +1847,7 @@ app.get("/auth/discord/callback", async (req, res) => {
 });
 
 
-// Exporte o que os testes precisam
-module.exports = {
-  app,
-  Usuario,
-  Jogador,
-  Time,
-  Tournament,
-  Admin,
-  Ranking,
-  mongoose
-};
+
 
 ///////////////////////////////////////////////////////////////////////// HOME_NOVIDADE //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2333,6 +2323,21 @@ politicasRouter.delete('/:id', async (req, res) => {
 
 // Usando o router para as rotas com prefixo '/politicas'
 app.use('/politicas', politicasRouter);
+
+// Exporte o que os testes precisam
+module.exports = {
+  app,
+  Usuario,
+  Jogador,
+  Time,
+  Tournament,
+  Admin,
+  Ranking,
+  mongoose,
+  Novidade,
+  Apresentacao,
+  Politicas,
+};
 
 
 

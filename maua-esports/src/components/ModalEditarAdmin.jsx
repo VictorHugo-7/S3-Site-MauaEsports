@@ -1,25 +1,35 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { RiImageAddLine, RiImageEditLine, RiCloseFill } from "react-icons/ri";
+import { RiCloseFill, RiImageAddLine, RiImageEditLine } from "react-icons/ri";
 import { FaInstagram, FaTwitter, FaTwitch } from "react-icons/fa";
 import SalvarBtn from "./SalvarBtn";
 import CancelarBtn from "./CancelarBtn";
-import FotoPadrao from "../assets/images/Foto.svg";
+import ImageCropper from "./ImageCropper";
+import { UseImageCrop } from "./UseImageCrop";
 
 const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
   const [formData, setFormData] = useState({
     nome: admin.nome || "",
     titulo: admin.titulo || "",
     descricao: admin.descricao || "",
-    foto: null,
     instagram: admin.insta || "",
     twitter: admin.twitter || "",
     twitch: admin.twitch || "",
   });
+
   const [errors, setErrors] = useState({});
   const [isVisible, setIsVisible] = useState(false);
-  const [fotoPreview, setFotoPreview] = useState(admin.fotoUrl || FotoPadrao);
   const [isSaving, setIsSaving] = useState(false);
+
+  const {
+    image: fotoImage,
+    croppedImage: fotoCropped,
+    isCropping: isCroppingFoto,
+    handleFileChange: handleFotoFileChange,
+    handleCropComplete: handleFotoCropComplete,
+    handleCancelCrop: handleCancelFotoCrop,
+    setCroppedImage: setFotoCropped,
+  } = UseImageCrop(admin.fotoUrl || null);
 
   useEffect(() => {
     setIsVisible(true);
@@ -32,38 +42,16 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
     }, 300);
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const tiposPermitidos = ["image/jpeg", "image/jpg", "image/png"];
-      if (!tiposPermitidos.includes(file.type)) {
-        setErrors({ foto: "Formato de imagem inválido. Use apenas JPG, JPEG ou PNG." });
-        return;
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors({ foto: "A imagem deve ter no máximo 5MB" });
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFotoPreview(reader.result);
-        setFormData({ ...formData, foto: file });
-        setErrors({ ...errors, foto: null });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
   };
 
   const handleRemoveFoto = () => {
-    setFotoPreview(FotoPadrao);
-    setFormData({ ...formData, foto: null });
+    setFotoCropped(null);
   };
 
   const validate = () => {
@@ -81,7 +69,7 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
       newErrors.descricao = "Descrição é obrigatória";
     }
     
-    if (!formData.foto && !admin.fotoUrl) {
+    if (!fotoCropped && !admin.fotoUrl) {
       newErrors.foto = "Foto é obrigatória";
     }
     
@@ -111,7 +99,7 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
           nome: formData.nome.trim(),
           titulo: formData.titulo.trim(),
           descricao: formData.descricao.trim(),
-          foto: formData.foto,
+          foto: fotoCropped || admin.fotoUrl,
           insta: formData.instagram.trim() || null,
           twitter: formData.twitter.trim() || null,
           twitch: formData.twitch.trim() || null,
@@ -131,6 +119,17 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
         isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >
+      {isCroppingFoto && (
+        <ImageCropper
+          initialImage={fotoImage}
+          onCropComplete={handleFotoCropComplete}
+          onCancel={handleCancelFotoCrop}
+          aspect={1}
+          cropShape="rect"
+          cropSize={{ width: 400, height: 400 }}
+        />
+      )}
+
       <div
         className={`bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-96 relative max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
           isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
@@ -159,17 +158,14 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
             </label>
             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-azul-claro rounded-lg cursor-pointer hover:bg-cinza-escuro/50 transition-colors">
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                {fotoPreview !== FotoPadrao ? (
-                  <>
-                    <RiImageEditLine className="w-8 h-8 text-azul-claro mb-2" />
-                    <p className="text-sm text-fonte-escura">Alterar imagem</p>
-                  </>
+                {fotoCropped || admin.fotoUrl ? (
+                  <RiImageEditLine className="w-8 h-8 text-azul-claro mb-2" />
                 ) : (
-                  <>
-                    <RiImageAddLine className="w-8 h-8 text-azul-claro mb-2" />
-                    <p className="text-sm text-fonte-escura">Clique para enviar</p>
-                  </>
+                  <RiImageAddLine className="w-8 h-8 text-azul-claro mb-2" />
                 )}
+                <p className="text-sm text-fonte-escura">
+                  {fotoCropped || admin.fotoUrl ? "Alterar imagem" : "Clique para enviar"}
+                </p>
                 <p className="text-xs text-fonte-escura/50 mt-1">
                   PNG, JPG ou JPEG (Max. 5MB)
                 </p>
@@ -177,26 +173,38 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
               <input
                 type="file"
                 accept="image/*"
-                onChange={handleFileChange}
+                onChange={(e) => {
+                  handleFotoFileChange(e);
+                  setFotoCropped(null);
+                }}
                 className="hidden"
               />
             </label>
             {errors.foto && (
               <p className="text-vermelho-claro text-sm mt-1">{errors.foto}</p>
             )}
-            {fotoPreview !== FotoPadrao && (
+            {(fotoCropped || admin.fotoUrl) && (
               <div className="mt-4 flex justify-center">
                 <div className="relative w-24 h-24">
                   <img
-                    src={fotoPreview}
+                    src={fotoCropped || admin.fotoUrl}
                     alt="Preview da foto"
                     className="w-full h-full rounded object-cover border border-cinza-escuro"
                   />
+                  <button
+                    type="button"
+                    onClick={handleRemoveFoto}
+                    className="absolute -top-2 -right-2 bg-vermelho-claro text-branco rounded-full w-6 h-6 flex items-center justify-center hover:bg-vermelho-escuro transition-colors"
+                    title="Remover imagem"
+                  >
+                    <RiCloseFill className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             )}
           </div>
 
+          {/* Restante do formulário permanece igual */}
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-1">
               Nome <span className="text-vermelho-claro">*</span>
