@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
 import Margin from '../../padrao/Margin';
 import Card from './Card';
 import AOS from 'aos';
@@ -8,7 +9,7 @@ import AlertaErro from '../../AlertaErro';
 
 const API_BASE_URL = "http://localhost:3000";
 
-const CardLayout = () => {
+const CardLayout = ({ onCardSave }) => {
   const [cards, setCards] = useState([]);
   const [error, setError] = useState('');
 
@@ -21,8 +22,6 @@ const CardLayout = () => {
     const fetchCards = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/cards`);
-
-        // LOG para debugging (pode remover depois)
         console.log("Cards recebidos:", response.data);
 
         if (!Array.isArray(response.data)) {
@@ -40,6 +39,23 @@ const CardLayout = () => {
 
     fetchCards();
   }, []);
+
+  const handleUpdateCard = (cardId, updatedData) => {
+    setCards((prevCards) =>
+      prevCards.map((card) =>
+        card._id === cardId
+          ? {
+              ...card,
+              titulo: updatedData.titulo,
+              descricao: updatedData.texto,
+              icone: updatedData.icon
+                ? { data: updatedData.icon.split(',')[1], contentType: updatedData.icon.split(';')[0].split(':')[1] }
+                : card.icone,
+            }
+          : card
+      )
+    );
+  };
 
   return (
     <Margin horizontal="60px">
@@ -66,6 +82,8 @@ const CardLayout = () => {
               }
               texto={card.descricao}
               titulo={card.titulo}
+              onCardSave={onCardSave}
+              onUpdateCard={handleUpdateCard}
               data-aos="fade-up"
               data-aos-delay={`${100 * (index + 1)}`}
             />
@@ -76,6 +94,10 @@ const CardLayout = () => {
       </div>
     </Margin>
   );
+};
+
+CardLayout.propTypes = {
+  onCardSave: PropTypes.func.isRequired,
 };
 
 export default CardLayout;

@@ -5,34 +5,29 @@ import SalvarBtn from '../../SalvarBtn';
 import CancelarBtn from '../../CancelarBtn';
 import { createPortal } from 'react-dom';
 import axios from 'axios';
-import AlertaOk from '../../AlertaOk';
 import AlertaErro from '../../AlertaErro';
 import { useMsal } from '@azure/msal-react';
 
 const API_BASE_URL = 'http://localhost:3000';
 
-const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, cardId, onSave }) => {
+const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, cardId, onSave, onCardSave }) => {
   const [texto, setTexto] = useState('');
   const [titulo, setTitulo] = useState('');
   const [iconPreview, setIconPreview] = useState(iconAtual);
   const [iconFile, setIconFile] = useState(null);
   const [erroLocal, setErroLocal] = useState('');
-  const [showAlertaOk, setShowAlertaOk] = useState(false);
   const [showAlertaErro, setShowAlertaErro] = useState('');
   const [loading, setLoading] = useState(false);
   const { instance } = useMsal();
 
-  // Clean up URL.createObjectURL
   useEffect(() => {
     if (isOpen) {
       setTexto(textoAtual);
       setTitulo(tituloAtual);
       setIconPreview(iconAtual);
       setErroLocal('');
-      setShowAlertaOk(false);
       setShowAlertaErro('');
     }
-    // Cleanup on unmount or when isOpen changes
     return () => {
       if (iconPreview && iconPreview.startsWith('blob:')) {
         URL.revokeObjectURL(iconPreview);
@@ -52,7 +47,6 @@ const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, cardId
         setErroLocal('A imagem deve ter no máximo 5MB');
         return;
       }
-      // Revoke previous blob URL if it exists
       if (iconPreview && iconPreview.startsWith('blob:')) {
         URL.revokeObjectURL(iconPreview);
       }
@@ -77,9 +71,10 @@ const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, cardId
       return;
     }
 
+    if (loading) return;
+
     setLoading(true);
     setErroLocal('');
-    setShowAlertaOk(false);
     setShowAlertaErro('');
 
     try {
@@ -115,18 +110,16 @@ const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, cardId
       console.timeEnd('axiosPut');
 
       if (response.status === 200) {
-        console.log('Setting showAlertaOk to true');
-        setShowAlertaOk(true);
         onSave({
           texto,
           titulo,
           icon: iconFile ? URL.createObjectURL(iconFile) : iconPreview,
+          showAlert: true,
         });
-        setTimeout(() => {
-          console.log('Closing modal, resetting showAlertaOk');
-          onClose();
-          setShowAlertaOk(false);
-        }, 2000);
+        if (onCardSave) {
+          onCardSave();
+        }
+        onClose();
       }
     } catch (error) {
       const errorMessage = error.response?.data?.error || 'Erro ao salvar alterações.';
@@ -141,7 +134,6 @@ const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, cardId
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-fundo/80">
       <div className="bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-96 relative max-h-[90vh] overflow-y-auto">
-        {showAlertaOk && <AlertaOk mensagem="Card atualizado com sucesso!" />}
         {showAlertaErro && <AlertaErro mensagem={showAlertaErro} />}
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-branco">Editar Informações</h2>
@@ -250,6 +242,7 @@ CardModal.propTypes = {
   iconAtual: PropTypes.string,
   cardId: PropTypes.string.isRequired,
   onSave: PropTypes.func.isRequired,
+  onCardSave: PropTypes.func,
 };
 
 export default CardModal;
