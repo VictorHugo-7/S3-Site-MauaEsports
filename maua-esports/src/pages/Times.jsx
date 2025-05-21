@@ -50,6 +50,17 @@ const Times = () => {
     loadUserData();
   }, [instance]);
 
+  // Limpa alertas após 3 segundos
+  useEffect(() => {
+    if (successMessage || erroCarregamento) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+        setErroCarregamento(null);
+      }, 3000); // 3 segundos
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage, erroCarregamento]);
+
   const carregarTimes = async () => {
     try {
       setCarregando(true);
@@ -66,7 +77,7 @@ const Times = () => {
       const timesComUrls = response.data.map((time) => ({
         ...time,
         fotoUrl: `${API_BASE_URL}/times/${time.id}/foto?${Date.now()}`,
-        jogoUrl: `${API_BASE_URL}/times/${time.id}/jogo?lossless=1&${Date.now()}`,
+        jogoUrl: `${API_BASE_URL}/times/${time.id}/jogo?${Date.now()}`,
       }));
 
       setTimes(timesComUrls.sort((a, b) => a.id - b.id));
@@ -90,7 +101,6 @@ const Times = () => {
   }, []);
 
   const handleDeleteTime = async (timeId) => {
-    const time = times.find((t) => t.id === timeId);
     try {
       await axios.delete(`${API_BASE_URL}/times/${timeId}`);
       setTimes(times.filter((time) => time.id !== timeId));
@@ -236,8 +246,14 @@ const Times = () => {
 
   return (
     <div className="w-full min-h-screen bg-fundo">
-      {erroCarregamento && <AlertaErro mensagem={erroCarregamento} />}
-      {successMessage && <AlertaOk mensagem={successMessage} />}
+      {successMessage && (
+          <AlertaOk mensagem={successMessage} />
+        
+      )}
+      {erroCarregamento && (
+          <AlertaErro mensagem={erroCarregamento} />
+        
+      )}
       <div className="bg-[#010409] h-[104px]"></div>
       <PageBanner pageName="Escolha seu time!" />
       <div className="bg-fundo w-full flex justify-center items-center overflow-auto scrollbar-hidden">

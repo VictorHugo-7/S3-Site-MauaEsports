@@ -10,7 +10,7 @@ import { useMsal } from '@azure/msal-react';
 
 const API_BASE_URL = 'http://localhost:3000';
 
-const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, cardId, onSave, onCardSave }) => {
+const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, cardId, onSave, onCardSave, onCardError }) => {
   const [texto, setTexto] = useState('');
   const [titulo, setTitulo] = useState('');
   const [iconPreview, setIconPreview] = useState(iconAtual);
@@ -80,7 +80,11 @@ const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, cardId
     try {
       const account = instance.getActiveAccount();
       if (!account) {
-        setShowAlertaErro('Usuário não autenticado.');
+        const errorMessage = 'Usuário não autenticado.';
+        setShowAlertaErro(errorMessage);
+        if (onCardError) {
+          onCardError(errorMessage);
+        }
         setLoading(false);
         return;
       }
@@ -124,6 +128,9 @@ const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, cardId
     } catch (error) {
       const errorMessage = error.response?.data?.error || 'Erro ao salvar alterações.';
       setShowAlertaErro(errorMessage);
+      if (onCardError) {
+        onCardError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -243,6 +250,7 @@ CardModal.propTypes = {
   cardId: PropTypes.string.isRequired,
   onSave: PropTypes.func.isRequired,
   onCardSave: PropTypes.func,
+  onCardError: PropTypes.func,
 };
 
 export default CardModal;
