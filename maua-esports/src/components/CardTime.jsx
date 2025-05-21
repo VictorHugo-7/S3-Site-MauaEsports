@@ -49,10 +49,11 @@ const CardTime = ({ timeId, nome, foto, jogo, onDelete, onEditClick, userRole })
                 {error}
               </div>
             )}
+            {isAdmin && (
             <div className="absolute top-2 right-2 bg-black bg-opacity-90 rounded-full w-8 h-8 flex items-center justify-center z-10">
               <span className="text-branco font-bold text-md">{timeId}</span>
             </div>
-
+            )}
             <div className="w-full h-[70%] relative overflow-hidden rounded-t-md">
               {imgError ? (
                 <div className="w-full h-full bg-cinza-escuro flex items-center justify-center">
