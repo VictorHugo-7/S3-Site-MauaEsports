@@ -2,6 +2,13 @@ const mongoose = require('mongoose');
 const { Usuario } = require('../../../backend.cjs');
 
 describe('Modelo Usuario', () => {
+  // Função para gerar emails válidos no formato Mauá
+  function generateMauaEmail() {
+    const randomDigits = Math.floor(10000 + Math.random() * 90000);
+    const randomDigit = Math.floor(1 + Math.random() * 9);
+    return `24.${randomDigits}-${randomDigit}@maua.br`;
+  }
+
   beforeAll(async () => {
     // Conexão com o banco de dados já deve estar configurada no setup.js
   });
@@ -12,7 +19,7 @@ describe('Modelo Usuario', () => {
 
   it('deve criar um usuário válido com email @maua.br', async () => {
     const userData = {
-      email: 'teste.valido@maua.br',
+      email: generateMauaEmail(),
       tipoUsuario: 'Jogador'
     };
 
@@ -46,9 +53,20 @@ describe('Modelo Usuario', () => {
       .toThrow(mongoose.Error.ValidationError);
   });
 
+  it('deve falhar ao criar usuário com formato Mauá inválido', async () => {
+    const userData = {
+      email: '24.123-1@maua.br', // Formato inválido
+      tipoUsuario: 'Jogador'
+    };
+
+    await expect(Usuario.create(userData))
+      .rejects
+      .toThrow(mongoose.Error.ValidationError);
+  });
+
   it('deve validar Discord ID com 18 dígitos', async () => {
     const userData = {
-      email: 'teste.discord@maua.br',
+      email: generateMauaEmail(),
       tipoUsuario: 'Jogador',
       discordID: '123456789012345678' // 18 dígitos
     };
@@ -59,7 +77,7 @@ describe('Modelo Usuario', () => {
 
   it('deve falhar com Discord ID inválido', async () => {
     const userData = {
-      email: 'teste.discord.invalido@maua.br',
+      email: generateMauaEmail(),
       tipoUsuario: 'Jogador',
       discordID: '123' // Inválido (menos de 18 dígitos)
     };
@@ -79,7 +97,7 @@ describe('Modelo Usuario', () => {
 
     for (const tipo of tiposValidos) {
       const userData = {
-        email: `teste.${tipo.replace(/\s+/g, '-').toLowerCase()}@maua.br`,
+        email: generateMauaEmail(),
         tipoUsuario: tipo
       };
 
@@ -90,7 +108,7 @@ describe('Modelo Usuario', () => {
 
   it('deve falhar com tipo de usuário inválido', async () => {
     const userData = {
-      email: 'teste.tipo.invalido@maua.br',
+      email: generateMauaEmail(),
       tipoUsuario: 'Tipo Inválido Que Não Existe'
     };
 
@@ -100,8 +118,9 @@ describe('Modelo Usuario', () => {
   });
 
   it('deve garantir que o email é único', async () => {
+    const emailUnico = generateMauaEmail();
     const userData = {
-      email: 'email.unico@maua.br',
+      email: emailUnico,
       tipoUsuario: 'Jogador'
     };
 
@@ -111,6 +130,6 @@ describe('Modelo Usuario', () => {
     // Segunda tentativa deve falhar
     await expect(Usuario.create(userData))
       .rejects
-      .toThrow(/já está em uso/); // Atualize para a mensagem real
+      .toThrow(/já está em uso/);
   });
 });
