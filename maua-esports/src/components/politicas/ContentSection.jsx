@@ -1,30 +1,33 @@
 import { useState, useEffect } from "react";
+import { useMsal } from "@azure/msal-react";
+import PropTypes from "prop-types";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+
+const API_BASE_URL = "http://localhost:3000";
 
 const ContentSection = ({
   id,
   title,
+  description,
   isActive,
   setSuccessMessage,
   setErrorMessage,
   isAdminMode,
 }) => {
+  const { instance } = useMsal();
   const [isEditing, setIsEditing] = useState(false);
   const [isMarkdownMode, setIsMarkdownMode] = useState(false);
-  const [content, setContent] = useState("");
-  const [editorContent, setEditorContent] = useState("");
+  const [content, setContent] = useState(description || "");
+  const [editorContent, setEditorContent] = useState(description || "");
   const [markdownContent, setMarkdownContent] = useState("");
 
   useEffect(() => {
-    const savedContent = localStorage.getItem(`termos-politicas-${id}`);
-    if (savedContent) {
-      setContent(savedContent);
-      setEditorContent(savedContent);
-      const basicMarkdown = htmlToBasicMarkdown(savedContent);
-      setMarkdownContent(basicMarkdown);
-    }
-  }, [id]);
+    const basicMarkdown = htmlToBasicMarkdown(description || "");
+    setContent(description || "");
+    setEditorContent(description || "");
+    setMarkdownContent(basicMarkdown);
+  }, [description]);
 
   const htmlToBasicMarkdown = (html) => {
     let markdown = html;
@@ -63,7 +66,7 @@ const ContentSection = ({
     const style = document.createElement("style");
     style.innerHTML = `
       .quill-editor-container .ql-editor {
-        background-color: #0D111;
+        background-color: #0D1117;
         color: white;
       }
       .ql-bold:hover::before { content: "Negrito"; position: absolute; background: #333; color: #fff; padding: 2px 5px; border-radius: 3px; font-size: 12px; bottom: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; }
@@ -132,7 +135,7 @@ const ContentSection = ({
         font-size: 2em !important;
       }
       .markdown-editor {
-        background-color: #0D111;
+        background-color: #0D1117;
         color: white;
         border: 1px solid #3D444D;
         border-radius: 4px;
@@ -190,7 +193,7 @@ const ContentSection = ({
     setIsMarkdownMode(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!isAdminMode) {
       setErrorMessage("Você não tem permissão para editar seções");
       return;
@@ -209,23 +212,47 @@ const ContentSection = ({
         setErrorMessage("O conteúdo não pode estar vazio");
         return;
       }
-      localStorage.setItem(`termos-politicas-${id}`, finalContent);
+
+      const account = instance.getActiveAccount();
+      if (!account) {
+        throw new Error("Usuário não autenticado");
+      }
+
+      const tokenResponse = await instance.acquireTokenSilent({
+        scopes: ["User.Read"],
+        account,
+      });
+
+      const response = await fetch(`${API_BASE_URL}/politicas/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${tokenResponse.accessToken}`,
+        },
+        body: JSON.stringify({
+          titulo: title,
+          descricao: finalContent,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Erro ao salvar política");
+      }
+
       setContent(finalContent);
       setIsEditing(false);
-      setSuccessMessage("Conteúdo salvo com sucesso!");
+      setSuccessMessage(data.message);
     } catch (err) {
-      setErrorMessage("Erro ao salvar o conteúdo");
+      setErrorMessage(err.message || "Erro ao salvar o conteúdo");
       console.error("Erro ao salvar:", err);
     }
   };
 
   const handleCancel = () => {
-    const savedContent = localStorage.getItem(`termos-politicas-${id}`);
-    if (savedContent) {
-      setEditorContent(savedContent);
-      const basicMarkdown = htmlToBasicMarkdown(savedContent);
-      setMarkdownContent(basicMarkdown);
-    }
+    setEditorContent(content);
+    setMarkdownContent(htmlToBasicMarkdown(content));
     setIsEditing(false);
   };
 
@@ -264,42 +291,42 @@ const ContentSection = ({
 
   return (
     <div className={`${isActive ? "block" : "hidden"}`}>
-      <div className="flex justify-between items-start md:items-center border-b-2 border-[#3D444D] pb-3 mb-3">
-        <h2 className="text-2xl font-bold text-[#F0F6FC]">{title}</h2>
-        {isAdminMode && !isEditing ? (
-          <div className="flex mt-2 md:mt-0">
-            <button
-              onClick={handleEdit}
-              className="bg-[#284880] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#162b50] mr-2"
-            >
-              Editar Visual
-            </button>
-            <button
-              onClick={handleEditMarkdown}
-              className="bg-[#284880] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#162b50]"
-            >
-              Editar Markdown
-            </button>
-          </div>
-        ) : (
-          isAdminMode && (
-            <div className="flex mt-2 md:mt-0">
-              <button
-                onClick={handleSave}
-                className="bg-[#006400] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#008800] mr-2"
-              >
-                Salvar
-              </button>
-              <button
-                onClick={handleCancel}
-                className="bg-[#640000] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#880000]"
-              >
-                Cancelar
-              </button>
-            </div>
-          )
-        )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-b-2 border-[#3D444D] pb-3 mb-3">
+  <h2 className="text-2xl font-bold text-[#F0F6FC] text-center sm:text-left"> {title} </h2>
+  {isAdminMode && !isEditing ? (
+    <div className="flex flex-col sm:flex-row gap-2 justify-center sm:justify-end">
+      <button
+        onClick={handleEdit}
+        className="bg-[#284880] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#162b50] hover:cursor-pointer w-full sm:w-auto"
+      >
+        Editar Visual
+      </button>
+      <button
+        onClick={handleEditMarkdown}
+        className="bg-[#284880] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#162b50] hover:cursor-pointer w-full sm:w-auto"
+      >
+        Editar Markdown
+      </button>
+    </div>
+  ) : (
+    isAdminMode && (
+      <div className="flex flex-col sm:flex-row gap-2 justify-center sm:justify-end">
+        <button
+          onClick={handleSave}
+          className="bg-[#006400] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#008800] hover:cursor-pointer w-full sm:w-auto"
+        >
+          Salvar
+        </button>
+        <button
+          onClick={handleCancel}
+          className="bg-[#640000] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#880000] hover:cursor-pointer w-full sm:w-auto"
+        >
+          Cancelar
+        </button>
       </div>
+    )
+  )}
+</div>
       {!isEditing ? (
         <div
           className="min-h-[100px] text-[#8D8D99] mb-10"
@@ -379,6 +406,16 @@ const ContentSection = ({
       )}
     </div>
   );
+};
+
+ContentSection.propTypes = {
+  id: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+  description: PropTypes.string,
+  isActive: PropTypes.bool.isRequired,
+  setSuccessMessage: PropTypes.func.isRequired,
+  setErrorMessage: PropTypes.func.isRequired,
+  isAdminMode: PropTypes.bool.isRequired,
 };
 
 export default ContentSection;

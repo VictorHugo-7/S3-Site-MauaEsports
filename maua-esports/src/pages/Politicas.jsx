@@ -16,6 +16,7 @@ const Politicas = () => {
   const [sections, setSections] = useState([]);
   const [isAddingSection, setIsAddingSection] = useState(false);
   const [newSectionTitle, setNewSectionTitle] = useState("");
+  const [newSectionDescription, setNewSectionDescription] = useState("");
   const [successMessage, setSuccessMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -23,90 +24,81 @@ const Politicas = () => {
   const [userRole, setUserRole] = useState("");
   const [authChecked, setAuthChecked] = useState(false);
 
-  // Função para gerar ID a partir do título
-  const generateId = (title) => {
-    return title
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-]/g, "");
-  };
+  // Limpar alertas após 3 segundos
+  useEffect(() => {
+    if (successMessage || errorMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+        setErrorMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage, errorMessage]);
 
   // Carregar dados do usuário e seções
   useEffect(() => {
-    const loadUserData = async () => {
+    const loadUserDataAndSections = async () => {
       try {
         const account = instance.getActiveAccount();
+        let token;
 
         if (account) {
-          const response = await fetch(
-            `${API_BASE_URL}/usuarios/por-email?email=${encodeURIComponent(
-              account.username
-            )}`
-          );
-          const data = await response.json();
+          const response = await instance.acquireTokenSilent({
+            scopes: ["User.Read"],
+            account,
+          });
+          token = response.accessToken;
 
-          if (!response.ok) {
-            throw new Error(data.error || "Erro ao carregar dados do usuário");
+          const userResponse = await fetch(
+            `${API_BASE_URL}/usuarios/por-email?email=${encodeURIComponent(account.username)}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          const userData = await userResponse.json();
+
+          if (!userResponse.ok) {
+            throw new Error(userData.error || "Erro ao carregar dados do usuário");
           }
 
-          setUserRole(data.usuario.tipoUsuario);
+          setUserRole(userData.usuario.tipoUsuario);
         }
 
+        // Carregar seções da API
+        const sectionsResponse = await fetch(`${API_BASE_URL}/politicas`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const sectionsData = await sectionsResponse.json();
+
+        if (!sectionsResponse.ok) {
+          throw new Error(sectionsData.error || "Erro ao carregar políticas");
+        }
+
+        if (!sectionsData.success || !Array.isArray(sectionsData.politicas)) {
+          throw new Error("Formato de dados inválido");
+        }
+
+        const formattedSections = sectionsData.politicas.map((politica) => ({
+          id: politica._id,
+          title: politica.titulo,
+          description: politica.descricao,
+        }));
+
+        setSections(formattedSections);
+        setActiveSection(formattedSections[0]?.id || "");
+
         setAuthChecked(true);
-        loadSections();
       } catch (err) {
-        console.error("Erro ao carregar dados do usuário:", err);
-        setErrorMessage("Erro ao carregar dados do usuário");
-        navigate("/nao-autorizado");
+        console.error("Erro ao carregar dados:", err);
+        setErrorMessage("Erro ao carregar dados. Tente novamente.");
+        if (err.message.includes("Erro ao carregar dados do usuário")) {
+          navigate("/nao-autorizado");
+        }
       }
     };
 
-    loadUserData();
+    loadUserDataAndSections();
   }, [instance, navigate]);
-
-  // Carregar seções do localStorage
-  const loadSections = () => {
-    const savedSections = localStorage.getItem("policy-sections");
-    const savedActiveSection = localStorage.getItem("active-policy-section");
-
-    if (savedSections) {
-      const parsedSections = JSON.parse(savedSections);
-      setSections(parsedSections);
-
-      if (
-        savedActiveSection &&
-        parsedSections.some((section) => section.id === savedActiveSection)
-      ) {
-        setActiveSection(savedActiveSection);
-      } else if (parsedSections.length > 0) {
-        setActiveSection(parsedSections[0].id);
-      }
-    } else {
-      const defaultSections = [
-        { id: "privacidade", title: "Política de Privacidade" },
-        { id: "cookies", title: "Política de Cookies" },
-        { id: "termos", title: "Termos de Serviço" },
-      ];
-      setSections(defaultSections);
-      setActiveSection(defaultSections[0].id);
-      localStorage.setItem("policy-sections", JSON.stringify(defaultSections));
-      localStorage.setItem("active-policy-section", defaultSections[0].id);
-    }
-  };
-
-  // Salvar seções no localStorage quando houver mudanças
-  useEffect(() => {
-    if (sections.length > 0) {
-      localStorage.setItem("policy-sections", JSON.stringify(sections));
-    }
-  }, [sections]);
-
-  // Salvar seção ativa quando ela for alterada
-  useEffect(() => {
-    if (activeSection) {
-      localStorage.setItem("active-policy-section", activeSection);
-    }
-  }, [activeSection]);
 
   const handleAddSection = () => {
     if (userRole !== "Administrador" && userRole !== "Administrador Geral") {
@@ -116,32 +108,62 @@ const Politicas = () => {
     setIsAddingSection(true);
   };
 
-  const handleSaveNewSection = () => {
+  const handleSaveNewSection = async () => {
     if (userRole !== "Administrador" && userRole !== "Administrador Geral") {
       setErrorMessage("Você não tem permissão para adicionar seções");
       return;
     }
 
     if (newSectionTitle.trim() === "") {
-      setErrorMessage("Digite um título para a seção");
+      setErrorMessage("O título é obrigatório!");
       return;
     }
 
-    const newId = generateId(newSectionTitle);
+    try {
+      const account = instance.getActiveAccount();
+      if (!account) {
+        throw new Error("Usuário não autenticado");
+      }
 
-    if (sections.some((section) => section.id === newId)) {
-      setErrorMessage(
-        "Já existe uma seção com título similar. Escolha outro título."
-      );
-      return;
+      const tokenResponse = await instance.acquireTokenSilent({
+        scopes: ["User.Read"],
+        account,
+      });
+
+      const response = await fetch(`${API_BASE_URL}/politicas`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${tokenResponse.accessToken}`,
+        },
+        body: JSON.stringify({
+          titulo: newSectionTitle.trim(),
+          descricao: newSectionDescription.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Erro ao criar política");
+      }
+
+      const newSection = {
+        id: data.politica._id,
+        title: data.politica.titulo,
+        description: data.politica.descricao,
+      };
+
+      setSections([...sections, newSection]);
+      setSuccessMessage(data.message);
+      setIsAddingSection(false);
+      setNewSectionTitle("");
+      setNewSectionDescription("");
+      setActiveSection(newSection.id);
+    } catch (error) {
+      console.error("Erro ao criar seção:", error);
+      setErrorMessage(error.message || "Erro ao criar seção");
     }
-
-    const newSection = { id: newId, title: newSectionTitle };
-    setSections([...sections, newSection]);
-    setSuccessMessage("Seção criada com sucesso!");
-    setIsAddingSection(false);
-    setNewSectionTitle("");
-    setActiveSection(newId);
   };
 
   const handleDeleteSection = (id) => {
@@ -153,26 +175,56 @@ const Politicas = () => {
     setShowConfirmModal(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (userRole !== "Administrador" && userRole !== "Administrador Geral") {
       setErrorMessage("Você não tem permissão para excluir seções");
       return;
     }
-    const idToDelete = sectionToDelete;
-    const updatedSections = sections.filter(
-      (section) => section.id !== idToDelete
-    );
-    setSections(updatedSections);
 
-    localStorage.removeItem(`termos-politicas-${idToDelete}`);
+    try {
+      const account = instance.getActiveAccount();
+      if (!account) {
+        throw new Error("Usuário não autenticado");
+      }
 
-    if (idToDelete === activeSection && updatedSections.length > 0) {
-      setActiveSection(updatedSections[0].id);
+      const tokenResponse = await instance.acquireTokenSilent({
+        scopes: ["User.Read"],
+        account,
+      });
+
+      const response = await fetch(`${API_BASE_URL}/politicas/${sectionToDelete}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${tokenResponse.accessToken}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Erro ao excluir política");
+      }
+
+      const updatedSections = sections.filter(
+        (section) => section.id !== sectionToDelete
+      );
+      setSections(updatedSections);
+
+      if (sectionToDelete === activeSection && updatedSections.length > 0) {
+        setActiveSection(updatedSections[0].id);
+      } else if (updatedSections.length === 0) {
+        setActiveSection("");
+      }
+
+      setSuccessMessage(data.message);
+      setShowConfirmModal(false);
+      setSectionToDelete(null);
+    } catch (error) {
+      console.error("Erro ao excluir seção:", error);
+      setErrorMessage(error.message || "Erro ao excluir seção");
+      setShowConfirmModal(false);
+      setSectionToDelete(null);
     }
-
-    setSuccessMessage("Seção excluída com sucesso!");
-    setShowConfirmModal(false);
-    setSectionToDelete(null);
   };
 
   const cancelDelete = () => {
@@ -180,50 +232,69 @@ const Politicas = () => {
     setSectionToDelete(null);
   };
 
-  const handleEditSection = (id, newTitle) => {
+  const handleEditSection = async (id, newTitle) => {
     if (userRole !== "Administrador" && userRole !== "Administrador Geral") {
       setErrorMessage("Você não tem permissão para editar seções");
       return;
     }
+
     const currentSection = sections.find((s) => s.id === id);
     if (currentSection.title === newTitle) {
       return;
     }
 
-    const newId = generateId(newTitle);
-
-    if (sections.some((section) => section.id === newId && section.id !== id)) {
-      setErrorMessage(
-        "Já existe uma seção com título similar. Escolha outro título."
-      );
-      return;
-    }
-
-    const oldContent = localStorage.getItem(`termos-politicas-${id}`);
-
-    const updatedSections = sections.map((section) => {
-      if (section.id === id) {
-        return { ...section, id: newId, title: newTitle };
+    try {
+      const account = instance.getActiveAccount();
+      if (!account) {
+        throw new Error("Usuário não autenticado");
       }
-      return section;
-    });
 
-    if (oldContent) {
-      localStorage.setItem(`termos-politicas-${newId}`, oldContent);
-      localStorage.removeItem(`termos-politicas-${id}`);
-    }
+      const tokenResponse = await instance.acquireTokenSilent({
+        scopes: ["User.Read"],
+        account,
+      });
 
-    setSections(updatedSections);
-    setSuccessMessage("Seção atualizada com sucesso!");
+      const response = await fetch(`${API_BASE_URL}/politicas/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${tokenResponse.accessToken}`,
+        },
+        body: JSON.stringify({
+          titulo: newTitle.trim(),
+          descricao: currentSection.description,
+        }),
+      });
 
-    if (id === activeSection) {
-      setActiveSection(newId);
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Erro ao atualizar política");
+      }
+
+      const updatedSections = sections.map((section) => {
+        if (section.id === id) {
+          return {
+            ...section,
+            title: data.politica.titulo,
+            description: data.politica.descricao,
+          };
+        }
+        return section;
+      });
+
+      setSections(updatedSections);
+      setSuccessMessage(data.message);
+    } catch (error) {
+      console.error("Erro ao editar seção:", error);
+      setErrorMessage(error.message || "Erro ao editar seção");
     }
   };
 
   const handleCancelAdd = () => {
     setIsAddingSection(false);
     setNewSectionTitle("");
+    setNewSectionDescription("");
   };
 
   if (!authChecked) {
@@ -236,14 +307,18 @@ const Politicas = () => {
 
   return (
     <div className="min-h-screen bg-[#0D1117]">
+      {successMessage && (
+          <AlertaOk mensagem={successMessage} />
+        
+      )}
+      {errorMessage && (
+          <AlertaErro mensagem={errorMessage} />
+      )}
       <div className="bg-[#010409] h-[104px]"></div>
 
       <PageBanner pageName="Políticas e Termos" />
 
       <div className="mx-14 px-4">
-        <AlertaOk mensagem={successMessage} />
-        <AlertaErro mensagem={errorMessage} />
-
         <div className="flex flex-col md:flex-row gap-10 mt-19">
           <div className="md:w-1/3">
             <Menu
@@ -256,6 +331,8 @@ const Politicas = () => {
               isAddingSection={isAddingSection}
               newSectionTitle={newSectionTitle}
               setNewSectionTitle={setNewSectionTitle}
+              newSectionDescription={newSectionDescription}
+              setNewSectionDescription={setNewSectionDescription}
               onSaveNewSection={handleSaveNewSection}
               onCancelAdd={handleCancelAdd}
               setSuccessMessage={setSuccessMessage}
@@ -273,6 +350,7 @@ const Politicas = () => {
                 key={section.id}
                 id={section.id}
                 title={section.title}
+                description={section.description}
                 isActive={activeSection === section.id}
                 setSuccessMessage={setSuccessMessage}
                 setErrorMessage={setErrorMessage}
@@ -286,7 +364,6 @@ const Politicas = () => {
         </div>
       </div>
 
-      {/* Confirmation Modal */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-[#1E252F] p-6 rounded-xl shadow-lg text-white">
