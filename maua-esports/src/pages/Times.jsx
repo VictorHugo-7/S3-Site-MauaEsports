@@ -22,13 +22,12 @@ const Times = () => {
   const navigate = useNavigate();
   const { instance } = useMsal();
 
-  // Verifica autenticação e carrega dados do usuário, se logado
   useEffect(() => {
     const loadUserData = async () => {
       try {
         const account = instance.getActiveAccount();
         if (!account) {
-          setUserRole(null); // Usuário não logado
+          setUserRole(null);
           return;
         }
 
@@ -43,20 +42,19 @@ const Times = () => {
         setUserRole(userData.tipoUsuario);
       } catch (error) {
         console.error("Erro ao carregar dados do usuário:", error);
-        setUserRole(null); // Tratar erro como usuário não logado
+        setUserRole(null);
       }
     };
 
     loadUserData();
   }, [instance]);
 
-  // Limpa alertas após 3 segundos
   useEffect(() => {
     if (successMessage || erroCarregamento) {
       const timer = setTimeout(() => {
         setSuccessMessage(null);
         setErroCarregamento(null);
-      }, 3000); // 3 segundos
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [successMessage, erroCarregamento]);
@@ -76,19 +74,19 @@ const Times = () => {
 
       const timesComUrls = response.data.map((time) => ({
         ...time,
-        fotoUrl: `${API_BASE_URL}/times/${time.id}/foto?${Date.now()}`,
-        jogoUrl: `${API_BASE_URL}/times/${time.id}/jogo?${Date.now()}`,
+        fotoUrl: `${API_BASE_URL}/times/${time._id}/foto?${Date.now()}`,
+        jogoUrl: `${API_BASE_URL}/times/${time._id}/jogo?${Date.now()}`,
       }));
 
-      setTimes(timesComUrls.sort((a, b) => a.id - b.id));
+      setTimes(timesComUrls);
     } catch (error) {
       console.error("Erro ao carregar times:", error);
       setErroCarregamento(
         error.response
           ? error.response.data.message || "Erro ao carregar times"
           : error.message.includes("Network Error")
-          ? "Servidor não responde. Verifique sua conexão ou tente novamente."
-          : error.message
+            ? "Servidor não responde. Verifique sua conexão ou tente novamente."
+            : error.message
       );
       setTimes([]);
     } finally {
@@ -103,13 +101,13 @@ const Times = () => {
   const handleDeleteTime = async (timeId) => {
     try {
       await axios.delete(`${API_BASE_URL}/times/${timeId}`);
-      setTimes(times.filter((time) => time.id !== timeId));
+      setTimes(times.filter((time) => time._id !== timeId));
       setSuccessMessage("Time excluído com sucesso!");
     } catch (error) {
       console.error("Erro ao deletar time:", error);
       setErroCarregamento(
         error.response?.data?.message ||
-          "Não foi possível excluir o time. Verifique se não há jogadores associados."
+        "Não foi possível excluir o time. Verifique se não há jogadores associados."
       );
     }
   };
@@ -130,7 +128,6 @@ const Times = () => {
     try {
       const formData = new FormData();
       formData.append("nome", timeAtualizado.nome);
-      formData.append("rota", timeAtualizado.rota);
 
       if (timeAtualizado.foto && timeAtualizado.foto.startsWith("data:image")) {
         const fotoBlob = dataURLtoBlob(timeAtualizado.foto);
@@ -140,23 +137,21 @@ const Times = () => {
       if (timeAtualizado.jogo && timeAtualizado.jogo.startsWith("data:image")) {
         const jogoBlob = dataURLtoBlob(timeAtualizado.jogo);
         formData.append("jogo", jogoBlob, `jogo-${Date.now()}.jpg`);
-      } else if (timeAtualizado.jogo === null) {
-        formData.append("removeJogo", "true");
       }
 
       const response = await axios.put(
-        `${API_BASE_URL}/times/${timeAtualizado.id}`,
+        `${API_BASE_URL}/times/${timeAtualizado._id}`,
         formData
       );
 
       setTimes(
         times.map((time) =>
-          time.id === timeAtualizado.id
+          time._id === timeAtualizado._id
             ? {
-                ...response.data,
-                fotoUrl: `${API_BASE_URL}/times/${response.data.id}/foto?${Date.now()}`,
-                jogoUrl: `${API_BASE_URL}/times/${response.data.id}/jogo?${Date.now()}`,
-              }
+              ...response.data,
+              fotoUrl: `${API_BASE_URL}/times/${response.data._id}/foto?${Date.now()}`,
+              jogoUrl: `${API_BASE_URL}/times/${response.data._id}/jogo?${Date.now()}`,
+            }
             : time
         )
       );
@@ -175,19 +170,8 @@ const Times = () => {
 
   const handleCreateTime = async (novoTime) => {
     try {
-      const idExistente = times.some(
-        (time) => time.id === parseInt(novoTime.id)
-      );
-      if (idExistente) {
-        throw new Error(
-          "Já existe um time com este ID. Por favor, use um ID diferente."
-        );
-      }
-
       const formData = new FormData();
-      formData.append("id", novoTime.id);
       formData.append("nome", novoTime.nome);
-      formData.append("rota", novoTime.rota);
 
       if (novoTime.foto && novoTime.foto.startsWith("data:image")) {
         const fotoBlob = dataURLtoBlob(novoTime.foto);
@@ -201,30 +185,28 @@ const Times = () => {
 
       const response = await axios.post(`${API_BASE_URL}/times`, formData);
 
-      setTimes(
-        [
-          ...times,
-          {
-            ...response.data,
-            fotoUrl: `${API_BASE_URL}/times/${response.data.id}/foto?${Date.now()}`,
-            jogoUrl: `${API_BASE_URL}/times/${response.data.id}/jogo?${Date.now()}`,
-          },
-        ].sort((a, b) => a.id - b.id)
-      );
+      setTimes([
+        ...times,
+        {
+          ...response.data,
+          fotoUrl: `${API_BASE_URL}/times/${response.data._id}/foto?${Date.now()}`,
+          jogoUrl: `${API_BASE_URL}/times/${response.data._id}/jogo?${Date.now()}`,
+        },
+      ]);
 
       setSuccessMessage("Time criado com sucesso!");
       return true;
     } catch (error) {
       console.error("Erro ao criar time:", error);
-      setErroCarregamento(
-        error.response?.data?.message || "Erro ao criar time"
-      );
+      const errorMessage =
+        error.response?.data?.message || "Erro ao criar time. Tente novamente.";
+      setErroCarregamento(errorMessage);
       throw error;
     }
   };
 
   const handleEditClick = (timeId) => {
-    const time = times.find((t) => t.id === timeId);
+    const time = times.find((t) => t._id === timeId);
     setTimeEditando({
       ...time,
       foto: time.fotoUrl,
@@ -246,14 +228,8 @@ const Times = () => {
 
   return (
     <div className="w-full min-h-screen bg-fundo">
-      {successMessage && (
-          <AlertaOk mensagem={successMessage} />
-        
-      )}
-      {erroCarregamento && (
-          <AlertaErro mensagem={erroCarregamento} />
-        
-      )}
+      {successMessage && <AlertaOk mensagem={successMessage} />}
+      {erroCarregamento && <AlertaErro mensagem={erroCarregamento} />}
       <div className="bg-[#010409] h-[104px]"></div>
       <PageBanner pageName="Escolha seu time!" />
       <div className="bg-fundo w-full flex justify-center items-center overflow-auto scrollbar-hidden">
@@ -261,11 +237,11 @@ const Times = () => {
           {times.length > 0 ? (
             times.map((time) => (
               <CardTime
-                key={time.id}
-                timeId={time.id}
+                key={time._id}
+                timeId={time._id}
                 nome={time.nome}
-                foto={`${API_BASE_URL}/times/${time.id}/foto?${Date.now()}`}
-                jogo={`${API_BASE_URL}/times/${time.id}/jogo?${Date.now()}`}
+                foto={`${API_BASE_URL}/times/${time._id}/foto?${Date.now()}`}
+                jogo={`${API_BASE_URL}/times/${time._id}/jogo?${Date.now()}`}
                 onDelete={handleDeleteTime}
                 onEditClick={handleEditClick}
                 userRole={userRole}

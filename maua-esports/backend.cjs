@@ -76,13 +76,11 @@ const jogadorSchema = mongoose.Schema({
     contentType: String,
     nomeOriginal: String,
   },
-
   insta: { type: String },
   twitter: { type: String },
   twitch: { type: String },
-
   time: {
-    type: Number,
+    type: mongoose.Schema.Types.ObjectId, 
     ref: "Time",
     required: true,
   },
@@ -701,21 +699,13 @@ app.get("/jogadores/:id/imagem", async (req, res) => {
 
 app.get("/jogadores", async (req, res) => {
   try {
-    const jogadores = await Jogador.find().lean(); // .lean() para objetos JS simples
-
-    // Busca manual dos times
-    const times = await Time.find({
-      id: { $in: jogadores.map((j) => j.time) },
-    });
-
-    const timesMap = times.reduce((acc, time) => {
-      acc[time.id] = time;
-      return acc;
-    }, {});
+    const jogadores = await Jogador.find()
+      .populate("time", "nome _id") // Popula o campo time com nome e _id
+      .lean();
 
     const resultado = jogadores.map((jogador) => ({
       ...jogador,
-      time: timesMap[jogador.time] || null,
+      time: jogador.time || null,
     }));
 
     res.status(200).json(resultado);
@@ -824,8 +814,8 @@ app.put("/jogadores/:id", upload.single("foto"), async (req, res) => {
 
 ///////////////////////////////////////////////////////////////////////////////AREA DE TIMES ////////////////////////////////////////////////////////////////////////////////////
 
+
 const timeSchema = mongoose.Schema({
-  id: { type: Number, required: true, unique: true },
   nome: { type: String, required: true, unique: true },
   foto: {
     data: Buffer,
@@ -845,11 +835,10 @@ const timeSchema = mongoose.Schema({
 
 const Time = mongoose.model("Time", timeSchema);
 
-// Rota para buscar time por ID numérico
-app.get("/times/:id", async (req, res) => {
+// Rota para buscar time por _id
+app.get("/times/:_id", async (req, res) => {
   try {
-    const timeId = parseInt(req.params.id);
-    const time = await Time.findOne({ id: timeId })
+    const time = await Time.findById(req.params._id)
       .select("-foto.data -jogo.data -__v")
       .lean();
 
@@ -859,10 +848,9 @@ app.get("/times/:id", async (req, res) => {
         .json({ success: false, message: "Time não encontrado" });
     }
 
-    // Adiciona a URL da logo ao objeto do time
     const timeComLogo = {
       ...time,
-      logoUrl: `${req.protocol}://${req.get("host")}/times/${timeId}/logo`,
+      logoUrl: `${req.protocol}://${req.get("host")}/times/${time._id}/logo`,
     };
 
     res.status(200).json(timeComLogo);
@@ -871,11 +859,11 @@ app.get("/times/:id", async (req, res) => {
     res.status(500).json({ success: false, message: "Erro ao buscar time" });
   }
 });
+
 // Rota para servir a logo do time
-app.get("/times/:id/logo", async (req, res) => {
+app.get("/times/:_id/logo", async (req, res) => {
   try {
-    const timeId = parseInt(req.params.id);
-    const time = await Time.findOne({ id: timeId });
+    const time = await Time.findById(req.params._id);
 
     if (!time || !time.jogo || !time.jogo.data) {
       return res.status(404).send("Logo não encontrada");
@@ -888,19 +876,14 @@ app.get("/times/:id/logo", async (req, res) => {
     res.status(500).send("Erro ao buscar logo");
   }
 });
-// Rota para buscar jogadores por time ID
-app.get("/times/:id/jogadores", async (req, res) => {
+
+// Rota para buscar jogadores por time _id
+app.get("/times/:_id/jogadores", async (req, res) => {
   try {
-    const timeId = parseInt(req.params.id);
-
-    // DEBUG: Verifique no console do servidor
-    console.log(`Buscando jogadores para time ID: ${timeId}`);
-
-    const jogadores = await Jogador.find({ time: timeId })
+    const jogadores = await Jogador.find({ time: req.params._id })
       .select("-foto.data -__v")
       .lean();
 
-    // Adiciona URL da foto para cada jogador
     const jogadoresComImagens = jogadores.map((jogador) => ({
       ...jogador,
       fotoUrl: `/jogadores/${jogador._id}/imagem`,
@@ -915,10 +898,11 @@ app.get("/times/:id/jogadores", async (req, res) => {
     });
   }
 });
+
 // Rota para obter a foto do time
-app.get("/times/:id/foto", async (req, res) => {
+app.get("/times/:_id/foto", async (req, res) => {
   try {
-    const time = await Time.findOne({ id: req.params.id });
+    const time = await Time.findById(req.params._id);
 
     if (!time || !time.foto || !time.foto.data) {
       return res.status(404).send("Imagem não encontrada");
@@ -932,9 +916,9 @@ app.get("/times/:id/foto", async (req, res) => {
 });
 
 // Rota para obter o logo do jogo
-app.get("/times/:id/jogo", async (req, res) => {
+app.get("/times/:_id/jogo", async (req, res) => {
   try {
-    const time = await Time.findOne({ id: req.params.id });
+    const time = await Time.findById(req.params._id);
 
     if (!time || !time.jogo || !time.jogo.data) {
       return res.status(404).send("Imagem não encontrada");
@@ -947,6 +931,7 @@ app.get("/times/:id/jogo", async (req, res) => {
   }
 });
 
+// Rota para criar time
 app.post(
   "/times",
   upload.fields([
@@ -955,13 +940,12 @@ app.post(
   ]),
   async (req, res) => {
     try {
-      const { id, nome } = req.body;
+      const { nome } = req.body;
       const fotoFile = req.files["foto"][0];
       const jogoFile = req.files["jogo"][0];
+      if (!nome) {
+        return res.status(400).json({ message: "Nome é obrigatório" });
 
-      // Validações
-      if (!id || !nome) {
-        return res.status(400).json({ message: "ID e nome são obrigatórios" });
       }
       if (!fotoFile || !jogoFile) {
         return res
@@ -970,7 +954,6 @@ app.post(
       }
 
       const novoTime = new Time({
-        id,
         nome,
         foto: {
           data: fotoFile.buffer,
@@ -986,13 +969,13 @@ app.post(
 
       await novoTime.save();
       res.status(201).json({
-        id: novoTime.id,
+        _id: novoTime._id,
         nome: novoTime.nome,
       });
     } catch (error) {
       if (error.code === 11000) {
         return res.status(400).json({
-          message: "Erro: ID ou nome já existem",
+          message: "Erro: Nome já existe",
           error: error.keyValue,
         });
       }
@@ -1001,59 +984,9 @@ app.post(
   }
 );
 
-app.get("/times", async (req, res) => {
-  try {
-    const times = await Time.find().select("-foto.data -jogo.data");
-    res.status(200).json(times);
-  } catch (error) {
-    res.status(500).json({ message: "Erro ao buscar times", error });
-  }
-});
-
-app.delete("/admins/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Validação robusta do ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Formato de ID inválido",
-        receivedId: id,
-        expectedFormat: "ObjectId (24 caracteres hexadecimais)",
-      });
-    }
-
-    const result = await Admin.deleteOne({
-      _id: new mongoose.Types.ObjectId(id),
-    });
-
-    if (result.deletedCount === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Nenhum admin encontrado com este ID",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Admin excluído com sucesso",
-    });
-  } catch (error) {
-    console.error("Erro no backend:", {
-      message: error.message,
-      stack: error.stack,
-      receivedId: req.params.id,
-    });
-    res.status(500).json({
-      success: false,
-      message: "Erro interno no servidor",
-    });
-  }
-});
-
+// Rota para atualizar time
 app.put(
-  "/times/:id",
+  "/times/:_id",
   upload.fields([
     { name: "foto", maxCount: 1 },
     { name: "jogo", maxCount: 1 },
@@ -1081,8 +1014,8 @@ app.put(
         };
       }
 
-      const timeAtualizado = await Time.findOneAndUpdate(
-        { id: req.params.id },
+      const timeAtualizado = await Time.findByIdAndUpdate(
+        req.params._id,
         updateData,
         { new: true }
       ).select("-foto.data -jogo.data");
@@ -1104,11 +1037,11 @@ app.put(
   }
 );
 
-app.delete("/times/:id", async (req, res) => {
+// Rota para deletar time
+app.delete("/times/:_id", async (req, res) => {
   try {
-    // Verifica se existem jogadores associados
     const jogadoresDoTime = await Jogador.countDocuments({
-      "time.id": parseInt(req.params.id),
+      time: req.params._id,
     });
 
     if (jogadoresDoTime > 0) {
@@ -1118,7 +1051,7 @@ app.delete("/times/:id", async (req, res) => {
       });
     }
 
-    const timeRemovido = await Time.findOneAndDelete({ id: req.params.id });
+    const timeRemovido = await Time.findByIdAndDelete(req.params._id);
 
     if (!timeRemovido) {
       return res.status(404).json({ message: "Time não encontrado" });
@@ -1126,10 +1059,20 @@ app.delete("/times/:id", async (req, res) => {
 
     res.status(200).json({
       message: "Time removido com sucesso",
-      id: timeRemovido.id,
+      _id: timeRemovido._id,
     });
   } catch (error) {
     res.status(500).json({ message: "Erro ao remover time", error });
+  }
+});
+
+// Rota para listar todos os times
+app.get("/times", async (req, res) => {
+  try {
+    const times = await Time.find().select("-foto.data -jogo.data");
+    res.status(200).json(times);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao buscar times", error });
   }
 });
 
@@ -1638,6 +1581,21 @@ app.get("/admins/:id/foto", async (req, res) => {
     res.status(500).send("Erro ao carregar imagem");
   }
 });
+
+app.delete('/admins/:id', async (req, res) => {
+  try {
+    const admin = await Admin.findByIdAndDelete(req.params.id);
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin não encontrado' });
+    }
+    console.log(`Admin removido: ${req.params.id}`);
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Erro ao remover admin:', error);
+    res.status(500).json({ message: 'Erro ao remover admin', error: error.message });
+  }
+});
+
 /////////////////////////////////////////////////////////////////////    API   ///////////////////////////////////////////////////////////////////////////////////////////////
 
 function authenticate(req, res, next) {
