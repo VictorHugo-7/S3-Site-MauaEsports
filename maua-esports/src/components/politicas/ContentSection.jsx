@@ -292,41 +292,41 @@ const ContentSection = ({
   return (
     <div className={`${isActive ? "block" : "hidden"}`}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-b-2 border-[#3D444D] pb-3 mb-3">
-  <h2 className="text-2xl font-bold text-[#F0F6FC] text-center sm:text-left"> {title} </h2>
-  {isAdminMode && !isEditing ? (
-    <div className="flex flex-col sm:flex-row gap-2 justify-center sm:justify-end">
-      <button
-        onClick={handleEdit}
-        className="bg-[#284880] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#162b50] hover:cursor-pointer w-full sm:w-auto"
-      >
-        Editar Visual
-      </button>
-      <button
-        onClick={handleEditMarkdown}
-        className="bg-[#284880] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#162b50] hover:cursor-pointer w-full sm:w-auto"
-      >
-        Editar Markdown
-      </button>
-    </div>
-  ) : (
-    isAdminMode && (
-      <div className="flex flex-col sm:flex-row gap-2 justify-center sm:justify-end">
-        <button
-          onClick={handleSave}
-          className="bg-[#006400] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#008800] hover:cursor-pointer w-full sm:w-auto"
-        >
-          Salvar
-        </button>
-        <button
-          onClick={handleCancel}
-          className="bg-[#640000] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#880000] hover:cursor-pointer w-full sm:w-auto"
-        >
-          Cancelar
-        </button>
+        <h2 className="text-2xl font-bold text-[#F0F6FC] text-center sm:text-left"> {title} </h2>
+        {isAdminMode && !isEditing ? (
+          <div className="flex flex-col sm:flex-row gap-2 justify-center sm:justify-end">
+            <button
+              onClick={handleEdit}
+              className="bg-[#284880] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#162b50] hover:cursor-pointer w-full sm:w-auto"
+            >
+              Editar Visual
+            </button>
+            <button
+              onClick={handleEditMarkdown}
+              className="bg-[#284880] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#162b50] hover:cursor-pointer w-full sm:w-auto"
+            >
+              Editar Markdown
+            </button>
+          </div>
+        ) : (
+          isAdminMode && (
+            <div className="flex flex-col sm:flex-row gap-2 justify-center sm:justify-end">
+              <button
+                onClick={handleSave}
+                className="bg-[#006400] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#008800] hover:cursor-pointer w-full sm:w-auto"
+              >
+                Salvar
+              </button>
+              <button
+                onClick={handleCancel}
+                className="bg-[#640000] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#880000] hover:cursor-pointer w-full sm:w-auto"
+              >
+                Cancelar
+              </button>
+            </div>
+          )
+        )}
       </div>
-    )
-  )}
-</div>
       {!isEditing ? (
         <div
           className="min-h-[100px] text-[#8D8D99] mb-10"

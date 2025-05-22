@@ -8,9 +8,7 @@ import { UseImageCrop } from "./UseImageCrop";
 
 const ModalNovoTime = ({ onSave, onClose }) => {
   const [formData, setFormData] = useState({
-    id: "",
     nome: "",
-    rota: "",
   });
   const [errors, setErrors] = useState({});
   const [isVisible, setIsVisible] = useState(false);
@@ -59,10 +57,6 @@ const ModalNovoTime = ({ onSave, onClose }) => {
   const validate = () => {
     const newErrors = {};
     
-    if (!formData.id) {
-      newErrors.id = "ID do Time é obrigatório";
-    }
-    
     if (!formData.nome) {
       newErrors.nome = "Nome do Time é obrigatório";
     }
@@ -86,7 +80,7 @@ const ModalNovoTime = ({ onSave, onClose }) => {
         const dataToSave = {
           ...formData,
           foto: fotoCropped,
-          jogo: jogoPreview
+          jogo: jogoPreview,
         };
         
         await onSave(dataToSave);
@@ -136,26 +130,6 @@ const ModalNovoTime = ({ onSave, onClose }) => {
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm text-fonte-escura font-semibold mb-1">
-              ID do Time <span className="text-vermelho-claro">*</span>
-            </label>
-            <input
-              type="text"
-              name="id"
-              value={formData.id}
-              onChange={handleChange}
-              className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
-                errors.id
-                  ? "border-vermelho-claro focus:border-vermelho-claro"
-                  : "border-borda focus:border-azul-claro"
-              }`}
-            />
-            {errors.id && (
-              <p className="text-vermelho-claro text-sm mt-1">{errors.id}</p>
-            )}
-          </div>
-
           <div className="mb-4">
             <label className="block text-sm text-fonte-escura font-semibold mb-1">
               Nome do Time <span className="text-vermelho-claro">*</span>
