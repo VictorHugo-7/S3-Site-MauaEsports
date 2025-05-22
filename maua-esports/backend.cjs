@@ -1993,7 +1993,7 @@ app.get("/api/apresentacao", async (req, res) => {
   }
 });
 
-app.post("/api/apresentacao", upload.fields([{ name: "imagem" }, { name: "icones" }]), async (req, res) => {
+app.post("/api/apresentacao", upload.any(), async (req, res) => {
   try {
     const {
       titulo1,
@@ -2013,7 +2013,15 @@ app.post("/api/apresentacao", upload.fields([{ name: "imagem" }, { name: "icones
     }
 
     // Parseia os ícones enviados como JSON
-    const iconesParsed = JSON.parse(iconesJson);
+    let iconesParsed;
+    try {
+      iconesParsed = JSON.parse(iconesJson);
+      if (!Array.isArray(iconesParsed)) {
+        return res.status(400).json({ message: "O campo 'icones' deve ser um array" });
+      }
+    } catch (error) {
+      return res.status(400).json({ message: "Erro ao parsear o campo 'icones'", error: error.message });
+    }
 
     // Verifica se já existe uma apresentação
     let apresentacao = await Apresentacao.findOne();
@@ -2024,13 +2032,28 @@ app.post("/api/apresentacao", upload.fields([{ name: "imagem" }, { name: "icones
     const imagemType = imagemFile ? imagemFile.mimetype : apresentacao ? apresentacao.imagemType : null;
 
     // Processa as imagens dos ícones
-    const iconesFiles = req.files["icones"] || [];
-    const iconesData = iconesParsed.map((icone, index) => ({
-      id: icone.id,
-      imagem: iconesFiles[index] ? iconesFiles[index].buffer : apresentacao?.icones[index]?.imagem || null,
-      imagemType: iconesFiles[index] ? iconesFiles[index].mimetype : apresentacao?.icones[index]?.imagemType || null,
-      link: icone.link,
-    }));
+    const iconesFiles = {};
+    req.files.forEach(file => {
+      const match = file.fieldname.match(/icones\[(\d+)\]/);
+      if (match) {
+        const index = parseInt(match[1], 10);
+        iconesFiles[index] = file;
+      }
+    });
+
+    // Mapeia os ícones com as imagens
+    const iconesData = iconesParsed.map((icone, index) => {
+      if (!icone.id || !icone.link) {
+        throw new Error(`Ícone no índice ${index} está faltando 'id' ou 'link'`);
+      }
+
+      return {
+        id: icone.id,
+        imagem: iconesFiles[index] ? iconesFiles[index].buffer : apresentacao?.icones.find(i => i.id === icone.id)?.imagem || null,
+        imagemType: iconesFiles[index] ? iconesFiles[index].mimetype : apresentacao?.icones.find(i => i.id === icone.id)?.imagemType || null,
+        link: icone.link,
+      };
+    });
 
     const apresentacaoData = {
       titulo1,
@@ -2074,10 +2097,9 @@ app.post("/api/apresentacao", upload.fields([{ name: "imagem" }, { name: "icones
       icones: iconesComBase64,
     });
   } catch (error) {
-    res.status(500).json({ message: "Erro ao salvar apresentação", error });
+    res.status(500).json({ message: "Erro ao salvar apresentação", error: error.message });
   }
 });
-
 
 
 //////////////////////////////////////////////////////////////////////////HOME_INFORMACOES////////////////////////////////////////////////////////

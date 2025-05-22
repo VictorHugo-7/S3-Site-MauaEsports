@@ -63,13 +63,12 @@ const Apresentacao = () => {
       if (formData.imagem instanceof File) {
         data.append("imagem", formData.imagem);
       }
-
-      // Adiciona as imagens dos ícones, se forem arquivos
-      formData.icones.forEach((icone, index) => {
-        if (icone.imagem instanceof File) {
-          data.append("icones", icone.imagem);
-        }
-      });
+// Adiciona as imagens dos ícones com nomes de campos indexados
+formData.icones.forEach((icone, index) => {
+  if (icone.imagem instanceof File) {
+    data.append(`icones[${index}]`, icone.imagem);
+  }
+});
 
       const response = await axios.post("http://localhost:3000/api/apresentacao", data, {
         headers: { "Content-Type": "multipart/form-data" },
