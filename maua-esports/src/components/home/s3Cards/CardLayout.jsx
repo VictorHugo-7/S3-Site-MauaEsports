@@ -1,17 +1,20 @@
-import { useEffect, useState } from 'react';
-import PropTypes from 'prop-types';
-import Margin from '../../padrao/Margin';
-import Card from './Card';
-import AOS from 'aos';
-import 'aos/dist/aos.css';
-import axios from 'axios';
-import AlertaErro from '../../AlertaErro';
+import { useEffect, useState } from "react";
+import PropTypes from "prop-types";
+import Margin from "../../padrao/Margin";
+import Card from "./Card";
+import AOS from "aos";
+import "aos/dist/aos.css";
+import axios from "axios";
+import AlertaErro from "../../AlertaErro";
+import { useMsal } from "@azure/msal-react";
 
 const API_BASE_URL = "http://localhost:3000";
 
 const CardLayout = ({ onCardSave, onCardError }) => {
   const [cards, setCards] = useState([]);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const [userRole, setUserRole] = useState(null);
+  const { instance } = useMsal();
 
   useEffect(() => {
     AOS.init({
@@ -19,6 +22,30 @@ const CardLayout = ({ onCardSave, onCardError }) => {
       once: true,
     });
 
+    // Fetch user role
+    const loadUserData = async () => {
+      try {
+        const account = instance.getActiveAccount();
+        if (!account) {
+          setUserRole(null); // User not logged in
+          return;
+        }
+
+        const response = await axios.get(
+          `${API_BASE_URL}/usuarios/por-email?email=${encodeURIComponent(
+            account.username
+          )}`,
+          { headers: { Accept: "application/json" } }
+        );
+        const userData = response.data.usuario;
+        setUserRole(userData.tipoUsuario);
+      } catch (error) {
+        console.error("Erro ao carregar dados do usuário:", error);
+        setUserRole(null); // Treat error as user not logged in
+      }
+    };
+
+    // Fetch cards
     const fetchCards = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/cards`);
@@ -29,16 +56,24 @@ const CardLayout = ({ onCardSave, onCardError }) => {
         }
 
         setCards(response.data);
-        setError('');
+        setError("");
       } catch (err) {
-        console.error('Erro ao buscar cards:', err);
-        setError('Erro ao carregar os cards.');
+        console.error("Erro ao buscar cards:", err);
+        setError("Erro ao carregar os cards.");
         setCards([]);
       }
     };
 
+    loadUserData();
     fetchCards();
-  }, []);
+  }, [instance]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(""), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const handleUpdateCard = (cardId, updatedData) => {
     setCards((prevCards) =>
@@ -49,7 +84,10 @@ const CardLayout = ({ onCardSave, onCardError }) => {
               titulo: updatedData.titulo,
               descricao: updatedData.texto,
               icone: updatedData.icon
-                ? { data: updatedData.icon.split(',')[1], contentType: updatedData.icon.split(';')[0].split(':')[1] }
+                ? {
+                    data: updatedData.icon.split(",")[1],
+                    contentType: updatedData.icon.split(";")[0].split(":")[1],
+                  }
                 : card.icone,
             }
           : card
@@ -78,13 +116,14 @@ const CardLayout = ({ onCardSave, onCardError }) => {
               icon={
                 card.icone
                   ? `data:${card.icone.contentType};base64,${card.icone.data}`
-                  : ''
+                  : ""
               }
               texto={card.descricao}
               titulo={card.titulo}
               onCardSave={onCardSave}
               onCardError={onCardError}
               onUpdateCard={handleUpdateCard}
+              userRole={userRole}
               data-aos="fade-up"
               data-aos-delay={`${100 * (index + 1)}`}
             />

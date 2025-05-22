@@ -1,5 +1,5 @@
 const express = require("express");
-const { body, validationResult } = require('express-validator');
+const { body, validationResult } = require("express-validator");
 const app = express();
 const cors = require("cors");
 const mongoose = require("mongoose");
@@ -35,21 +35,22 @@ app.use((req, res, next) => {
 });
 
 async function conectarAoMongoDB() {
-  const url = process.env.NODE_ENV === 'test'
-    ? process.env.MONGO_TEST_URL
-    : process.env.MONGO_URL;
+  const url =
+    process.env.NODE_ENV === "test"
+      ? process.env.MONGO_TEST_URL
+      : process.env.MONGO_URL;
 
   await mongoose.connect(url, {
     useNewUrlParser: true,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
   });
 }
 
 // Configuração do Multer
-const storage = multer.memoryStorage(); 
+const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, 
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: function (req, file, cb) {
     const filetypes = /jpeg|jpg|png|svg/;
     const mimetype = filetypes.test(file.mimetype);
@@ -150,12 +151,13 @@ const usuarioSchema = new mongoose.Schema({
     required: true,
     unique: true,
     validate: {
-      validator: function(v) {
+      validator: function (v) {
         // Regex para o formato específico: XX.XXXXX-Y@maua.br OU esports@maua.br
         const emailRegex = /^([0-9]{2}\.[0-9]{5}-[0-9]{1}|esports)@maua\.br$/;
         return emailRegex.test(v);
       },
-      message: props => `${props.value} não é um email válido! O formato deve ser XX.XXXXX-Y@maua.br (ex: 24.00086-8@maua.br)`
+      message: (props) =>
+        `${props.value} não é um email válido! O formato deve ser XX.XXXXX-Y@maua.br (ex: 24.00086-8@maua.br)`,
     },
   },
   discordID: {
@@ -219,7 +221,7 @@ app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
       email,
       ...(discordID && { discordID }),
       tipoUsuario: tipoUsuario?.trim() || "Jogador",
-      ...(time && { time }), 
+      ...(time && { time }),
       ...(req.file && {
         fotoPerfil: {
           data: req.file.buffer,
@@ -239,30 +241,32 @@ app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
         email: novoUsuario.email,
         ...(novoUsuario.discordID && { discordID: novoUsuario.discordID }),
         tipoUsuario: novoUsuario.tipoUsuario,
-        ...(novoUsuario.time && { time: novoUsuario.time }), 
+        ...(novoUsuario.time && { time: novoUsuario.time }),
         createdAt: novoUsuario.createdAt,
       },
       message: "Usuário criado com sucesso",
     });
-  } 
-  catch (error) {
+  } catch (error) {
     console.error("Erro ao criar usuário:", error);
 
- 
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(e => e.message);
-      return res.status(400).json({ success: false, message: messages.join(', ') });
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((e) => e.message);
+      return res
+        .status(400)
+        .json({ success: false, message: messages.join(", ") });
     }
 
     // No bloco catch da rota POST /usuarios
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
-        message: "Email já está em uso"
+        message: "Email já está em uso",
       });
     }
 
-    res.status(500).json({ success: false, message: "Erro interno do servidor" });
+    res
+      .status(500)
+      .json({ success: false, message: "Erro interno do servidor" });
   }
 });
 
@@ -300,40 +304,40 @@ app.get("/usuarios/verificar-email", async (req, res) => {
     });
   }
 });
-app.get('/usuarios/por-discord-ids', async (req, res) => {
+app.get("/usuarios/por-discord-ids", async (req, res) => {
   try {
     // Recebe os IDs como query parameter (ex: ?ids=123,456,789)
     const idsString = req.query.ids;
-    
+
     if (!idsString) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Parâmetro 'ids' é obrigatório" 
+      return res.status(400).json({
+        success: false,
+        message: "Parâmetro 'ids' é obrigatório",
       });
     }
 
     // Converte a string de IDs para array
-    const discordIds = idsString.split(',');
-    
+    const discordIds = idsString.split(",");
+
     // Verifica se há IDs válidos
-    if (!discordIds.length || discordIds.some(id => !id.trim())) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Lista de Discord IDs inválida" 
+    if (!discordIds.length || discordIds.some((id) => !id.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: "Lista de Discord IDs inválida",
       });
     }
 
-    const usuarios = await Usuario.find({ 
-      discordID: { $in: discordIds } 
-    }).select('email discordID');
+    const usuarios = await Usuario.find({
+      discordID: { $in: discordIds },
+    }).select("email discordID");
 
     res.status(200).json(usuarios);
   } catch (error) {
     console.error("Erro ao buscar usuários por Discord IDs:", error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: "Erro ao buscar usuários",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
@@ -412,17 +416,17 @@ app.get("/usuarios/:id/foto", async (req, res) => {
     if (!usuario || !usuario.fotoPerfil || !usuario.fotoPerfil.data) {
       return res.status(404).json({
         success: false,
-        message: "Imagem não encontrada"
+        message: "Imagem não encontrada",
       });
     }
 
-    res.set('Content-Type', usuario.fotoPerfil.contentType);
+    res.set("Content-Type", usuario.fotoPerfil.contentType);
     res.send(usuario.fotoPerfil.data);
   } catch (error) {
     console.error("Erro ao buscar foto:", error);
     res.status(500).json({
       success: false,
-      message: "Erro ao carregar imagem"
+      message: "Erro ao carregar imagem",
     });
   }
 });
@@ -487,11 +491,11 @@ app.put("/usuarios/:id", upload.single("fotoPerfil"), async (req, res) => {
     console.error("Erro ao atualizar usuário:", error);
 
     // Captura erros de validação do Mongoose (incluindo unique)
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(e => e.message);
-      return res.status(400).json({ 
-        success: false, 
-        message: messages.join(', ') 
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((e) => e.message);
+      return res.status(400).json({
+        success: false,
+        message: messages.join(", "),
       });
     }
 
@@ -500,19 +504,19 @@ app.put("/usuarios/:id", upload.single("fotoPerfil"), async (req, res) => {
       if (error.keyValue.email) {
         return res.status(400).json({
           success: false,
-          message: "Email já está em uso"
+          message: "Email já está em uso",
         });
       }
       if (error.keyValue.discordID) {
         return res.status(400).json({
           success: false,
-          message: "Discord ID já está em uso"
+          message: "Discord ID já está em uso",
         });
       }
     }
 
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: "Erro ao atualizar usuário",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
@@ -545,9 +549,6 @@ app.delete("/usuarios/:id", async (req, res) => {
     });
   }
 });
-
-
-
 
 ///////////////////////////////////////////////AREA DE RAANKING/////////////////////////////////////////////////////////////////
 // POST - Criar novo ranking com upload de imagem
@@ -592,7 +593,7 @@ app.get("/rankings/:id/image", async (req, res) => {
     res.set({
       "Content-Type": ranking.image.contentType,
       "Cache-Control": "public, max-age=31536000, immutable",
-      "Last-Modified": new Date(ranking.createdAt).toUTCString()
+      "Last-Modified": new Date(ranking.createdAt).toUTCString(),
     });
 
     res.send(ranking.image.data);
@@ -691,14 +692,12 @@ app.get("/jogadores/:id/imagem", async (req, res) => {
       });
     }
 
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Erro ao criar jogador",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
-
-
 
 app.get("/jogadores", async (req, res) => {
   try {
@@ -744,8 +743,6 @@ app.delete("/jogadores/:id", async (req, res) => {
     res.status(500).json({ message: "Erro ao remover jogador", error });
   }
 });
-
-
 
 app.put("/jogadores/:id", upload.single("foto"), async (req, res) => {
   try {
@@ -964,9 +961,7 @@ app.post(
 
       // Validações
       if (!id || !nome) {
-        return res
-          .status(400)
-          .json({ message: "ID e nome são obrigatórios" });
+        return res.status(400).json({ message: "ID e nome são obrigatórios" });
       }
       if (!fotoFile || !jogoFile) {
         return res
@@ -1545,8 +1540,9 @@ app.post("/admins", upload.single("foto"), async (req, res) => {
       success: true,
       admin: {
         ...novoAdmin.toObject(),
-        fotoUrl: `${req.protocol}://${req.get("host")}/admins/${novoAdmin._id
-          }/foto`,
+        fotoUrl: `${req.protocol}://${req.get("host")}/admins/${
+          novoAdmin._id
+        }/foto`,
         foto: undefined,
       },
     });
@@ -1611,8 +1607,9 @@ app.put("/admins/:id", upload.single("foto"), async (req, res) => {
       insta: updated.insta || undefined, // Envie undefined em vez de null
       twitter: updated.twitter || undefined,
       twitch: updated.twitch || undefined,
-      fotoUrl: `${req.protocol}://${req.get("host")}/admins/${updated._id
-        }/foto`,
+      fotoUrl: `${req.protocol}://${req.get("host")}/admins/${
+        updated._id
+      }/foto`,
     });
   } catch (error) {
     console.error("Erro na edição:", error);
@@ -1653,14 +1650,14 @@ function authenticate(req, res, next) {
 
 const PORT = process.env.PORT || 3001;
 
-const trains = []; 
+const trains = [];
 const modality = [];
 
-app.get('/trains/all', authenticate, (req, res) => {
-  res.json(trains); 
+app.get("/trains/all", authenticate, (req, res) => {
+  res.json(trains);
 });
-app.get('/modality/all', authenticate, (req, res) => {
-  res.json(modality); 
+app.get("/modality/all", authenticate, (req, res) => {
+  res.json(modality);
 });
 
 /////////////////////////////////////////////////////////////////////////  RELATORIOS  //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1846,9 +1843,6 @@ app.get("/auth/discord/callback", async (req, res) => {
   }
 });
 
-
-
-
 ///////////////////////////////////////////////////////////////////////// HOME_NOVIDADE //////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Modelo da Novidade
@@ -1875,7 +1869,9 @@ app.get("/api/homeNovidade", async (req, res) => {
 
     // Converte a imagem para base64, se existir
     const imagemBase64 = novidade.imagem
-      ? `data:${novidade.imagemType};base64,${novidade.imagem.toString("base64")}`
+      ? `data:${novidade.imagemType};base64,${novidade.imagem.toString(
+          "base64"
+        )}`
       : null;
 
     res.json({
@@ -1909,7 +1905,11 @@ app.post("/api/homeNovidade", upload.single("imagem"), async (req, res) => {
       nomeBotao: nomeBotao || null,
       urlBotao: urlBotao || null,
       imagem: req.file ? req.file.buffer : novidade ? novidade.imagem : null,
-      imagemType: req.file ? req.file.mimetype : novidade ? novidade.imagemType : null,
+      imagemType: req.file
+        ? req.file.mimetype
+        : novidade
+        ? novidade.imagemType
+        : null,
     };
 
     if (novidade) {
@@ -1925,7 +1925,9 @@ app.post("/api/homeNovidade", upload.single("imagem"), async (req, res) => {
 
     // Converte a imagem para base64 para retorno
     const imagemBase64 = novidade.imagem
-      ? `data:${novidade.imagemType};base64,${novidade.imagem.toString("base64")}`
+      ? `data:${novidade.imagemType};base64,${novidade.imagem.toString(
+          "base64"
+        )}`
       : null;
 
     res.status(200).json({
@@ -1962,17 +1964,20 @@ const apresentacaoSchema = new mongoose.Schema({
 apresentacaoSchema.plugin(uniqueValidator);
 const Apresentacao = mongoose.model("Apresentacao", apresentacaoSchema);
 
-
 app.get("/api/apresentacao", async (req, res) => {
   try {
     const apresentacao = await Apresentacao.findOne();
     if (!apresentacao) {
-      return res.status(404).json({ message: "Nenhuma apresentação encontrada" });
+      return res
+        .status(404)
+        .json({ message: "Nenhuma apresentação encontrada" });
     }
 
     // Converte a imagem principal para base64
     const imagemBase64 = apresentacao.imagem
-      ? `data:${apresentacao.imagemType};base64,${apresentacao.imagem.toString("base64")}`
+      ? `data:${apresentacao.imagemType};base64,${apresentacao.imagem.toString(
+          "base64"
+        )}`
       : null;
 
     // Converte as imagens dos ícones para base64
@@ -2008,8 +2013,19 @@ app.post("/api/apresentacao", upload.any(), async (req, res) => {
     } = req.body;
 
     // Validação básica
-    if (!titulo1 || !titulo2 || !descricao1 || !descricao2 || !botao1Nome || !botao1Link || !botao2Nome || !botao2Link) {
-      return res.status(400).json({ message: "Todos os campos são obrigatórios" });
+    if (
+      !titulo1 ||
+      !titulo2 ||
+      !descricao1 ||
+      !descricao2 ||
+      !botao1Nome ||
+      !botao1Link ||
+      !botao2Nome ||
+      !botao2Link
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Todos os campos são obrigatórios" });
     }
 
     // Parseia os ícones enviados como JSON
@@ -2017,23 +2033,36 @@ app.post("/api/apresentacao", upload.any(), async (req, res) => {
     try {
       iconesParsed = JSON.parse(iconesJson);
       if (!Array.isArray(iconesParsed)) {
-        return res.status(400).json({ message: "O campo 'icones' deve ser um array" });
+        return res
+          .status(400)
+          .json({ message: "O campo 'icones' deve ser um array" });
       }
     } catch (error) {
-      return res.status(400).json({ message: "Erro ao parsear o campo 'icones'", error: error.message });
+      return res.status(400).json({
+        message: "Erro ao parsear o campo 'icones'",
+        error: error.message,
+      });
     }
 
     // Verifica se já existe uma apresentação
     let apresentacao = await Apresentacao.findOne();
 
     // Processa a imagem principal
-    const imagemFile = req.files["imagem"] ? req.files["imagem"][0] : null;
-    const imagemBuffer = imagemFile ? imagemFile.buffer : apresentacao ? apresentacao.imagem : null;
-    const imagemType = imagemFile ? imagemFile.mimetype : apresentacao ? apresentacao.imagemType : null;
+    const imagemFile = req.files.find((file) => file.fieldname === "imagem");
+    const imagemBuffer = imagemFile
+      ? imagemFile.buffer
+      : apresentacao
+      ? apresentacao.imagem
+      : null;
+    const imagemType = imagemFile
+      ? imagemFile.mimetype
+      : apresentacao
+      ? apresentacao.imagemType
+      : null;
 
     // Processa as imagens dos ícones
     const iconesFiles = {};
-    req.files.forEach(file => {
+    req.files.forEach((file) => {
       const match = file.fieldname.match(/icones\[(\d+)\]/);
       if (match) {
         const index = parseInt(match[1], 10);
@@ -2044,13 +2073,20 @@ app.post("/api/apresentacao", upload.any(), async (req, res) => {
     // Mapeia os ícones com as imagens
     const iconesData = iconesParsed.map((icone, index) => {
       if (!icone.id || !icone.link) {
-        throw new Error(`Ícone no índice ${index} está faltando 'id' ou 'link'`);
+        throw new Error(
+          `Ícone no índice ${index} está faltando 'id' ou 'link'`
+        );
       }
 
       return {
         id: icone.id,
-        imagem: iconesFiles[index] ? iconesFiles[index].buffer : apresentacao?.icones.find(i => i.id === icone.id)?.imagem || null,
-        imagemType: iconesFiles[index] ? iconesFiles[index].mimetype : apresentacao?.icones.find(i => i.id === icone.id)?.imagemType || null,
+        imagem: iconesFiles[index]
+          ? iconesFiles[index].buffer
+          : apresentacao?.icones.find((i) => i.id === icone.id)?.imagem || null,
+        imagemType: iconesFiles[index]
+          ? iconesFiles[index].mimetype
+          : apresentacao?.icones.find((i) => i.id === icone.id)?.imagemType ||
+            null,
         link: icone.link,
       };
     });
@@ -2071,7 +2107,9 @@ app.post("/api/apresentacao", upload.any(), async (req, res) => {
 
     if (apresentacao) {
       // Atualiza a apresentação existente
-      apresentacao = await Apresentacao.findOneAndUpdate({}, apresentacaoData, { new: true });
+      apresentacao = await Apresentacao.findOneAndUpdate({}, apresentacaoData, {
+        new: true,
+      });
     } else {
       // Cria uma nova apresentação
       apresentacao = new Apresentacao(apresentacaoData);
@@ -2080,7 +2118,9 @@ app.post("/api/apresentacao", upload.any(), async (req, res) => {
 
     // Converte a imagem principal para base64 para retorno
     const imagemBase64 = apresentacao.imagem
-      ? `data:${apresentacao.imagemType};base64,${apresentacao.imagem.toString("base64")}`
+      ? `data:${apresentacao.imagemType};base64,${apresentacao.imagem.toString(
+          "base64"
+        )}`
       : null;
 
     // Converte as imagens dos ícones para base64 para retorno
@@ -2097,13 +2137,12 @@ app.post("/api/apresentacao", upload.any(), async (req, res) => {
       icones: iconesComBase64,
     });
   } catch (error) {
-    res.status(500).json({ message: "Erro ao salvar apresentação", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Erro ao salvar apresentação", error: error.message });
   }
 });
-
-
 //////////////////////////////////////////////////////////////////////////HOME_INFORMACOES////////////////////////////////////////////////////////
-
 
 // Middleware
 app.use(cors());
@@ -2122,229 +2161,262 @@ const cardHomeSchema = mongoose.Schema({
   },
 });
 
-const CardHome = mongoose.model('Card', cardHomeSchema);
+const CardHome = mongoose.model("Card", cardHomeSchema);
 
 // Rota para buscar todos os cards
-cardsRouter.get('/', async (req, res) => {
+cardsRouter.get("/", async (req, res) => {
   try {
-    const cards = await CardHome.find().select('titulo descricao icone');
-    const formattedCards = cards.map(card => ({
+    const cards = await CardHome.find().select("titulo descricao icone");
+    const formattedCards = cards.map((card) => ({
       _id: card._id,
       titulo: card.titulo,
       descricao: card.descricao,
       icone: card.icone
         ? {
             contentType: card.icone.contentType,
-            data: card.icone.data.toString('base64'),
+            data: card.icone.data.toString("base64"),
             nomeOriginal: card.icone.nomeOriginal,
           }
         : null,
     }));
     res.status(200).json(formattedCards);
   } catch (error) {
-    console.error('Erro ao buscar cards:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor.' });
+    console.error("Erro ao buscar cards:", error);
+    res
+      .status(500)
+      .json({ success: false, error: "Erro interno do servidor." });
   }
 });
 
 // Rota para atualizar um card
-cardsRouter.put('/:id', upload.single('icone'), [
-  body('titulo').trim().notEmpty().withMessage('O título é obrigatório'),
-  body('descricao').trim().notEmpty().withMessage('A descrição é obrigatória'),
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
-    }
+cardsRouter.put(
+  "/:id",
+  upload.single("icone"),
+  [
+    body("titulo").trim().notEmpty().withMessage("O título é obrigatório"),
+    body("descricao")
+      .trim()
+      .notEmpty()
+      .withMessage("A descrição é obrigatória"),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+      }
 
-    const { id } = req.params;
-    const updateData = {
-      titulo: req.body.titulo?.trim(),
-      descricao: req.body.descricao?.trim(),
-    };
-
-    if (req.file) {
-      updateData.icone = {
-        data: req.file.buffer,
-        contentType: req.file.mimetype,
-        nomeOriginal: req.file.originalname,
+      const { id } = req.params;
+      const updateData = {
+        titulo: req.body.titulo?.trim(),
+        descricao: req.body.descricao?.trim(),
       };
+
+      if (req.file) {
+        updateData.icone = {
+          data: req.file.buffer,
+          contentType: req.file.mimetype,
+          nomeOriginal: req.file.originalname,
+        };
+      }
+
+      const updated = await CardHome.findByIdAndUpdate(
+        id,
+        { $set: updateData },
+        { new: true, runValidators: true }
+      );
+
+      if (!updated) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Card não encontrado" });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Card atualizado com sucesso!",
+        card: {
+          _id: updated._id,
+          titulo: updated.titulo,
+          descricao: updated.descricao,
+          icone: updated.icone
+            ? {
+                contentType: updated.icone.contentType,
+                nomeOriginal: updated.icone.nomeOriginal,
+                iconeUrl: `${req.protocol}://${req.get("host")}/cards/${
+                  updated._id
+                }/icone`,
+              }
+            : undefined,
+        },
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar card:", error);
+      res.status(500).json({ success: false, error: error.message });
     }
-
-    const updated = await CardHome.findByIdAndUpdate(
-      id,
-      { $set: updateData },
-      { new: true, runValidators: true }
-    );
-
-    if (!updated) {
-      return res.status(404).json({ success: false, message: 'Card não encontrado' });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Card atualizado com sucesso!',
-      card: {
-        _id: updated._id,
-        titulo: updated.titulo,
-        descricao: updated.descricao,
-        icone: updated.icone
-          ? {
-              contentType: updated.icone.contentType,
-              nomeOriginal: updated.icone.nomeOriginal,
-              iconeUrl: `${req.protocol}://${req.get('host')}/cards/${updated._id}/icone`,
-            }
-          : undefined,
-      },
-    });
-  } catch (error) {
-    console.error('Erro ao atualizar card:', error);
-    res.status(500).json({ success: false, error: error.message });
   }
-});
+);
 
 // Rota para servir a imagem do ícone
-cardsRouter.get('/:id/icone', async (req, res) => {
+cardsRouter.get("/:id/icone", async (req, res) => {
   try {
     const card = await CardHome.findById(req.params.id);
     if (!card || !card.icone) {
-      return res.status(404).json({ success: false, message: 'Ícone não encontrado' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Ícone não encontrado" });
     }
 
-    res.set('Content-Type', card.icone.contentType);
+    res.set("Content-Type", card.icone.contentType);
     res.send(card.icone.data);
   } catch (error) {
-    console.error('Erro ao buscar ícone:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor.' });
+    console.error("Erro ao buscar ícone:", error);
+    res
+      .status(500)
+      .json({ success: false, error: "Erro interno do servidor." });
   }
 });
 
 // Usando o router para as rotas com prefixo '/cards'
-app.use('/cards', cardsRouter);
+app.use("/cards", cardsRouter);
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Definindo o esquema e modelo de politicas
 const politicasRouter = express.Router();
 const politicasSchema = mongoose.Schema({
   titulo: { type: String, required: true },
-  descricao: { type: String},
+  descricao: { type: String },
 });
 
-const Politicas = mongoose.model('Politicas', politicasSchema);
+const Politicas = mongoose.model("Politicas", politicasSchema);
 
 // Rota para buscar todas as politicas
-politicasRouter.get('/', async (req, res) => {
+politicasRouter.get("/", async (req, res) => {
   try {
-    const politicas = await Politicas.find().select('titulo descricao');
+    const politicas = await Politicas.find().select("titulo descricao");
     res.status(200).json({ success: true, politicas });
   } catch (error) {
-    console.error('Erro ao buscar políticas:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor.' });
+    console.error("Erro ao buscar políticas:", error);
+    res
+      .status(500)
+      .json({ success: false, error: "Erro interno do servidor." });
   }
 });
 
 // Rota para atualizar uma política
-politicasRouter.put('/:id', [
-  body('titulo').trim().notEmpty().withMessage('O título é obrigatório'),
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
+politicasRouter.put(
+  "/:id",
+  [body("titulo").trim().notEmpty().withMessage("O título é obrigatório")],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+      }
+
+      const { id } = req.params;
+      if (!mongoose.isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: "ID inválido" });
+      }
+
+      const updateData = {
+        titulo: req.body.titulo.trim(),
+        descricao: req.body.descricao.trim(),
+      };
+
+      const updated = await Politicas.findByIdAndUpdate(
+        id,
+        { $set: updateData },
+        { new: true, runValidators: true }
+      );
+
+      if (!updated) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Política não encontrada" });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Política atualizada com sucesso!",
+        politica: {
+          _id: updated._id,
+          titulo: updated.titulo,
+          descricao: updated.descricao,
+        },
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar política:", error);
+      res
+        .status(500)
+        .json({ success: false, error: "Erro interno do servidor." });
     }
-
-    const { id } = req.params;
-    if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({ success: false, message: 'ID inválido' });
-    }
-
-    const updateData = {
-      titulo: req.body.titulo.trim(),
-      descricao: req.body.descricao.trim(),
-    };
-
-    const updated = await Politicas.findByIdAndUpdate(
-      id,
-      { $set: updateData },
-      { new: true, runValidators: true }
-    );
-
-    if (!updated) {
-      return res.status(404).json({ success: false, message: 'Política não encontrada' });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Política atualizada com sucesso!',
-      politica: {
-        _id: updated._id,
-        titulo: updated.titulo,
-        descricao: updated.descricao,
-      },
-    });
-  } catch (error) {
-    console.error('Erro ao atualizar política:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor.' });
   }
-});
+);
 
 // Rota para criar uma nova política
-politicasRouter.post('/', [
-  body('titulo').trim().notEmpty().withMessage('O título é obrigatório'),
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
+politicasRouter.post(
+  "/",
+  [body("titulo").trim().notEmpty().withMessage("O título é obrigatório")],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+      }
+
+      const novaPolitica = new Politicas({
+        titulo: req.body.titulo.trim(),
+        descricao: req.body.descricao.trim(),
+      });
+
+      const saved = await novaPolitica.save();
+      res.status(201).json({
+        success: true,
+        message: "Política criada com sucesso!",
+        politica: {
+          _id: saved._id,
+          titulo: saved.titulo,
+          descricao: saved.descricao,
+        },
+      });
+    } catch (error) {
+      console.error("Erro ao criar política:", error);
+      res
+        .status(500)
+        .json({ success: false, error: "Erro interno do servidor." });
     }
-
-    const novaPolitica = new Politicas({
-      titulo: req.body.titulo.trim(),
-      descricao: req.body.descricao.trim(),
-    });
-
-    const saved = await novaPolitica.save();
-    res.status(201).json({
-      success: true,
-      message: 'Política criada com sucesso!',
-      politica: {
-        _id: saved._id,
-        titulo: saved.titulo,
-        descricao: saved.descricao,
-      },
-    });
-  } catch (error) {
-    console.error('Erro ao criar política:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor.' });
   }
-});
-
+);
 
 // Rota para excluir uma política
-politicasRouter.delete('/:id', async (req, res) => {
+politicasRouter.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({ success: false, message: 'ID inválido' });
+      return res.status(400).json({ success: false, message: "ID inválido" });
     }
 
     const deleted = await Politicas.findByIdAndDelete(id);
     if (!deleted) {
-      return res.status(404).json({ success: false, message: 'Política não encontrada' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Política não encontrada" });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Política excluída com sucesso!',
+      message: "Política excluída com sucesso!",
     });
   } catch (error) {
-    console.error('Erro ao excluir política:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor.' });
+    console.error("Erro ao excluir política:", error);
+    res
+      .status(500)
+      .json({ success: false, error: "Erro interno do servidor." });
   }
 });
 
 // Usando o router para as rotas com prefixo '/politicas'
-app.use('/politicas', politicasRouter);
+app.use("/politicas", politicasRouter);
 
 // Exporte o que os testes precisam
 module.exports = {
@@ -2361,11 +2433,9 @@ module.exports = {
   Politicas,
 };
 
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Só inicia os servidores se NÃO estiver em ambiente de teste
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== "test") {
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
     console.log(`CORS configurado para: http://localhost:5173`);
@@ -2384,12 +2454,3 @@ if (process.env.NODE_ENV !== 'test') {
     }
   });
 }
-
-
-
-
-
-
-
-
-

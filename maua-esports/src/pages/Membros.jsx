@@ -51,8 +51,8 @@ const Membros = () => {
         error.response
           ? error.response.data.message || "Erro ao carregar dados"
           : error.message.includes("Network Error")
-            ? "Servidor não responde. Verifique sua conexão ou tente novamente."
-            : error.message
+          ? "Servidor não responde. Verifique sua conexão ou tente novamente."
+          : error.message
       );
     } finally {
       setCarregando(false);
@@ -98,9 +98,7 @@ const Membros = () => {
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Erro ao deletar jogador:", error);
-      setErro(
-        error.response?.data?.message || "Erro ao deletar jogador"
-      );
+      setErro(error.response?.data?.message || "Erro ao deletar jogador");
       setTimeout(() => setErro(null), 3000);
     }
   };
@@ -144,15 +142,17 @@ const Membros = () => {
         prev.map((jogador) =>
           jogador._id === jogadorId
             ? {
-              ...jogador,
-              nome: response.data.nome,
-              titulo: response.data.titulo,
-              descricao: response.data.descricao,
-              insta: response.data.insta,
-              twitter: response.data.twitter,
-              twitch: response.data.twitch,
-              fotoUrl: `${API_BASE_URL}/jogadores/${response.data._id}/imagem?${Date.now()}`,
-            }
+                ...jogador,
+                nome: response.data.nome,
+                titulo: response.data.titulo,
+                descricao: response.data.descricao,
+                insta: response.data.insta,
+                twitter: response.data.twitter,
+                twitch: response.data.twitch,
+                fotoUrl: `${API_BASE_URL}/jogadores/${
+                  response.data._id
+                }/imagem?${Date.now()}`,
+              }
             : jogador
         )
       );
@@ -190,7 +190,9 @@ const Membros = () => {
         ...prev,
         {
           ...response.data,
-          fotoUrl: `${API_BASE_URL}/jogadores/${response.data._id}/imagem?${Date.now()}`,
+          fotoUrl: `${API_BASE_URL}/jogadores/${
+            response.data._id
+          }/imagem?${Date.now()}`,
         },
       ]);
 
@@ -199,9 +201,7 @@ const Membros = () => {
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Erro ao adicionar jogador:", error);
-      setErro(
-        error.response?.data?.message || "Erro ao adicionar jogador"
-      );
+      setErro(error.response?.data?.message || "Erro ao adicionar jogador");
       setTimeout(() => setErro(null), 3000);
     }
   };
@@ -265,6 +265,7 @@ const Membros = () => {
 Membros.propTypes = {
   userRole: PropTypes.oneOf([
     "Jogador",
+    "Capitão de time",
     "Administrador",
     "Administrador Geral",
     null,
