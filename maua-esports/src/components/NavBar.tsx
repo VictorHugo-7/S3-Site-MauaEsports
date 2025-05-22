@@ -4,7 +4,13 @@ import { IoMdArrowDropdown, IoMdClose } from "react-icons/io";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { CgLogIn, CgLogOut } from "react-icons/cg";
 import { RiTeamFill, RiImageEditLine, RiDiscordFill } from "react-icons/ri";
-import { FaUserTie, FaRegClock, FaUserCog, FaDiscord, FaTimes } from "react-icons/fa";
+import {
+  FaUserTie,
+  FaRegClock,
+  FaUserCog,
+  FaDiscord,
+  FaTimes,
+} from "react-icons/fa";
 import { HiUserCircle } from "react-icons/hi2";
 import { GiSwordsEmblem } from "react-icons/gi";
 import { useMsal } from "@azure/msal-react";
@@ -141,7 +147,9 @@ const NavBar = () => {
     setIsLoadingUserData(true);
     try {
       const response = await fetch(
-        `http://localhost:3000/usuarios/por-email?email=${encodeURIComponent(email)}`
+        `http://localhost:3000/usuarios/por-email?email=${encodeURIComponent(
+          email
+        )}`
       );
       if (!response.ok) throw new Error("Erro ao buscar usuário");
 
@@ -405,10 +413,11 @@ const NavBar = () => {
       returnUrl: location.pathname, // Armazena a página atual
     });
 
-    const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${import.meta.env.VITE_CLIENT_ID_DISCORD
-      }&response_type=code&redirect_uri=${encodeURIComponent(
-        "http://localhost:3005/auth/discord/callback"
-      )}&scope=identify&state=${encodeURIComponent(state)}`;
+    const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${
+      import.meta.env.VITE_CLIENT_ID_DISCORD
+    }&response_type=code&redirect_uri=${encodeURIComponent(
+      "http://localhost:3005/auth/discord/callback"
+    )}&scope=identify&state=${encodeURIComponent(state)}`;
 
     window.location.href = discordAuthUrl;
   };
@@ -464,15 +473,17 @@ const NavBar = () => {
   return (
     <>
       <nav
-        className={`z-50 py-5 fixed w-full flex justify-between items-center text-lg text-white font-blinker transition-all duration-300 ease-in-out ${isScrolled
-          ? "bg-navbar lg:bg-navbar/97"
-          : "bg-transparent lg:bg-transparent"
-          } md:bg-navbar`}
+        className={`z-50 py-5 fixed w-full flex justify-between items-center text-lg text-white font-blinker transition-all duration-300 ease-in-out ${
+          isScrolled
+            ? "bg-navbar lg:bg-navbar/97"
+            : "bg-transparent lg:bg-transparent"
+        } md:bg-navbar`}
       >
         <div className="absolute bottom-0 left-0 w-full h-[1.5px] bg-transparent">
           <div
-            className={`absolute left-0 h-full bg-borda transition-all duration-500 ${isScrolled ? "w-full" : "w-0"
-              }`}
+            className={`absolute left-0 h-full bg-borda transition-all duration-500 ${
+              isScrolled ? "w-full" : "w-0"
+            }`}
           />
         </div>
 
@@ -484,8 +495,9 @@ const NavBar = () => {
         {errorMessage && <AlertaErro mensagem={errorMessage} />}
 
         <button
-          className={`lg:hidden text-white fixed right-5 cursor-pointer transform transition-all duration-300 ${isHamburgerOpen ? "rotate-90" : "rotate-0"
-            }`}
+          className={`lg:hidden text-white fixed right-5 cursor-pointer transform transition-all duration-300 ${
+            isHamburgerOpen ? "rotate-90" : "rotate-0"
+          }`}
           onClick={toggleHamburgerMenu}
         >
           {isHamburgerOpen ? (
@@ -497,17 +509,22 @@ const NavBar = () => {
 
         <div className="flex items-center">
           <ul
-            className={`gap-6 items-center lg:flex ${isHamburgerOpen
-              ? "mx-0 bg-navbar flex flex-col w-full absolute top-full left-0 justify-center items-center"
-              : "lg:block hidden mx-2"
-              }`}
+            className={`gap-6 items-center lg:flex ${
+              isHamburgerOpen
+                ? "mx-0 bg-navbar flex flex-col w-full absolute top-full left-0 justify-center items-center"
+                : "lg:block hidden mx-2"
+            }`}
           >
             <li
-              className={`px-4 py-2 cursor-pointer transition-transform duration-300 hover:translate-y-[-4px] border-b-3 ${isHamburgerOpen
-                ? `border-borda ${isActive("/") ? "text-azul-claro font-bold" : ""}`
-                : `border-b-transparent hover:text-azul-claro hover:font-bold ${isActive("/") ? "text-azul-claro font-bold" : ""
-                }`
-                }`}
+              className={`px-4 py-2 cursor-pointer transition-transform duration-300 hover:translate-y-[-4px] border-b-3 ${
+                isHamburgerOpen
+                  ? `border-borda ${
+                      isActive("/") ? "text-azul-claro font-bold" : ""
+                    }`
+                  : `border-b-transparent hover:text-azul-claro hover:font-bold ${
+                      isActive("/") ? "text-azul-claro font-bold" : ""
+                    }`
+              }`}
             >
               <Link to="/">Home</Link>
             </li>
@@ -515,35 +532,40 @@ const NavBar = () => {
             <li className="relative px-4 py-2 transition-transform duration-300 hover:translate-y-[-4px] border-b-3 border-b-transparent">
               <button
                 onClick={toggleDropdown}
-                className={`focus:outline-none flex items-center gap-1 cursor-pointer ${isTimesActive(location.pathname)
-                  ? "text-azul-claro font-bold"
-                  : "hover:text-azul-claro hover:font-bold"
-                  }`}
+                className={`focus:outline-none flex items-center gap-1 cursor-pointer ${
+                  isTimesActive(location.pathname)
+                    ? "text-azul-claro font-bold"
+                    : "hover:text-azul-claro hover:font-bold"
+                }`}
               >
                 Times{" "}
                 <IoMdArrowDropdown
-                  className={`transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : "rotate-0"
-                    }`}
+                  className={`transition-transform duration-300 ${
+                    isDropdownOpen ? "rotate-180" : "rotate-0"
+                  }`}
                 />
               </button>
 
               <ul
-                className={`absolute bg-fundo border-2 border-borda shadow-lg rounded-lg transition-all duration-300 ease-out text-center ${isDropdownOpen
-                  ? "opacity-100 translate-y-0 visible"
-                  : "opacity-0 translate-y-[-20px] invisible"
-                  } ${isHamburgerOpen && isDropdownOpen
+                className={`absolute bg-fundo border-2 border-borda shadow-lg rounded-lg transition-all duration-300 ease-out text-center ${
+                  isDropdownOpen
+                    ? "opacity-100 translate-y-0 visible"
+                    : "opacity-0 translate-y-[-20px] invisible"
+                } ${
+                  isHamburgerOpen && isDropdownOpen
                     ? "w-full border-t-2 rounded-none mt-4 relative right-0"
                     : "mt-12 right-[-60px]"
-                  }`}
+                }`}
               >
                 <li className="px-4 py-2 border-b-2 border-borda relative">
                   <Link
                     to="/times"
                     onClick={() => setIsDropdownOpen(false)}
-                    className={`px-4 border-transparent inline-flex items-center gap-2 transform hover:scale-110 transition-transform duration-300 cursor-pointer ${isActive("/times")
-                      ? "text-azul-claro font-bold"
-                      : "hover:text-azul-claro hover:font-bold"
-                      }`}
+                    className={`px-4 border-transparent inline-flex items-center gap-2 transform hover:scale-110 transition-transform duration-300 cursor-pointer ${
+                      isActive("/times")
+                        ? "text-azul-claro font-bold"
+                        : "hover:text-azul-claro hover:font-bold"
+                    }`}
                   >
                     <RiTeamFill />
                     Membros
@@ -554,10 +576,11 @@ const NavBar = () => {
                   <Link
                     to="/admins"
                     onClick={() => setIsDropdownOpen(false)}
-                    className={`px-4 border-transparent inline-flex items-center gap-2 transform hover:scale-110 transition-transform duration-300 cursor-pointer ${isActive("/admins")
-                      ? "text-azul-claro font-bold"
-                      : "hover:text-azul-claro hover:font-bold"
-                      }`}
+                    className={`px-4 border-transparent inline-flex items-center gap-2 transform hover:scale-110 transition-transform duration-300 cursor-pointer ${
+                      isActive("/admins")
+                        ? "text-azul-claro font-bold"
+                        : "hover:text-azul-claro hover:font-bold"
+                    }`}
                   >
                     <FaUserTie />
                     Administradores
@@ -567,23 +590,33 @@ const NavBar = () => {
             </li>
 
             <li
-              className={`px-4 py-2 cursor-pointer transition-transform duration-300 hover:translate-y-[-4px] border-b-3 ${isHamburgerOpen
-                ? `border-borda ${isActive("/campeonatos") ? "text-azul-claro font-bold" : ""
-                }`
-                : `border-b-transparent hover:text-azul-claro hover:font-bold ${isActive("/campeonatos") ? "text-azul-claro font-bold" : ""
-                }`
-                }`}
+              className={`px-4 py-2 cursor-pointer transition-transform duration-300 hover:translate-y-[-4px] border-b-3 ${
+                isHamburgerOpen
+                  ? `border-borda ${
+                      isActive("/campeonatos")
+                        ? "text-azul-claro font-bold"
+                        : ""
+                    }`
+                  : `border-b-transparent hover:text-azul-claro hover:font-bold ${
+                      isActive("/campeonatos")
+                        ? "text-azul-claro font-bold"
+                        : ""
+                    }`
+              }`}
             >
               <Link to="/campeonatos">Campeonatos</Link>
             </li>
 
             <li
-              className={`px-4 py-2 cursor-pointer transition-transform duration-300 hover:translate-y-[-4px] border-b-3 ${isHamburgerOpen
-                ? `border-borda ${isActive("/novidades") ? "text-azul-claro font-bold" : ""
-                }`
-                : `border-b-transparent hover:text-azul-claro hover:font-bold ${isActive("/novidades") ? "text-azul-claro font-bold" : ""
-                }`
-                }`}
+              className={`px-4 py-2 cursor-pointer transition-transform duration-300 hover:translate-y-[-4px] border-b-3 ${
+                isHamburgerOpen
+                  ? `border-borda ${
+                      isActive("/novidades") ? "text-azul-claro font-bold" : ""
+                    }`
+                  : `border-b-transparent hover:text-azul-claro hover:font-bold ${
+                      isActive("/novidades") ? "text-azul-claro font-bold" : ""
+                    }`
+              }`}
             >
               <Link to="/novidades">Novidades</Link>
             </li>
@@ -604,10 +637,11 @@ const NavBar = () => {
 
           {isAuthenticated && (
             <div
-              className={`lg:mx-14 ${isHamburgerOpen
-                ? "hidden"
-                : "lg:inline-block fixed right-16 top-5 lg:static lg:top-auto lg:right-auto"
-                }`}
+              className={`lg:mx-14 ${
+                isHamburgerOpen
+                  ? "hidden"
+                  : "lg:inline-block fixed right-16 top-5 lg:static lg:top-auto lg:right-auto"
+              }`}
             >
               <div className="px-4 py-2 cursor-pointer transition-transform duration-300 hover:translate-y-[-4px] relative">
                 <button
@@ -626,19 +660,24 @@ const NavBar = () => {
                 </button>
 
                 <ul
-                  className={`transition-all duration-300 ease-out text-center ${isProfileDropdownOpen
-                    ? "opacity-100 translate-y-0 visible"
-                    : "opacity-0 translate-y-[-20px] invisible"
-                    } ${isHamburgerOpen
+                  className={`transition-all duration-300 ease-out text-center ${
+                    isProfileDropdownOpen
+                      ? "opacity-100 translate-y-0 visible"
+                      : "opacity-0 translate-y-[-20px] invisible"
+                  } ${
+                    isHamburgerOpen
                       ? "fixed left-1/2 transform -translate-x-1/2 w-[90%] max-w-[300px] mt-4"
                       : "absolute left-0 transform -translate-x-1/2 mt-12"
-                    }`}
+                  }`}
                 >
                   <div className="bg-fundo w-full border-2 border-borda shadow-azul-escuro shadow-sm rounded-lg flex flex-col">
                     <div className="w-full h-full flex border-b-2 border-borda items-center px-3 pt-1 pb-3 gap-3">
                       <div className="w-23 h-23 flex items-center justify-center">
                         <button
-                          onClick={() => croppedImage && abrirImagemAmpliada(croppedImage, "Foto de Perfil")}
+                          onClick={() =>
+                            croppedImage &&
+                            abrirImagemAmpliada(croppedImage, "Foto de Perfil")
+                          }
                           className="relative w-auto h-auto rounded-full overflow-hidden"
                         >
                           {croppedImage ? (
@@ -663,7 +702,6 @@ const NavBar = () => {
                     </div>
 
                     <div className="flex-grow pb-10 items-left">
-
                       <Link
                         to="/treinos-admin"
                         className="w-full"
@@ -692,7 +730,6 @@ const NavBar = () => {
                           </div>
                         </div>
                       </Link>
-
 
                       <Link
                         to="/horas-pae"
@@ -812,7 +849,10 @@ const NavBar = () => {
             >
               <FaTimes />
             </button>
-            <div className="max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="max-w-full max-h-full"
+              onClick={(e) => e.stopPropagation()}
+            >
               <img
                 src={imagemAmpliada.src || ""}
                 alt={imagemAmpliada.alt}
@@ -826,12 +866,14 @@ const NavBar = () => {
       {/* Modal de Edição de Perfil */}
       {showEditModal && (
         <div
-          className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
-            }`}
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${
+            isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
         >
           <div
-            className={`bg-fundo p-6 rounded-lg max-w-md w-full border shadow-sm shadow-azul-claro max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
-              }`}
+            className={`bg-fundo p-6 rounded-lg max-w-md w-full border shadow-sm shadow-azul-claro max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
+              isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+            }`}
           >
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-branco">Editar Perfil</h2>
@@ -924,7 +966,12 @@ const NavBar = () => {
                           <input
                             type="text"
                             value={editFormData.discordID}
-                            readOnly={!["Administrador Geral", "Administrador"].includes(userType)}
+                            readOnly={
+                              ![
+                                "Administrador Geral",
+                                "Administrador",
+                              ].includes(userType)
+                            }
                             onChange={(e) =>
                               setEditFormData({
                                 ...editFormData,
@@ -932,25 +979,33 @@ const NavBar = () => {
                               })
                             }
                             placeholder="Exemplo:123456789012345678"
-                            className={`w-full border border-borda border-l-0 rounded-r-md p-2 focus:border-azul-claro text-branco bg-preto focus:outline-none ${!["Administrador Geral", "Administrador"].includes(userType)
-                              ? "cursor-not-allowed"
-                              : ""
-                              }`}
+                            className={`w-full border border-borda border-l-0 rounded-r-md p-2 focus:border-azul-claro text-branco bg-preto focus:outline-none ${
+                              ![
+                                "Administrador Geral",
+                                "Administrador",
+                              ].includes(userType)
+                                ? "cursor-not-allowed"
+                                : ""
+                            }`}
                             pattern="\d{18}|^$"
                           />
                         </div>
                         <p className="text-xs text-fonte-escura mt-1">
-                          Deixe vazio para remover o Discord ID (deve ser um número de 18 dígitos)
+                          Deve ser somente números (Deixe vazio para remover o
+                          Discord ID).
                         </p>
                         <button
-      className="flex items-center gap-2 bg-[#5865F2] hover:bg-[#4752C4] text-white px-4 py-2 rounded-lg text-sm font-semibold active:scale-95 transition-colors duration-200 hover:cursor-pointer sm:text-xs sm:px-3 sm:py-1.5 w-full sm:w-auto mt-2"
-      onClick={VincularContaDiscord}
-      role="button"
-      aria-label="Vincular conta do Discord"
-    >
-      <RiDiscordFill className="w-4 h-4" aria-hidden="true" />
-      Vincular conta do Discord
-    </button>
+                          className="flex items-center gap-2 bg-[#5865F2] hover:bg-[#4752C4] text-white px-4 py-2 rounded-lg text-sm font-semibold active:scale-95 transition-colors duration-200 hover:cursor-pointer sm:text-xs sm:px-3 sm:py-1.5 w-full sm:w-auto mt-2"
+                          onClick={VincularContaDiscord}
+                          role="button"
+                          aria-label="Vincular conta do Discord"
+                        >
+                          <RiDiscordFill
+                            className="w-4 h-4"
+                            aria-hidden="true"
+                          />
+                          Vincular conta do Discord
+                        </button>
                       </div>
 
                       {/* Foto de perfil */}

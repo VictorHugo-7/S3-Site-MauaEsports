@@ -80,7 +80,7 @@ const jogadorSchema = mongoose.Schema({
   twitter: { type: String },
   twitch: { type: String },
   time: {
-    type: mongoose.Schema.Types.ObjectId, 
+    type: mongoose.Schema.Types.ObjectId,
     ref: "Time",
     required: true,
   },
@@ -163,14 +163,6 @@ const usuarioSchema = new mongoose.Schema({
     required: false,
     unique: true,
     sparse: true,
-    validate: {
-      validator: function (v) {
-        if (!v) return true;
-        return /^\d{18}$/.test(v);
-      },
-      message: (props) =>
-        `${props.value} não é um Discord ID válido! Deve ser exatamente 18 dígitos ou vazio.`,
-    },
   },
   fotoPerfil: {
     data: { type: Buffer, required: false },
@@ -831,7 +823,6 @@ app.put("/jogadores/:id", upload.single("foto"), async (req, res) => {
 
 ///////////////////////////////////////////////////////////////////////////////AREA DE TIMES ////////////////////////////////////////////////////////////////////////////////////
 
-
 const timeSchema = mongoose.Schema({
   nome: { type: String, required: true, unique: true },
   foto: {
@@ -962,7 +953,6 @@ app.post(
       const jogoFile = req.files["jogo"][0];
       if (!nome) {
         return res.status(400).json({ message: "Nome é obrigatório" });
-
       }
       if (!fotoFile || !jogoFile) {
         return res
@@ -1599,17 +1589,19 @@ app.get("/admins/:id/foto", async (req, res) => {
   }
 });
 
-app.delete('/admins/:id', async (req, res) => {
+app.delete("/admins/:id", async (req, res) => {
   try {
     const admin = await Admin.findByIdAndDelete(req.params.id);
     if (!admin) {
-      return res.status(404).json({ message: 'Admin não encontrado' });
+      return res.status(404).json({ message: "Admin não encontrado" });
     }
     console.log(`Admin removido: ${req.params.id}`);
     res.status(200).json({ success: true });
   } catch (error) {
-    console.error('Erro ao remover admin:', error);
-    res.status(500).json({ message: 'Erro ao remover admin', error: error.message });
+    console.error("Erro ao remover admin:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao remover admin", error: error.message });
   }
 });
 
