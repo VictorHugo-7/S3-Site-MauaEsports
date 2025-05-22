@@ -5,7 +5,7 @@ import FotoPadrao from "../../../assets/images/Foto.svg";
 import SalvarBtn from "../../SalvarBtn";
 import CancelarBtn from "../../CancelarBtn";
 
-const NovidadeModal = ({ isOpen, onClose, onSave, initialData, erro }) => {
+const NovidadeModal = ({ isOpen, onClose, onSave, initialData, userRole }) => {
   const [formData, setFormData] = useState({
     imagem: "",
     titulo: "",
@@ -17,12 +17,13 @@ const NovidadeModal = ({ isOpen, onClose, onSave, initialData, erro }) => {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(FotoPadrao);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [erroLocal, setErroLocal] = useState(erro || "");
+  const [erroLocal, setErroLocal] = useState("");
 
   useEffect(() => {
     if (isOpen && initialData) {
       setFormData(initialData);
       setImagePreview(initialData.imagem || FotoPadrao);
+      setImageFile(null);
     }
   }, [isOpen, initialData]);
 
@@ -77,6 +78,13 @@ const NovidadeModal = ({ isOpen, onClose, onSave, initialData, erro }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Check if user has permission to save
+    if (!["Administrador", "Administrador Geral"].includes(userRole)) {
+      setErroLocal("Você não tem permissão para salvar alterações.");
+      return;
+    }
+
     setIsSubmitting(true);
     setErroLocal("");
 
@@ -126,9 +134,9 @@ const NovidadeModal = ({ isOpen, onClose, onSave, initialData, erro }) => {
           </button>
         </div>
 
-        {(erroLocal || erro) && (
+        {erroLocal && (
           <div className="mb-4 p-2 bg-vermelho-claro/20 text-vermelho-claro rounded">
-            {erroLocal || erro}
+            {erroLocal}
           </div>
         )}
 
@@ -150,6 +158,7 @@ const NovidadeModal = ({ isOpen, onClose, onSave, initialData, erro }) => {
                 accept="image/*"
                 onChange={handleImageChange}
                 className="hidden"
+                disabled={isSubmitting}
               />
             </label>
             {imagePreview !== FotoPadrao && (
@@ -165,6 +174,7 @@ const NovidadeModal = ({ isOpen, onClose, onSave, initialData, erro }) => {
                     onClick={handleRemoveImage}
                     className="absolute -top-2 -right-2 bg-vermelho-claro text-branco rounded-full w-6 h-6 flex items-center justify-center hover:bg-vermelho-escuro transition-colors"
                     title="Remover imagem"
+                    disabled={isSubmitting}
                   >
                     <RiCloseFill className="w-4 h-4" />
                   </button>
@@ -184,6 +194,7 @@ const NovidadeModal = ({ isOpen, onClose, onSave, initialData, erro }) => {
               onChange={handleChange}
               className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
               required
+              disabled={isSubmitting}
             />
           </div>
 
@@ -197,6 +208,7 @@ const NovidadeModal = ({ isOpen, onClose, onSave, initialData, erro }) => {
               value={formData.subtitulo}
               onChange={handleChange}
               className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -211,6 +223,7 @@ const NovidadeModal = ({ isOpen, onClose, onSave, initialData, erro }) => {
               className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
               rows="3"
               required
+              disabled={isSubmitting}
             ></textarea>
           </div>
 
@@ -225,6 +238,7 @@ const NovidadeModal = ({ isOpen, onClose, onSave, initialData, erro }) => {
               onChange={handleChange}
               className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
               placeholder="Ex: VER NOTÍCIA"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -239,6 +253,7 @@ const NovidadeModal = ({ isOpen, onClose, onSave, initialData, erro }) => {
               onChange={handleChange}
               className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
               placeholder="https://exemplo.com/pagina"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -257,7 +272,13 @@ NovidadeModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
   initialData: PropTypes.object,
-  erro: PropTypes.string,
+  userRole: PropTypes.oneOf([
+    "Jogador",
+    "Administrador",
+    "Capitão de time",
+    "Administrador Geral",
+    null,
+  ]),
 };
 
 export default NovidadeModal;

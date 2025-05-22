@@ -1,18 +1,26 @@
 import { useState, useEffect } from "react";
-import Margin from "../../padrao/Margin";
 import { Link } from "react-router-dom";
 import ApresentacaoModal from "./ApresentacaoModal";
+import Margin from "../../padrao/Margin";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import axios from "axios";
+import { useMsal } from "@azure/msal-react";
+import AlertaOk from "../../AlertaOk";
+import AlertaErro from "../../AlertaErro";
+
+const API_BASE_URL = "http://localhost:3000";
 
 const Apresentacao = () => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [userRole, setUserRole] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [erro, setErro] = useState(null);
   const [apresentacaoData, setApresentacaoData] = useState({
     titulo1: "",
     titulo2: "",
-    descricao1:"",
-    descricao2:"",
+    descricao1: "",
+    descricao2: "",
     botao1Nome: "",
     botao1Link: "",
     botao2Nome: "",
@@ -27,24 +35,63 @@ const Apresentacao = () => {
     ],
   });
 
+  const { instance } = useMsal();
+
   useEffect(() => {
+    // Initialize AOS
     AOS.init({
       duration: 1500,
       once: true,
     });
 
-    // Buscar dados do backend
-    const fetchApresentacao = async () => {
+    // Fetch user role
+    const loadUserData = async () => {
       try {
-        const response = await axios.get("http://localhost:3000/api/apresentacao");
-        setApresentacaoData(response.data);
+        const account = instance.getActiveAccount();
+        if (!account) {
+          setUserRole(null); // User not logged in
+          return;
+        }
+
+        const response = await axios.get(
+          `${API_BASE_URL}/usuarios/por-email?email=${encodeURIComponent(
+            account.username
+          )}`,
+          { headers: { Accept: "application/json" } }
+        );
+        const userData = response.data.usuario;
+        setUserRole(userData.tipoUsuario);
       } catch (error) {
-        console.error("Erro ao buscar apresentação:", error);
+        console.error("Erro ao carregar dados do usuário:", error);
+        setUserRole(null); // Treat error as user not logged in
       }
     };
 
+    // Fetch presentation data
+    const fetchApresentacao = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/apresentacao`);
+        setApresentacaoData(response.data);
+      } catch (error) {
+        console.error("Erro ao buscar apresentação:", error);
+        setErro("Erro ao carregar dados da apresentação");
+        setTimeout(() => setErro(null), 3000);
+      }
+    };
+
+    loadUserData();
     fetchApresentacao();
-  }, []);
+  }, [instance]);
+
+  useEffect(() => {
+    if (successMessage || erro) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+        setErro(null);
+      }, 3000); // Clear alerts after 3 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage, erro]);
 
   const handleSave = async (formData) => {
     try {
@@ -57,42 +104,62 @@ const Apresentacao = () => {
       data.append("botao1Link", formData.botao1Link);
       data.append("botao2Nome", formData.botao2Nome);
       data.append("botao2Link", formData.botao2Link);
-      data.append("icones", JSON.stringify(formData.icones));
 
-      // Adiciona a imagem principal, se for um arquivo
+      const iconesParaEnviar = formData.icones.map(({ id, link }) => ({
+        id,
+        link,
+      }));
+      data.append("icones", JSON.stringify(iconesParaEnviar));
+
       if (formData.imagem instanceof File) {
         data.append("imagem", formData.imagem);
       }
 
-      // Adiciona as imagens dos ícones, se forem arquivos
       formData.icones.forEach((icone, index) => {
         if (icone.imagem instanceof File) {
-          data.append("icones", icone.imagem);
+          data.append(`icones[${index}]`, icone.imagem);
         }
       });
 
-      const response = await axios.post("http://localhost:3000/api/apresentacao", data, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const response = await axios.post(
+        `${API_BASE_URL}/api/apresentacao`,
+        data,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
       setApresentacaoData(response.data);
       setModalOpen(false);
-      alert("Alterações salvas com sucesso!");
+      setSuccessMessage("Apresentação atualizada com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar apresentação:", error);
-      alert("Erro ao salvar alterações");
+      setErro(error.response?.data?.message || "Erro ao salvar apresentação");
     }
   };
 
   return (
     <Margin horizontal="60px">
+      {erro && <AlertaErro mensagem={erro} />}
+      {successMessage && <AlertaOk mensagem={successMessage} />}
       <div className="bg-fundo flex flex-col lg:flex-row items-stretch lg:items-center justify-between">
-        <div data-aos="fade-up" className="w-full lg:w-1/1 space-y-6 text-left lg:pr-8 py-8 lg:py-0">
+        <div
+          data-aos="fade-up"
+          className="w-full lg:w-1/1 space-y-6 text-left lg:pr-8 py-8 lg:py-0"
+        >
           <h4 className="text-3xl font-bold mt-2">
-            <span className="text-white block md:inline pb-[15px]">{apresentacaoData.titulo1} </span>
-            <span className="text-azul-escuro block md:inline">{apresentacaoData.titulo2}</span>
+            <span className="text-white block md:inline pb-[15px]">
+              {apresentacaoData.titulo1}{" "}
+            </span>
+            <span className="text-azul-escuro block md:inline">
+              {apresentacaoData.titulo2}
+            </span>
           </h4>
-          <p className="text-fonte-escura mb-3">{apresentacaoData.descricao1}</p>
-          <p className="text-fonte-escura mb-7">{apresentacaoData.descricao2}</p>
+          <p className="text-fonte-escura mb-3">
+            {apresentacaoData.descricao1}
+          </p>
+          <p className="text-fonte-escura mb-7">
+            {apresentacaoData.descricao2}
+          </p>
           <div className="flex flex-col lg:flex-row lg:justify-between gap-4">
             <div className="flex flex-col sm:flex-row gap-5">
               <Link to={apresentacaoData.botao1Link}>
@@ -105,7 +172,12 @@ const Apresentacao = () => {
                     viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 5l7 7-7 7"
+                    />
                   </svg>
                 </button>
               </Link>
@@ -119,22 +191,34 @@ const Apresentacao = () => {
                     viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 5l7 7-7 7"
+                    />
                   </svg>
                 </button>
               </Link>
             </div>
-            <button
-              onClick={() => setModalOpen(true)}
-              className="bg-[#284880] font-bold text-white border-0 py-2 px-4 rounded text-center transition-colors hover:bg-[#162b50] cursor-pointer w-[80px]"
-            >
-              Editar
-            </button>
+            {["Administrador", "Administrador Geral"].includes(userRole) && (
+              <button
+                onClick={() => setModalOpen(true)}
+                className="bg-[#284880] font-bold text-white border-0 py-2 px-4 rounded text-center transition-colors hover:bg-[#162b50] cursor-pointer w-[80px]"
+              >
+                Editar
+              </button>
+            )}
           </div>
           <div className="border-t border-gray-700"></div>
           <div className="flex gap-5">
             {apresentacaoData.icones.map((icone) => (
-              <a key={icone.id} href={icone.link} target="_blank" rel="noopener noreferrer">
+              <a
+                key={icone.id}
+                href={icone.link}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <img
                   src={icone.imagem}
                   className="h-10 hover:scale-105 transition-transform duration-600 ease-in-out"
@@ -144,7 +228,10 @@ const Apresentacao = () => {
             ))}
           </div>
         </div>
-        <div data-aos="fade-up" className="w-full lg:w-1/2 flex justify-center lg:justify-end items-center">
+        <div
+          data-aos="fade-up"
+          className="w-full lg:w-1/2 flex justify-center lg:justify-end items-center"
+        >
           <img
             src={apresentacaoData.imagem}
             alt="Logo Mauá Esports"
@@ -158,6 +245,7 @@ const Apresentacao = () => {
         onClose={() => setModalOpen(false)}
         onSave={handleSave}
         dadosIniciais={apresentacaoData}
+        userRole={userRole}
       />
     </Margin>
   );
