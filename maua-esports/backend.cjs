@@ -217,11 +217,19 @@ app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
       });
     }
 
+    // Valida o formato do email
+    if (!/^\d{2}\.\d{5}-\d@maua\.br$/.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Formato de email inválido. Esperado: xx.xxxxx-x@maua.br",
+      });
+    }
+
     const usuarioData = {
       email,
-      ...(discordID && { discordID }),
+      discordID: discordID || null,
       tipoUsuario: tipoUsuario?.trim() || "Jogador",
-      ...(time && { time }),
+      time: time || null,
       ...(req.file && {
         fotoPerfil: {
           data: req.file.buffer,
@@ -231,42 +239,54 @@ app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
       }),
     };
 
-    const novoUsuario = new Usuario(usuarioData);
-    await novoUsuario.save();
+    // Atualiza ou cria o usuário com base no email
+    const usuario = await Usuario.findOneAndUpdate({ email }, usuarioData, {
+      upsert: true,
+      new: true,
+      runValidators: true,
+    });
+
+    console.log(
+      `Usuário salvo/atualizado: email=${email}, discordID=${usuario.discordID}`
+    );
 
     res.status(201).json({
       success: true,
       usuario: {
-        _id: novoUsuario._id,
-        email: novoUsuario.email,
-        ...(novoUsuario.discordID && { discordID: novoUsuario.discordID }),
-        tipoUsuario: novoUsuario.tipoUsuario,
-        ...(novoUsuario.time && { time: novoUsuario.time }),
-        createdAt: novoUsuario.createdAt,
+        _id: usuario._id,
+        email: usuario.email,
+        discordID: usuario.discordID || null,
+        tipoUsuario: usuario.tipoUsuario,
+        time: usuario.time || null,
+        createdAt: usuario.createdAt,
       },
-      message: "Usuário criado com sucesso",
+      message: "Usuário criado/atualizado com sucesso",
     });
   } catch (error) {
-    console.error("Erro ao criar usuário:", error);
+    console.error("Erro ao criar/atualizar usuário:", error);
 
     if (error.name === "ValidationError") {
       const messages = Object.values(error.errors).map((e) => e.message);
-      return res
-        .status(400)
-        .json({ success: false, message: messages.join(", ") });
-    }
-
-    // No bloco catch da rota POST /usuarios
-    if (error.code === 11000) {
       return res.status(400).json({
         success: false,
-        message: "Email já está em uso",
+        message: messages.join(", "),
       });
     }
 
-    res
-      .status(500)
-      .json({ success: false, message: "Erro interno do servidor" });
+    if (error.code === 11000) {
+      if (error.keyValue.discordID) {
+        return res.status(400).json({
+          success: false,
+          message: "Discord ID já está em uso por outro usuário",
+        });
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Erro interno do servidor",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
 });
 
@@ -306,7 +326,6 @@ app.get("/usuarios/verificar-email", async (req, res) => {
 });
 app.get("/usuarios/por-discord-ids", async (req, res) => {
   try {
-    // Recebe os IDs como query parameter (ex: ?ids=123,456,789)
     const idsString = req.query.ids;
 
     if (!idsString) {
@@ -316,10 +335,8 @@ app.get("/usuarios/por-discord-ids", async (req, res) => {
       });
     }
 
-    // Converte a string de IDs para array
     const discordIds = idsString.split(",");
 
-    // Verifica se há IDs válidos
     if (!discordIds.length || discordIds.some((id) => !id.trim())) {
       return res.status(400).json({
         success: false,
@@ -1660,102 +1677,6 @@ app.get("/modality/all", authenticate, (req, res) => {
   res.json(modality);
 });
 
-/////////////////////////////////////////////////////////////////////////  RELATORIOS  //////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Função auxiliar para obter o semestre atual
-function getCurrentSemester() {
-  const now = new Date();
-  const year = now.getFullYear();
-  return now.getMonth() < 6 ? `${year}.1` : `${year}.2`;
-}
-
-// Rota para gerar PDF
-router.post("/api/generate-pdf-report", async (req, res) => {
-  try {
-    const { team } = req.body;
-
-    // Crie o documento PDF
-    const doc = new PDFDocument();
-
-    // Configura o cabeçalho da resposta
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=relatorio_pae_${team}.pdf`
-    );
-
-    // Pipe do PDF para a resposta
-    doc.pipe(res);
-
-    // Adicione conteúdo ao PDF
-    doc.fontSize(25).text(`Relatório PAE - ${team}`, { align: "center" });
-    doc.moveDown();
-    doc
-      .fontSize(12)
-      .text(`Semestre: ${getCurrentSemester()}`, { align: "center" });
-    doc.moveDown(2);
-
-    // Adicione tabela de jogadores (exemplo)
-    doc.fontSize(14).text("Jogadores e Horas:", { underline: true });
-    doc.moveDown();
-
-    // Aqui você deve adicionar os dados reais dos jogadores
-    doc.fontSize(12).text("Jogador 1 - 45 horas (Experiente - Azul)");
-    doc.text("Jogador 2 - 30 horas (Avançado - Ouro)");
-    // ...
-
-    // Finalize o PDF
-    doc.end();
-  } catch (error) {
-    console.error("Erro ao gerar PDF:", error);
-    res.status(500).json({ error: "Erro ao gerar relatório PDF" });
-  }
-});
-
-// Rota para gerar Excel
-router.post("/api/generate-excel-report", async (req, res) => {
-  try {
-    const { team } = req.body;
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Relatório PAE");
-
-    // Adicione cabeçalhos
-    worksheet.columns = [
-      { header: "Jogador", key: "name", width: 30 },
-      { header: "Horas", key: "hours", width: 15 },
-      { header: "Rank", key: "rank", width: 25 },
-    ];
-
-    // Adicione dados (substitua pelos dados reais da sua aplicação)
-    worksheet.addRow({
-      name: "Jogador 1",
-      hours: 45,
-      rank: "Experiente (Azul)",
-    });
-    worksheet.addRow({
-      name: "Jogador 2",
-      hours: 28,
-      rank: "Avançado (Ouro)",
-    });
-
-    // Configura o cabeçalho da resposta
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=relatorio_pae_${team}.xlsx`
-    );
-
-    // Envie o arquivo
-    await workbook.xlsx.write(res);
-    res.end();
-  } catch (error) {
-    console.error("Erro ao gerar Excel:", error);
-    res.status(500).json({ error: "Erro ao gerar relatório Excel" });
-  }
-});
 /////////////////////////////////////////////////////////////////////////DISCORD API //////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Função para obter o discordID
