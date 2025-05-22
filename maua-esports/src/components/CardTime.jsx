@@ -4,7 +4,15 @@ import EditarBtn from "./EditarBtn";
 import DeletarBtn from "./DeletarBtn";
 import PropTypes from "prop-types";
 
-const CardTime = ({ timeId, nome, foto, jogo, onDelete, onEditClick, userRole }) => {
+const CardTime = ({
+  timeId,
+  nome,
+  foto,
+  jogo,
+  onDelete,
+  onEditClick,
+  userRole,
+}) => {
   const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
   const [jogoError, setJogoError] = useState(false);
@@ -41,7 +49,7 @@ const CardTime = ({ timeId, nome, foto, jogo, onDelete, onEditClick, userRole })
         onClick={handleCardClick}
         className="block hover:scale-105 transition-transform duration-300 cursor-pointer"
       >
-        <div className="border-2 border-borda relative w-[300px] h-[450px] bg-fundo shadow-lg flex flex-col items-center rounded-md">
+        <div className="border-2 border-borda relative w-[300px] h-[450px] bg-gray-900 shadow-lg flex flex-col items-center rounded-md">
           {error && (
             <div className="absolute top-2 left-2 bg-red-500 text-white p-2 rounded">
               {error}

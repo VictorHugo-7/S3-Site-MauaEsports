@@ -83,7 +83,6 @@ const CardJogador = ({
     }
   };
 
-
   const handleMouseMove = (e) => {
     setTooltipPosition({
       x: e.clientX,
@@ -91,11 +90,9 @@ const CardJogador = ({
     });
   };
 
-
-
   return (
     <>
-      <div className="border-2 border-borda relative w-[300px] h-[450px] bg-fundo shadow-lg flex flex-col items-center hover:scale-110 transition-transform duration-300 cursor-pointer animate-fadeInUp rounded-md">
+      <div className="border-2 border-borda relative w-[300px] h-[450px] bg-gray-900 shadow-lg flex flex-col items-center hover:scale-110 transition-transform duration-300 cursor-pointer animate-fadeInUp rounded-md">
         {error && (
           <div className="absolute top-2 left-2 bg-red-500 text-white p-2 rounded">
             {error}
@@ -135,7 +132,11 @@ const CardJogador = ({
             <p
               ref={descRef}
               className="text-sm text-left mt-2 ml-4 font-blinker w-full text-fonte-escura"
-              onMouseEnter={() => descricao && descricao.length > MAX_CHARACTERS && setShowTooltip(true)}
+              onMouseEnter={() =>
+                descricao &&
+                descricao.length > MAX_CHARACTERS &&
+                setShowTooltip(true)
+              }
               onMouseLeave={() => setShowTooltip(false)}
               onMouseMove={handleMouseMove}
             >
