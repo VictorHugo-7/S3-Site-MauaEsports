@@ -143,52 +143,39 @@ const rankingSchema = new mongoose.Schema({
 
 const Ranking = mongoose.model("Ranking", rankingSchema);
 
-const usuarioSchema = new mongoose.Schema({
+const usuarioSchema = mongoose.Schema({
   email: {
     type: String,
     required: true,
     unique: true,
     validate: {
-      validator: function (v) {
-        // Regex para o formato específico: XX.XXXXX-Y@maua.br OU esports@maua.br
-        const emailRegex = /^([0-9]{2}\.[0-9]{5}-[0-9]{1}|esports)@maua\.br$/;
-        return emailRegex.test(v);
-      },
-      message: (props) =>
-        `${props.value} não é um email válido! O formato deve ser XX.XXXXX-Y@maua.br (ex: 24.00086-8@maua.br)`,
+      validator: (v) => /^([0-9]{2}\.[0-9]{5}-[0-9]{1}|esports)@maua\.br$/.test(v),
+      message: (props) => `${props.value} não é um email válido!`,
     },
   },
   discordID: {
     type: String,
-    required: false,
-    unique: true,
     sparse: true,
+    validate: {
+      validator: async function (v) {
+        if (!v) return true; 
+        const existing = await mongoose.model('Usuario').findOne({ discordID: v, _id: { $ne: this._id } });
+        return !existing; 
+      },
+      message: 'DiscordID já está em uso',
+    },
   },
-  fotoPerfil: {
-    data: { type: Buffer, required: false },
-    contentType: { type: String, required: false },
-    nomeOriginal: { type: String, required: false },
-  },
+  fotoPerfil: { data: Buffer, contentType: String, nomeOriginal: String },
   tipoUsuario: {
     type: String,
     required: true,
-    enum: [
-      "Administrador Geral",
-      "Administrador",
-      "Capitão de time",
-      "Jogador",
-    ],
+    enum: ["Administrador Geral", "Administrador", "Capitão de time", "Jogador"],
     default: "Jogador",
   },
-  time: {
-    type: String,
-    required: false, // Campo opcional
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+  time: String,
+  createdAt: { type: Date, default: Date.now },
 });
+
 
 usuarioSchema.plugin(uniqueValidator, {
   message: "O {PATH} {VALUE} já está em uso.",
