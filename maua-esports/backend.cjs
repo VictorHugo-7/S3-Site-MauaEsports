@@ -1587,7 +1587,6 @@ function authenticate(req, res, next) {
   next();
 }
 
-const PORT = process.env.PORT || 3001;
 
 const trains = [];
 const modality = [];
@@ -1748,7 +1747,7 @@ app.get("/auth/discord/callback", async (req, res) => {
         client_secret: process.env.CLIENT_SECRET_DISCORD,
         grant_type: "authorization_code",
         code,
-        redirect_uri: "http://localhost:3005/auth/discord/callback",
+        redirect_uri: "http://localhost:3000/auth/discord/callback",
       }),
       {
         headers: {
@@ -2346,21 +2345,13 @@ module.exports = {
   Politicas,
 };
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Só inicia os servidores se NÃO estiver em ambiente de teste
+const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== "test") {
-  app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
-    console.log(`CORS configurado para: http://localhost:5173`);
-  });
-
-  app.listen(3005, () => {
-    console.log("Discord API rodando na porta 3005");
-  });
-
-  app.listen(3000, () => {
+  app.listen(PORT, async () => {
     try {
-      conectarAoMongoDB();
+      await conectarAoMongoDB();
+      console.log(`Servidor rodando na porta ${PORT}`);
+      console.log(`CORS configurado para: http://localhost:5173`);
       console.log("up and running");
     } catch (e) {
       console.log("Erro", e);
