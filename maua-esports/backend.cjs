@@ -163,6 +163,14 @@ const usuarioSchema = new mongoose.Schema({
     required: false,
     unique: true,
     sparse: true,
+    validate: {
+      validator: function (v) {
+        if (!v) return true;
+        return /^\d{18}$/.test(v);
+      },
+      message: (props) =>
+        `${props.value} não é um Discord ID válido! Deve ser exatamente 18 dígitos ou vazio.`,
+    },
   },
   fotoPerfil: {
     data: { type: Buffer, required: false },
@@ -207,19 +215,11 @@ app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
       });
     }
 
-    // Valida o formato do email
-    if (!/^\d{2}\.\d{5}-\d@maua\.br$/.test(email)) {
-      return res.status(400).json({
-        success: false,
-        message: "Formato de email inválido. Esperado: xx.xxxxx-x@maua.br",
-      });
-    }
-
     const usuarioData = {
       email,
-      discordID: discordID || null,
+      ...(discordID && { discordID }),
       tipoUsuario: tipoUsuario?.trim() || "Jogador",
-      time: time || null,
+      ...(time && { time }),
       ...(req.file && {
         fotoPerfil: {
           data: req.file.buffer,
@@ -229,54 +229,42 @@ app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
       }),
     };
 
-    // Atualiza ou cria o usuário com base no email
-    const usuario = await Usuario.findOneAndUpdate({ email }, usuarioData, {
-      upsert: true,
-      new: true,
-      runValidators: true,
-    });
-
-    console.log(
-      `Usuário salvo/atualizado: email=${email}, discordID=${usuario.discordID}`
-    );
+    const novoUsuario = new Usuario(usuarioData);
+    await novoUsuario.save();
 
     res.status(201).json({
       success: true,
       usuario: {
-        _id: usuario._id,
-        email: usuario.email,
-        discordID: usuario.discordID || null,
-        tipoUsuario: usuario.tipoUsuario,
-        time: usuario.time || null,
-        createdAt: usuario.createdAt,
+        _id: novoUsuario._id,
+        email: novoUsuario.email,
+        ...(novoUsuario.discordID && { discordID: novoUsuario.discordID }),
+        tipoUsuario: novoUsuario.tipoUsuario,
+        ...(novoUsuario.time && { time: novoUsuario.time }),
+        createdAt: novoUsuario.createdAt,
       },
-      message: "Usuário criado/atualizado com sucesso",
+      message: "Usuário criado com sucesso",
     });
   } catch (error) {
-    console.error("Erro ao criar/atualizar usuário:", error);
+    console.error("Erro ao criar usuário:", error);
 
     if (error.name === "ValidationError") {
       const messages = Object.values(error.errors).map((e) => e.message);
+      return res
+        .status(400)
+        .json({ success: false, message: messages.join(", ") });
+    }
+
+    // No bloco catch da rota POST /usuarios
+    if (error.code === 11000) {
       return res.status(400).json({
         success: false,
-        message: messages.join(", "),
+        message: "Email já está em uso",
       });
     }
 
-    if (error.code === 11000) {
-      if (error.keyValue.discordID) {
-        return res.status(400).json({
-          success: false,
-          message: "Discord ID já está em uso por outro usuário",
-        });
-      }
-    }
-
-    res.status(500).json({
-      success: false,
-      message: "Erro interno do servidor",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
+    res
+      .status(500)
+      .json({ success: false, message: "Erro interno do servidor" });
   }
 });
 
@@ -316,6 +304,7 @@ app.get("/usuarios/verificar-email", async (req, res) => {
 });
 app.get("/usuarios/por-discord-ids", async (req, res) => {
   try {
+    // Recebe os IDs como query parameter (ex: ?ids=123,456,789)
     const idsString = req.query.ids;
 
     if (!idsString) {
@@ -325,8 +314,10 @@ app.get("/usuarios/por-discord-ids", async (req, res) => {
       });
     }
 
+    // Converte a string de IDs para array
     const discordIds = idsString.split(",");
 
+    // Verifica se há IDs válidos
     if (!discordIds.length || discordIds.some((id) => !id.trim())) {
       return res.status(400).json({
         success: false,
@@ -951,6 +942,8 @@ app.post(
       const { nome } = req.body;
       const fotoFile = req.files["foto"][0];
       const jogoFile = req.files["jogo"][0];
+
+      // Validações
       if (!nome) {
         return res.status(400).json({ message: "Nome é obrigatório" });
       }
@@ -1627,6 +1620,102 @@ app.get("/modality/all", authenticate, (req, res) => {
   res.json(modality);
 });
 
+/////////////////////////////////////////////////////////////////////////  RELATORIOS  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Função auxiliar para obter o semestre atual
+function getCurrentSemester() {
+  const now = new Date();
+  const year = now.getFullYear();
+  return now.getMonth() < 6 ? `${year}.1` : `${year}.2`;
+}
+
+// Rota para gerar PDF
+router.post("/api/generate-pdf-report", async (req, res) => {
+  try {
+    const { team } = req.body;
+
+    // Crie o documento PDF
+    const doc = new PDFDocument();
+
+    // Configura o cabeçalho da resposta
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=relatorio_pae_${team}.pdf`
+    );
+
+    // Pipe do PDF para a resposta
+    doc.pipe(res);
+
+    // Adicione conteúdo ao PDF
+    doc.fontSize(25).text(`Relatório PAE - ${team}`, { align: "center" });
+    doc.moveDown();
+    doc
+      .fontSize(12)
+      .text(`Semestre: ${getCurrentSemester()}`, { align: "center" });
+    doc.moveDown(2);
+
+    // Adicione tabela de jogadores (exemplo)
+    doc.fontSize(14).text("Jogadores e Horas:", { underline: true });
+    doc.moveDown();
+
+    // Aqui você deve adicionar os dados reais dos jogadores
+    doc.fontSize(12).text("Jogador 1 - 45 horas (Experiente - Azul)");
+    doc.text("Jogador 2 - 30 horas (Avançado - Ouro)");
+    // ...
+
+    // Finalize o PDF
+    doc.end();
+  } catch (error) {
+    console.error("Erro ao gerar PDF:", error);
+    res.status(500).json({ error: "Erro ao gerar relatório PDF" });
+  }
+});
+
+// Rota para gerar Excel
+router.post("/api/generate-excel-report", async (req, res) => {
+  try {
+    const { team } = req.body;
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Relatório PAE");
+
+    // Adicione cabeçalhos
+    worksheet.columns = [
+      { header: "Jogador", key: "name", width: 30 },
+      { header: "Horas", key: "hours", width: 15 },
+      { header: "Rank", key: "rank", width: 25 },
+    ];
+
+    // Adicione dados (substitua pelos dados reais da sua aplicação)
+    worksheet.addRow({
+      name: "Jogador 1",
+      hours: 45,
+      rank: "Experiente (Azul)",
+    });
+    worksheet.addRow({
+      name: "Jogador 2",
+      hours: 28,
+      rank: "Avançado (Ouro)",
+    });
+
+    // Configura o cabeçalho da resposta
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=relatorio_pae_${team}.xlsx`
+    );
+
+    // Envie o arquivo
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Erro ao gerar Excel:", error);
+    res.status(500).json({ error: "Erro ao gerar relatório Excel" });
+  }
+});
 /////////////////////////////////////////////////////////////////////////DISCORD API //////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Função para obter o discordID
@@ -1869,150 +1958,124 @@ app.get("/api/apresentacao", async (req, res) => {
   }
 });
 
-app.post("/api/apresentacao", upload.any(), async (req, res) => {
-  try {
-    const {
-      titulo1,
-      titulo2,
-      descricao1,
-      descricao2,
-      botao1Nome,
-      botao1Link,
-      botao2Nome,
-      botao2Link,
-      icones: iconesJson,
-    } = req.body;
-
-    // Validação básica
-    if (
-      !titulo1 ||
-      !titulo2 ||
-      !descricao1 ||
-      !descricao2 ||
-      !botao1Nome ||
-      !botao1Link ||
-      !botao2Nome ||
-      !botao2Link
-    ) {
-      return res
-        .status(400)
-        .json({ message: "Todos os campos são obrigatórios" });
-    }
-
-    // Parseia os ícones enviados como JSON
-    let iconesParsed;
+app.post(
+  "/api/apresentacao",
+  upload.fields([{ name: "imagem" }, { name: "icones" }]),
+  async (req, res) => {
     try {
-      iconesParsed = JSON.parse(iconesJson);
-      if (!Array.isArray(iconesParsed)) {
+      const {
+        titulo1,
+        titulo2,
+        descricao1,
+        descricao2,
+        botao1Nome,
+        botao1Link,
+        botao2Nome,
+        botao2Link,
+        icones: iconesJson,
+      } = req.body;
+
+      // Validação básica
+      if (
+        !titulo1 ||
+        !titulo2 ||
+        !descricao1 ||
+        !descricao2 ||
+        !botao1Nome ||
+        !botao1Link ||
+        !botao2Nome ||
+        !botao2Link
+      ) {
         return res
           .status(400)
-          .json({ message: "O campo 'icones' deve ser um array" });
-      }
-    } catch (error) {
-      return res.status(400).json({
-        message: "Erro ao parsear o campo 'icones'",
-        error: error.message,
-      });
-    }
-
-    // Verifica se já existe uma apresentação
-    let apresentacao = await Apresentacao.findOne();
-
-    // Processa a imagem principal
-    const imagemFile = req.files.find((file) => file.fieldname === "imagem");
-    const imagemBuffer = imagemFile
-      ? imagemFile.buffer
-      : apresentacao
-      ? apresentacao.imagem
-      : null;
-    const imagemType = imagemFile
-      ? imagemFile.mimetype
-      : apresentacao
-      ? apresentacao.imagemType
-      : null;
-
-    // Processa as imagens dos ícones
-    const iconesFiles = {};
-    req.files.forEach((file) => {
-      const match = file.fieldname.match(/icones\[(\d+)\]/);
-      if (match) {
-        const index = parseInt(match[1], 10);
-        iconesFiles[index] = file;
-      }
-    });
-
-    // Mapeia os ícones com as imagens
-    const iconesData = iconesParsed.map((icone, index) => {
-      if (!icone.id || !icone.link) {
-        throw new Error(
-          `Ícone no índice ${index} está faltando 'id' ou 'link'`
-        );
+          .json({ message: "Todos os campos são obrigatórios" });
       }
 
-      return {
+      // Parseia os ícones enviados como JSON
+      const iconesParsed = JSON.parse(iconesJson);
+
+      // Verifica se já existe uma apresentação
+      let apresentacao = await Apresentacao.findOne();
+
+      // Processa a imagem principal
+      const imagemFile = req.files["imagem"] ? req.files["imagem"][0] : null;
+      const imagemBuffer = imagemFile
+        ? imagemFile.buffer
+        : apresentacao
+        ? apresentacao.imagem
+        : null;
+      const imagemType = imagemFile
+        ? imagemFile.mimetype
+        : apresentacao
+        ? apresentacao.imagemType
+        : null;
+
+      // Processa as imagens dos ícones
+      const iconesFiles = req.files["icones"] || [];
+      const iconesData = iconesParsed.map((icone, index) => ({
         id: icone.id,
         imagem: iconesFiles[index]
           ? iconesFiles[index].buffer
-          : apresentacao?.icones.find((i) => i.id === icone.id)?.imagem || null,
+          : apresentacao?.icones[index]?.imagem || null,
         imagemType: iconesFiles[index]
           ? iconesFiles[index].mimetype
-          : apresentacao?.icones.find((i) => i.id === icone.id)?.imagemType ||
-            null,
+          : apresentacao?.icones[index]?.imagemType || null,
         link: icone.link,
+      }));
+
+      const apresentacaoData = {
+        titulo1,
+        titulo2,
+        descricao1,
+        descricao2,
+        botao1Nome,
+        botao1Link,
+        botao2Nome,
+        botao2Link,
+        imagem: imagemBuffer,
+        imagemType,
+        icones: iconesData,
       };
-    });
 
-    const apresentacaoData = {
-      titulo1,
-      titulo2,
-      descricao1,
-      descricao2,
-      botao1Nome,
-      botao1Link,
-      botao2Nome,
-      botao2Link,
-      imagem: imagemBuffer,
-      imagemType,
-      icones: iconesData,
-    };
+      if (apresentacao) {
+        // Atualiza a apresentação existente
+        apresentacao = await Apresentacao.findOneAndUpdate(
+          {},
+          apresentacaoData,
+          { new: true }
+        );
+      } else {
+        // Cria uma nova apresentação
+        apresentacao = new Apresentacao(apresentacaoData);
+        await apresentacao.save();
+      }
 
-    if (apresentacao) {
-      // Atualiza a apresentação existente
-      apresentacao = await Apresentacao.findOneAndUpdate({}, apresentacaoData, {
-        new: true,
+      // Converte a imagem principal para base64 para retorno
+      const imagemBase64 = apresentacao.imagem
+        ? `data:${
+            apresentacao.imagemType
+          };base64,${apresentacao.imagem.toString("base64")}`
+        : null;
+
+      // Converte as imagens dos ícones para base64 para retorno
+      const iconesComBase64 = apresentacao.icones.map((icone) => ({
+        ...icone._doc,
+        imagem: icone.imagem
+          ? `data:${icone.imagemType};base64,${icone.imagem.toString("base64")}`
+          : null,
+      }));
+
+      res.status(200).json({
+        ...apresentacao._doc,
+        imagem: imagemBase64,
+        icones: iconesComBase64,
       });
-    } else {
-      // Cria uma nova apresentação
-      apresentacao = new Apresentacao(apresentacaoData);
-      await apresentacao.save();
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao salvar apresentação", error });
     }
-
-    // Converte a imagem principal para base64 para retorno
-    const imagemBase64 = apresentacao.imagem
-      ? `data:${apresentacao.imagemType};base64,${apresentacao.imagem.toString(
-          "base64"
-        )}`
-      : null;
-
-    // Converte as imagens dos ícones para base64 para retorno
-    const iconesComBase64 = apresentacao.icones.map((icone) => ({
-      ...icone._doc,
-      imagem: icone.imagem
-        ? `data:${icone.imagemType};base64,${icone.imagem.toString("base64")}`
-        : null,
-    }));
-
-    res.status(200).json({
-      ...apresentacao._doc,
-      imagem: imagemBase64,
-      icones: iconesComBase64,
-    });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Erro ao salvar apresentação", error: error.message });
   }
-});
+);
+
 //////////////////////////////////////////////////////////////////////////HOME_INFORMACOES////////////////////////////////////////////////////////
 
 // Middleware

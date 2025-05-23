@@ -6,8 +6,7 @@ export const msalConfig = {
     authority: `https://login.microsoftonline.com/${
       import.meta.env.VITE_TENANT_ID
     }`,
-    redirectUri:
-      "https://6e3b-2804-7f0-18-48bc-c008-f94d-3eca-98d2.ngrok-free.app",
+    redirectUri: "localhost:5173/",
   },
   cache: {
     cacheLocation: "localStorage", // IMPORTANTE: mantém o login após reload
