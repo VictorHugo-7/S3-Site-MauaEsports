@@ -1,193 +1,189 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="79" failures="0" errors="0" time="22.479">
-  <testsuite name="Rotas de Admin" errors="0" failures="0" skipped="0" timestamp="2025-05-22T19:04:43" time="2.947" tests="3">
-    <testcase classname="Rotas de Admin GET /admins deve retornar admins" name="Rotas de Admin GET /admins deve retornar admins" time="0.055">
+<testsuites name="jest tests" tests="77" failures="0" errors="0" time="27.873">
+  <testsuite name="Modelo Usuario" errors="0" failures="0" skipped="0" timestamp="2025-05-23T10:49:48" time="3.53" tests="7">
+    <testcase classname="Modelo Usuario deve criar um usuário válido com email @maua.br" name="Modelo Usuario deve criar um usuário válido com email @maua.br" time="0.213">
     </testcase>
-    <testcase classname="Rotas de Admin POST /admins deve criar novo admin" name="Rotas de Admin POST /admins deve criar novo admin" time="0.037">
+    <testcase classname="Modelo Usuario deve falhar ao criar usuário com email inválido" name="Modelo Usuario deve falhar ao criar usuário com email inválido" time="0.044">
     </testcase>
-    <testcase classname="Rotas de Admin DELETE /admins/:id deve remover um admin existente" name="Rotas de Admin DELETE /admins/:id deve remover um admin existente" time="0.046">
+    <testcase classname="Modelo Usuario deve falhar ao criar usuário com email não @maua.br" name="Modelo Usuario deve falhar ao criar usuário com email não @maua.br" time="0.032">
     </testcase>
-  </testsuite>
-  <testsuite name="Modelo Time" errors="0" failures="0" skipped="0" timestamp="2025-05-22T19:04:46" time="1.238" tests="3">
-    <testcase classname="Modelo Time deve criar um time válido com campos obrigatórios" name="Modelo Time deve criar um time válido com campos obrigatórios" time="0.148">
+    <testcase classname="Modelo Usuario deve falhar ao criar usuário com formato Mauá inválido" name="Modelo Usuario deve falhar ao criar usuário com formato Mauá inválido" time="0.042">
     </testcase>
-    <testcase classname="Modelo Time deve falhar ao criar time sem nome" name="Modelo Time deve falhar ao criar time sem nome" time="0.016">
+    <testcase classname="Modelo Usuario deve aceitar tipos de usuário válidos" name="Modelo Usuario deve aceitar tipos de usuário válidos" time="0.08">
     </testcase>
-    <testcase classname="Modelo Time deve garantir que o nome é único" name="Modelo Time deve garantir que o nome é único" time="0.035">
+    <testcase classname="Modelo Usuario deve falhar com tipo de usuário inválido" name="Modelo Usuario deve falhar com tipo de usuário inválido" time="0.037">
     </testcase>
-  </testsuite>
-  <testsuite name="Rotas de Usuário" errors="0" failures="0" skipped="0" timestamp="2025-05-22T19:04:48" time="1.626" tests="11">
-    <testcase classname="Rotas de Usuário POST /usuarios deve criar um novo usuário" name="Rotas de Usuário POST /usuarios deve criar um novo usuário" time="0.053">
-    </testcase>
-    <testcase classname="Rotas de Usuário POST /usuarios deve falhar ao criar usuário com email duplicado" name="Rotas de Usuário POST /usuarios deve falhar ao criar usuário com email duplicado" time="0.055">
-    </testcase>
-    <testcase classname="Rotas de Usuário POST /usuarios deve aceitar upload de foto de perfil" name="Rotas de Usuário POST /usuarios deve aceitar upload de foto de perfil" time="0.05">
-    </testcase>
-    <testcase classname="Rotas de Usuário GET /usuarios deve listar todos os usuários" name="Rotas de Usuário GET /usuarios deve listar todos os usuários" time="0.046">
-    </testcase>
-    <testcase classname="Rotas de Usuário GET /usuarios/:id deve retornar um usuário específico" name="Rotas de Usuário GET /usuarios/:id deve retornar um usuário específico" time="0.032">
-    </testcase>
-    <testcase classname="Rotas de Usuário GET /usuarios/:id deve retornar 404 para usuário não encontrado" name="Rotas de Usuário GET /usuarios/:id deve retornar 404 para usuário não encontrado" time="0.03">
-    </testcase>
-    <testcase classname="Rotas de Usuário PUT /usuarios/:id deve atualizar um usuário" name="Rotas de Usuário PUT /usuarios/:id deve atualizar um usuário" time="0.037">
-    </testcase>
-    <testcase classname="Rotas de Usuário PUT /usuarios/:id deve atualizar a foto de perfil" name="Rotas de Usuário PUT /usuarios/:id deve atualizar a foto de perfil" time="0.041">
-    </testcase>
-    <testcase classname="Rotas de Usuário GET /usuarios/:id/foto deve retornar a foto de perfil" name="Rotas de Usuário GET /usuarios/:id/foto deve retornar a foto de perfil" time="0.047">
-    </testcase>
-    <testcase classname="Rotas de Usuário GET /usuarios/:id/foto deve retornar 404 se não houver foto" name="Rotas de Usuário GET /usuarios/:id/foto deve retornar 404 se não houver foto" time="0.031">
-    </testcase>
-    <testcase classname="Rotas de Usuário DELETE /usuarios/:id deve remover um usuário" name="Rotas de Usuário DELETE /usuarios/:id deve remover um usuário" time="0.034">
+    <testcase classname="Modelo Usuario deve garantir que o email é único" name="Modelo Usuario deve garantir que o email é único" time="0.059">
     </testcase>
   </testsuite>
-  <testsuite name="Rotas de Homepage" errors="0" failures="0" skipped="0" timestamp="2025-05-22T19:04:49" time="1.49" tests="10">
-    <testcase classname="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) GET /api/homeNovidade deve retornar a novidade existente" name="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) GET /api/homeNovidade deve retornar a novidade existente" time="0.153">
+  <testsuite name="Rotas de Políticas (/politicas)" errors="0" failures="0" skipped="0" timestamp="2025-05-23T10:49:52" time="1.797" tests="7">
+    <testcase classname="Rotas de Políticas (/politicas) GET /politicas deve listar todas as políticas" name="Rotas de Políticas (/politicas) GET /politicas deve listar todas as políticas" time="0.216">
     </testcase>
-    <testcase classname="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) GET /api/homeNovidade deve retornar 404 se não houver novidade" name="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) GET /api/homeNovidade deve retornar 404 se não houver novidade" time="0.028">
+    <testcase classname="Rotas de Políticas (/politicas) POST /politicas deve criar uma nova política" name="Rotas de Políticas (/politicas) POST /politicas deve criar uma nova política" time="0.074">
     </testcase>
-    <testcase classname="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) POST /api/homeNovidade deve criar uma nova novidade com imagem" name="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) POST /api/homeNovidade deve criar uma nova novidade com imagem" time="0.039">
+    <testcase classname="Rotas de Políticas (/politicas) POST /politicas deve falhar se título estiver ausente" name="Rotas de Políticas (/politicas) POST /politicas deve falhar se título estiver ausente" time="0.041">
     </testcase>
-    <testcase classname="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) POST /api/homeNovidade deve falhar se título ou descrição estiverem ausentes" name="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) POST /api/homeNovidade deve falhar se título ou descrição estiverem ausentes" time="0.024">
+    <testcase classname="Rotas de Políticas (/politicas) PUT /politicas/:id deve atualizar uma política" name="Rotas de Políticas (/politicas) PUT /politicas/:id deve atualizar uma política" time="0.058">
     </testcase>
-    <testcase classname="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) POST /api/homeNovidade deve atualizar uma novidade existente" name="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) POST /api/homeNovidade deve atualizar uma novidade existente" time="0.039">
+    <testcase classname="Rotas de Políticas (/politicas) PUT /politicas/:id deve retornar 404 se política não existir" name="Rotas de Políticas (/politicas) PUT /politicas/:id deve retornar 404 se política não existir" time="0.034">
     </testcase>
-    <testcase classname="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) GET /api/apresentacao deve retornar a apresentação existente" name="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) GET /api/apresentacao deve retornar a apresentação existente" time="0.039">
+    <testcase classname="Rotas de Políticas (/politicas) DELETE /politicas/:id deve excluir uma política" name="Rotas de Políticas (/politicas) DELETE /politicas/:id deve excluir uma política" time="0.048">
     </testcase>
-    <testcase classname="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) GET /api/apresentacao deve retornar 404 se não houver apresentação" name="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) GET /api/apresentacao deve retornar 404 se não houver apresentação" time="0.024">
-    </testcase>
-    <testcase classname="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) POST /api/apresentacao deve criar uma nova apresentação com imagem e ícones" name="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) POST /api/apresentacao deve criar uma nova apresentação com imagem e ícones" time="0.049">
-    </testcase>
-    <testcase classname="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) POST /api/apresentacao deve falhar se campos obrigatórios estiverem ausentes" name="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) POST /api/apresentacao deve falhar se campos obrigatórios estiverem ausentes" time="0.033">
-    </testcase>
-    <testcase classname="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) POST /api/apresentacao deve atualizar uma apresentação existente" name="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) POST /api/apresentacao deve atualizar uma apresentação existente" time="0.048">
+    <testcase classname="Rotas de Políticas (/politicas) DELETE /politicas/:id deve retornar 404 se política não existir" name="Rotas de Políticas (/politicas) DELETE /politicas/:id deve retornar 404 se política não existir" time="0.038">
     </testcase>
   </testsuite>
-  <testsuite name="Rotas de Times" errors="0" failures="0" skipped="0" timestamp="2025-05-22T19:04:51" time="1.292" tests="3">
-    <testcase classname="Rotas de Times GET /times deve retornar times" name="Rotas de Times GET /times deve retornar times" time="0.024">
+  <testsuite name="Rotas de Usuário" errors="0" failures="0" skipped="0" timestamp="2025-05-23T10:49:53" time="2.232" tests="11">
+    <testcase classname="Rotas de Usuário POST /usuarios deve criar um novo usuário" name="Rotas de Usuário POST /usuarios deve criar um novo usuário" time="0.081">
     </testcase>
-    <testcase classname="Rotas de Times POST /times deve criar novo time" name="Rotas de Times POST /times deve criar novo time" time="0.034">
+    <testcase classname="Rotas de Usuário POST /usuarios deve falhar ao criar usuário com email duplicado" name="Rotas de Usuário POST /usuarios deve falhar ao criar usuário com email duplicado" time="0.109">
     </testcase>
-    <testcase classname="Rotas de Times DELETE /times/:id deve remover um times" name="Rotas de Times DELETE /times/:id deve remover um times" time="0.027">
+    <testcase classname="Rotas de Usuário POST /usuarios deve aceitar upload de foto de perfil" name="Rotas de Usuário POST /usuarios deve aceitar upload de foto de perfil" time="0.088">
     </testcase>
-  </testsuite>
-  <testsuite name="Rotas de Políticas (/politicas)" errors="0" failures="0" skipped="0" timestamp="2025-05-22T19:04:52" time="1.638" tests="7">
-    <testcase classname="Rotas de Políticas (/politicas) GET /politicas deve listar todas as políticas" name="Rotas de Políticas (/politicas) GET /politicas deve listar todas as políticas" time="0.153">
+    <testcase classname="Rotas de Usuário GET /usuarios deve listar todos os usuários" name="Rotas de Usuário GET /usuarios deve listar todos os usuários" time="0.078">
     </testcase>
-    <testcase classname="Rotas de Políticas (/politicas) POST /politicas deve criar uma nova política" name="Rotas de Políticas (/politicas) POST /politicas deve criar uma nova política" time="0.029">
+    <testcase classname="Rotas de Usuário GET /usuarios/:id deve retornar um usuário específico" name="Rotas de Usuário GET /usuarios/:id deve retornar um usuário específico" time="0.054">
     </testcase>
-    <testcase classname="Rotas de Políticas (/politicas) POST /politicas deve falhar se título estiver ausente" name="Rotas de Políticas (/politicas) POST /politicas deve falhar se título estiver ausente" time="0.018">
+    <testcase classname="Rotas de Usuário GET /usuarios/:id deve retornar 404 para usuário não encontrado" name="Rotas de Usuário GET /usuarios/:id deve retornar 404 para usuário não encontrado" time="0.055">
     </testcase>
-    <testcase classname="Rotas de Políticas (/politicas) PUT /politicas/:id deve atualizar uma política" name="Rotas de Políticas (/politicas) PUT /politicas/:id deve atualizar uma política" time="0.025">
+    <testcase classname="Rotas de Usuário PUT /usuarios/:id deve atualizar um usuário" name="Rotas de Usuário PUT /usuarios/:id deve atualizar um usuário" time="0.06">
     </testcase>
-    <testcase classname="Rotas de Políticas (/politicas) PUT /politicas/:id deve retornar 404 se política não existir" name="Rotas de Políticas (/politicas) PUT /politicas/:id deve retornar 404 se política não existir" time="0.021">
+    <testcase classname="Rotas de Usuário PUT /usuarios/:id deve atualizar a foto de perfil" name="Rotas de Usuário PUT /usuarios/:id deve atualizar a foto de perfil" time="0.064">
     </testcase>
-    <testcase classname="Rotas de Políticas (/politicas) DELETE /politicas/:id deve excluir uma política" name="Rotas de Políticas (/politicas) DELETE /politicas/:id deve excluir uma política" time="0.022">
+    <testcase classname="Rotas de Usuário GET /usuarios/:id/foto deve retornar a foto de perfil" name="Rotas de Usuário GET /usuarios/:id/foto deve retornar a foto de perfil" time="0.08">
     </testcase>
-    <testcase classname="Rotas de Políticas (/politicas) DELETE /politicas/:id deve retornar 404 se política não existir" name="Rotas de Políticas (/politicas) DELETE /politicas/:id deve retornar 404 se política não existir" time="0.02">
+    <testcase classname="Rotas de Usuário GET /usuarios/:id/foto deve retornar 404 se não houver foto" name="Rotas de Usuário GET /usuarios/:id/foto deve retornar 404 se não houver foto" time="0.058">
     </testcase>
-  </testsuite>
-  <testsuite name="Rotas de Campeonatos" errors="0" failures="0" skipped="0" timestamp="2025-05-22T19:04:54" time="1.321" tests="6">
-    <testcase classname="Rotas de Campeonatos GET /campeonatos deve retornar campeonatos" name="Rotas de Campeonatos GET /campeonatos deve retornar campeonatos" time="0.027">
-    </testcase>
-    <testcase classname="Rotas de Campeonatos PATCH /campeonatos/:id/move deve mover status" name="Rotas de Campeonatos PATCH /campeonatos/:id/move deve mover status" time="0.026">
-    </testcase>
-    <testcase classname="Rotas de Campeonatos POST /campeonatos - deve criar novo campeonato com imagens" name="Rotas de Campeonatos POST /campeonatos - deve criar novo campeonato com imagens" time="0.035">
-    </testcase>
-    <testcase classname="Rotas de Campeonatos POST /campeonatos - deve falhar ao criar campeonato sem nome" name="Rotas de Campeonatos POST /campeonatos - deve falhar ao criar campeonato sem nome" time="0.021">
-    </testcase>
-    <testcase classname="Rotas de Campeonatos POST /campeonatos - deve falhar ao criar campeonato com status inválido" name="Rotas de Campeonatos POST /campeonatos - deve falhar ao criar campeonato com status inválido" time="0.021">
-    </testcase>
-    <testcase classname="Rotas de Campeonatos DELETE /campeonatos/:id deve remover um campeonato existente" name="Rotas de Campeonatos DELETE /campeonatos/:id deve remover um campeonato existente" time="0.027">
+    <testcase classname="Rotas de Usuário DELETE /usuarios/:id deve remover um usuário" name="Rotas de Usuário DELETE /usuarios/:id deve remover um usuário" time="0.067">
     </testcase>
   </testsuite>
-  <testsuite name="Modelo Usuario" errors="0" failures="0" skipped="0" timestamp="2025-05-22T19:04:55" time="1.324" tests="9">
-    <testcase classname="Modelo Usuario deve criar um usuário válido com email @maua.br" name="Modelo Usuario deve criar um usuário válido com email @maua.br" time="0.157">
+  <testsuite name="Rotas de Homepage" errors="0" failures="0" skipped="0" timestamp="2025-05-23T10:49:56" time="2.035" tests="10">
+    <testcase classname="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) GET /api/homeNovidade deve retornar a novidade existente" name="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) GET /api/homeNovidade deve retornar a novidade existente" time="0.176">
     </testcase>
-    <testcase classname="Modelo Usuario deve falhar ao criar usuário com email inválido" name="Modelo Usuario deve falhar ao criar usuário com email inválido" time="0.016">
+    <testcase classname="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) GET /api/homeNovidade deve retornar 404 se não houver novidade" name="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) GET /api/homeNovidade deve retornar 404 se não houver novidade" time="0.059">
     </testcase>
-    <testcase classname="Modelo Usuario deve falhar ao criar usuário com email não @maua.br" name="Modelo Usuario deve falhar ao criar usuário com email não @maua.br" time="0.016">
+    <testcase classname="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) POST /api/homeNovidade deve criar uma nova novidade com imagem" name="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) POST /api/homeNovidade deve criar uma nova novidade com imagem" time="0.091">
     </testcase>
-    <testcase classname="Modelo Usuario deve falhar ao criar usuário com formato Mauá inválido" name="Modelo Usuario deve falhar ao criar usuário com formato Mauá inválido" time="0.017">
+    <testcase classname="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) POST /api/homeNovidade deve falhar se título ou descrição estiverem ausentes" name="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) POST /api/homeNovidade deve falhar se título ou descrição estiverem ausentes" time="0.059">
     </testcase>
-    <testcase classname="Modelo Usuario deve validar Discord ID com 18 dígitos" name="Modelo Usuario deve validar Discord ID com 18 dígitos" time="0.021">
+    <testcase classname="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) POST /api/homeNovidade deve atualizar uma novidade existente" name="Rotas de Homepage Rotas de Homepage - Novidade (/api/homeNovidade) POST /api/homeNovidade deve atualizar uma novidade existente" time="0.083">
     </testcase>
-    <testcase classname="Modelo Usuario deve falhar com Discord ID inválido" name="Modelo Usuario deve falhar com Discord ID inválido" time="0.017">
+    <testcase classname="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) GET /api/apresentacao deve retornar a apresentação existente" name="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) GET /api/apresentacao deve retornar a apresentação existente" time="0.072">
     </testcase>
-    <testcase classname="Modelo Usuario deve aceitar tipos de usuário válidos" name="Modelo Usuario deve aceitar tipos de usuário válidos" time="0.037">
+    <testcase classname="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) GET /api/apresentacao deve retornar 404 se não houver apresentação" name="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) GET /api/apresentacao deve retornar 404 se não houver apresentação" time="0.053">
     </testcase>
-    <testcase classname="Modelo Usuario deve falhar com tipo de usuário inválido" name="Modelo Usuario deve falhar com tipo de usuário inválido" time="0.017">
+    <testcase classname="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) POST /api/apresentacao deve criar uma nova apresentação com imagem e ícones" name="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) POST /api/apresentacao deve criar uma nova apresentação com imagem e ícones" time="0.082">
     </testcase>
-    <testcase classname="Modelo Usuario deve garantir que o email é único" name="Modelo Usuario deve garantir que o email é único" time="0.023">
+    <testcase classname="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) POST /api/apresentacao deve falhar se campos obrigatórios estiverem ausentes" name="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) POST /api/apresentacao deve falhar se campos obrigatórios estiverem ausentes" time="0.05">
     </testcase>
-  </testsuite>
-  <testsuite name="Rotas de Jogadores" errors="0" failures="0" skipped="0" timestamp="2025-05-22T19:04:56" time="1.266" tests="4">
-    <testcase classname="Rotas de Jogadores GET /jogadores - deve retornar lista de jogadores" name="Rotas de Jogadores GET /jogadores - deve retornar lista de jogadores" time="0.027">
-    </testcase>
-    <testcase classname="Rotas de Jogadores POST /jogadores - deve criar novo jogador com imagem" name="Rotas de Jogadores POST /jogadores - deve criar novo jogador com imagem" time="0.033">
-    </testcase>
-    <testcase classname="Rotas de Jogadores GET /jogadores/:id/imagem - deve retornar a imagem do jogador" name="Rotas de Jogadores GET /jogadores/:id/imagem - deve retornar a imagem do jogador" time="0.036">
-    </testcase>
-    <testcase classname="Rotas de Jogadores DELETE /jogadores/:id deve remover um jogador existente com sucesso" name="Rotas de Jogadores DELETE /jogadores/:id deve remover um jogador existente com sucesso" time="0.025">
+    <testcase classname="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) POST /api/apresentacao deve atualizar uma apresentação existente" name="Rotas de Homepage Rotas de Homepage - Apresentação (/api/apresentacao) POST /api/apresentacao deve atualizar uma apresentação existente" time="0.089">
     </testcase>
   </testsuite>
-  <testsuite name="Modelo Jogador" errors="0" failures="0" skipped="0" timestamp="2025-05-22T19:04:58" time="1.205" tests="5">
-    <testcase classname="Modelo Jogador deve criar um jogador válido com campos obrigatórios" name="Modelo Jogador deve criar um jogador válido com campos obrigatórios" time="0.016">
+  <testsuite name="Rotas de Campeonatos" errors="0" failures="0" skipped="0" timestamp="2025-05-23T10:49:58" time="1.543" tests="6">
+    <testcase classname="Rotas de Campeonatos GET /campeonatos deve retornar campeonatos" name="Rotas de Campeonatos GET /campeonatos deve retornar campeonatos" time="0.071">
     </testcase>
-    <testcase classname="Modelo Jogador deve falhar ao criar jogador sem nome" name="Modelo Jogador deve falhar ao criar jogador sem nome" time="0.016">
+    <testcase classname="Rotas de Campeonatos PATCH /campeonatos/:id/move deve mover status" name="Rotas de Campeonatos PATCH /campeonatos/:id/move deve mover status" time="0.05">
     </testcase>
-    <testcase classname="Modelo Jogador deve falhar ao criar jogador sem time" name="Modelo Jogador deve falhar ao criar jogador sem time" time="0.015">
+    <testcase classname="Rotas de Campeonatos POST /campeonatos - deve criar novo campeonato com imagens" name="Rotas de Campeonatos POST /campeonatos - deve criar novo campeonato com imagens" time="0.067">
     </testcase>
-    <testcase classname="Modelo Jogador deve aceitar redes sociais opcionais" name="Modelo Jogador deve aceitar redes sociais opcionais" time="0.017">
+    <testcase classname="Rotas de Campeonatos POST /campeonatos - deve falhar ao criar campeonato sem nome" name="Rotas de Campeonatos POST /campeonatos - deve falhar ao criar campeonato sem nome" time="0.039">
     </testcase>
-    <testcase classname="Modelo Jogador deve aceitar foto como Buffer" name="Modelo Jogador deve aceitar foto como Buffer" time="0.017">
+    <testcase classname="Rotas de Campeonatos POST /campeonatos - deve falhar ao criar campeonato com status inválido" name="Rotas de Campeonatos POST /campeonatos - deve falhar ao criar campeonato com status inválido" time="0.044">
     </testcase>
-  </testsuite>
-  <testsuite name="Upload de Imagens" errors="0" failures="0" skipped="0" timestamp="2025-05-22T19:04:59" time="1.199" tests="2">
-    <testcase classname="Upload de Imagens deve fazer upload de imagem para perfil de usuário" name="Upload de Imagens deve fazer upload de imagem para perfil de usuário" time="0.05">
-    </testcase>
-    <testcase classname="Upload de Imagens deve atualizar foto de perfil existente" name="Upload de Imagens deve atualizar foto de perfil existente" time="0.033">
+    <testcase classname="Rotas de Campeonatos DELETE /campeonatos/:id deve remover um campeonato existente" name="Rotas de Campeonatos DELETE /campeonatos/:id deve remover um campeonato existente" time="0.058">
     </testcase>
   </testsuite>
-  <testsuite name="Autenticação" errors="0" failures="0" skipped="0" timestamp="2025-05-22T19:05:00" time="1.238" tests="4">
-    <testcase classname="Autenticação Middleware authenticate deve bloquear requisição sem token (trains)" name="Autenticação Middleware authenticate deve bloquear requisição sem token (trains)" time="0.021">
+  <testsuite name="Autenticação" errors="0" failures="0" skipped="0" timestamp="2025-05-23T10:49:59" time="1.609" tests="4">
+    <testcase classname="Autenticação Middleware authenticate deve bloquear requisição sem token (trains)" name="Autenticação Middleware authenticate deve bloquear requisição sem token (trains)" time="0.096">
     </testcase>
-    <testcase classname="Autenticação Middleware authenticate deve permitir requisição com token válido(trains)" name="Autenticação Middleware authenticate deve permitir requisição com token válido(trains)" time="0.027">
+    <testcase classname="Autenticação Middleware authenticate deve permitir requisição com token válido(trains)" name="Autenticação Middleware authenticate deve permitir requisição com token válido(trains)" time="0.055">
     </testcase>
-    <testcase classname="Autenticação Middleware authenticate deve bloquear requisição sem token (trains)" name="Autenticação Middleware authenticate deve bloquear requisição sem token (trains)" time="0.016">
+    <testcase classname="Autenticação Middleware authenticate deve bloquear requisição sem token (trains)" name="Autenticação Middleware authenticate deve bloquear requisição sem token (trains)" time="0.034">
     </testcase>
-    <testcase classname="Autenticação Middleware authenticate deve permitir requisição com token válido(trains)" name="Autenticação Middleware authenticate deve permitir requisição com token válido(trains)" time="0.024">
-    </testcase>
-  </testsuite>
-  <testsuite name="Modelo Admin" errors="0" failures="0" skipped="0" timestamp="2025-05-22T19:05:01" time="1.238" tests="4">
-    <testcase classname="Modelo Admin deve criar um admin válido com campos obrigatórios" name="Modelo Admin deve criar um admin válido com campos obrigatórios" time="0.13">
-    </testcase>
-    <testcase classname="Modelo Admin deve falhar ao criar admin sem nome" name="Modelo Admin deve falhar ao criar admin sem nome" time="0.017">
-    </testcase>
-    <testcase classname="Modelo Admin deve aceitar redes sociais opcionais" name="Modelo Admin deve aceitar redes sociais opcionais" time="0.018">
-    </testcase>
-    <testcase classname="Modelo Admin deve aceitar foto como Buffer" name="Modelo Admin deve aceitar foto como Buffer" time="0.016">
+    <testcase classname="Autenticação Middleware authenticate deve permitir requisição com token válido(trains)" name="Autenticação Middleware authenticate deve permitir requisição com token válido(trains)" time="0.056">
     </testcase>
   </testsuite>
-  <testsuite name="Rotas de Discord (/auth/discord/callback)" errors="0" failures="0" skipped="0" timestamp="2025-05-22T19:05:03" time="1.141" tests="3">
-    <testcase classname="Rotas de Discord (/auth/discord/callback) GET /auth/discord/callback deve falhar se o código não for fornecido" name="Rotas de Discord (/auth/discord/callback) GET /auth/discord/callback deve falhar se o código não for fornecido" time="0.052">
+  <testsuite name="Rotas de Jogadores" errors="0" failures="0" skipped="0" timestamp="2025-05-23T10:50:01" time="1.73" tests="4">
+    <testcase classname="Rotas de Jogadores GET /jogadores - deve retornar lista de jogadores" name="Rotas de Jogadores GET /jogadores - deve retornar lista de jogadores" time="0.041">
     </testcase>
-    <testcase classname="Rotas de Discord (/auth/discord/callback) GET /auth/discord/callback deve falhar se o state não for fornecido" name="Rotas de Discord (/auth/discord/callback) GET /auth/discord/callback deve falhar se o state não for fornecido" time="0.019">
+    <testcase classname="Rotas de Jogadores POST /jogadores - deve criar novo jogador com imagem" name="Rotas de Jogadores POST /jogadores - deve criar novo jogador com imagem" time="0.055">
     </testcase>
-    <testcase classname="Rotas de Discord (/auth/discord/callback) GET /auth/discord/callback deve falhar se o userId não for fornecido no state" name="Rotas de Discord (/auth/discord/callback) GET /auth/discord/callback deve falhar se o userId não for fornecido no state" time="0.044">
+    <testcase classname="Rotas de Jogadores GET /jogadores/:id/imagem - deve retornar a imagem do jogador" name="Rotas de Jogadores GET /jogadores/:id/imagem - deve retornar a imagem do jogador" time="0.064">
     </testcase>
-  </testsuite>
-  <testsuite name="Modelo Tournament" errors="0" failures="0" skipped="0" timestamp="2025-05-22T19:05:04" time="1.145" tests="4">
-    <testcase classname="Modelo Tournament deve criar um campeonato válido com campos obrigatórios" name="Modelo Tournament deve criar um campeonato válido com campos obrigatórios" time="0.129">
-    </testcase>
-    <testcase classname="Modelo Tournament deve falhar ao criar campeonato sem nome" name="Modelo Tournament deve falhar ao criar campeonato sem nome" time="0.015">
-    </testcase>
-    <testcase classname="Modelo Tournament deve aceitar apenas status válidos" name="Modelo Tournament deve aceitar apenas status válidos" time="0.02">
-    </testcase>
-    <testcase classname="Modelo Tournament deve falhar com status inválido" name="Modelo Tournament deve falhar com status inválido" time="0.013">
+    <testcase classname="Rotas de Jogadores DELETE /jogadores/:id deve remover um jogador existente com sucesso" name="Rotas de Jogadores DELETE /jogadores/:id deve remover um jogador existente com sucesso" time="0.05">
     </testcase>
   </testsuite>
-  <testsuite name="Middleware CORS" errors="0" failures="0" skipped="0" timestamp="2025-05-22T19:05:05" time="1.032" tests="1">
-    <testcase classname="Middleware CORS deve configurar CORS corretamente" name="Middleware CORS deve configurar CORS corretamente" time="0.046">
+  <testsuite name="Modelo Jogador" errors="0" failures="0" skipped="0" timestamp="2025-05-23T10:50:03" time="1.579" tests="5">
+    <testcase classname="Modelo Jogador deve criar um jogador válido com campos obrigatórios" name="Modelo Jogador deve criar um jogador válido com campos obrigatórios" time="0.029">
+    </testcase>
+    <testcase classname="Modelo Jogador deve falhar ao criar jogador sem nome" name="Modelo Jogador deve falhar ao criar jogador sem nome" time="0.033">
+    </testcase>
+    <testcase classname="Modelo Jogador deve falhar ao criar jogador sem time" name="Modelo Jogador deve falhar ao criar jogador sem time" time="0.054">
+    </testcase>
+    <testcase classname="Modelo Jogador deve aceitar redes sociais opcionais" name="Modelo Jogador deve aceitar redes sociais opcionais" time="0.051">
+    </testcase>
+    <testcase classname="Modelo Jogador deve aceitar foto como Buffer" name="Modelo Jogador deve aceitar foto como Buffer" time="0.033">
+    </testcase>
+  </testsuite>
+  <testsuite name="Rotas de Admin" errors="0" failures="0" skipped="0" timestamp="2025-05-23T10:50:04" time="1.471" tests="3">
+    <testcase classname="Rotas de Admin GET /admins deve retornar admins" name="Rotas de Admin GET /admins deve retornar admins" time="0.041">
+    </testcase>
+    <testcase classname="Rotas de Admin POST /admins deve criar novo admin" name="Rotas de Admin POST /admins deve criar novo admin" time="0.05">
+    </testcase>
+    <testcase classname="Rotas de Admin DELETE /admins/:id deve remover um admin existente" name="Rotas de Admin DELETE /admins/:id deve remover um admin existente" time="0.058">
+    </testcase>
+  </testsuite>
+  <testsuite name="Rotas de Times" errors="0" failures="0" skipped="0" timestamp="2025-05-23T10:50:06" time="1.483" tests="3">
+    <testcase classname="Rotas de Times GET /times deve retornar times" name="Rotas de Times GET /times deve retornar times" time="0.035">
+    </testcase>
+    <testcase classname="Rotas de Times POST /times deve criar novo time" name="Rotas de Times POST /times deve criar novo time" time="0.055">
+    </testcase>
+    <testcase classname="Rotas de Times DELETE /times/:id deve remover um times" name="Rotas de Times DELETE /times/:id deve remover um times" time="0.07">
+    </testcase>
+  </testsuite>
+  <testsuite name="Rotas de Discord (/auth/discord/callback)" errors="0" failures="0" skipped="0" timestamp="2025-05-23T10:50:07" time="1.475" tests="3">
+    <testcase classname="Rotas de Discord (/auth/discord/callback) GET /auth/discord/callback deve falhar se o código não for fornecido" name="Rotas de Discord (/auth/discord/callback) GET /auth/discord/callback deve falhar se o código não for fornecido" time="0.134">
+    </testcase>
+    <testcase classname="Rotas de Discord (/auth/discord/callback) GET /auth/discord/callback deve falhar se o state não for fornecido" name="Rotas de Discord (/auth/discord/callback) GET /auth/discord/callback deve falhar se o state não for fornecido" time="0.039">
+    </testcase>
+    <testcase classname="Rotas de Discord (/auth/discord/callback) GET /auth/discord/callback deve falhar se o userId não for fornecido no state" name="Rotas de Discord (/auth/discord/callback) GET /auth/discord/callback deve falhar se o userId não for fornecido no state" time="0.048">
+    </testcase>
+  </testsuite>
+  <testsuite name="Modelo Tournament" errors="0" failures="0" skipped="0" timestamp="2025-05-23T10:50:09" time="1.379" tests="4">
+    <testcase classname="Modelo Tournament deve criar um campeonato válido com campos obrigatórios" name="Modelo Tournament deve criar um campeonato válido com campos obrigatórios" time="0.084">
+    </testcase>
+    <testcase classname="Modelo Tournament deve falhar ao criar campeonato sem nome" name="Modelo Tournament deve falhar ao criar campeonato sem nome" time="0.067">
+    </testcase>
+    <testcase classname="Modelo Tournament deve aceitar apenas status válidos" name="Modelo Tournament deve aceitar apenas status válidos" time="0.043">
+    </testcase>
+    <testcase classname="Modelo Tournament deve falhar com status inválido" name="Modelo Tournament deve falhar com status inválido" time="0.024">
+    </testcase>
+  </testsuite>
+  <testsuite name="Upload de Imagens" errors="0" failures="0" skipped="0" timestamp="2025-05-23T10:50:10" time="1.484" tests="2">
+    <testcase classname="Upload de Imagens deve fazer upload de imagem para perfil de usuário" name="Upload de Imagens deve fazer upload de imagem para perfil de usuário" time="0.088">
+    </testcase>
+    <testcase classname="Upload de Imagens deve atualizar foto de perfil existente" name="Upload de Imagens deve atualizar foto de perfil existente" time="0.068">
+    </testcase>
+  </testsuite>
+  <testsuite name="Modelo Admin" errors="0" failures="0" skipped="0" timestamp="2025-05-23T10:50:12" time="1.498" tests="4">
+    <testcase classname="Modelo Admin deve criar um admin válido com campos obrigatórios" name="Modelo Admin deve criar um admin válido com campos obrigatórios" time="0.135">
+    </testcase>
+    <testcase classname="Modelo Admin deve falhar ao criar admin sem nome" name="Modelo Admin deve falhar ao criar admin sem nome" time="0.031">
+    </testcase>
+    <testcase classname="Modelo Admin deve aceitar redes sociais opcionais" name="Modelo Admin deve aceitar redes sociais opcionais" time="0.039">
+    </testcase>
+    <testcase classname="Modelo Admin deve aceitar foto como Buffer" name="Modelo Admin deve aceitar foto como Buffer" time="0.032">
+    </testcase>
+  </testsuite>
+  <testsuite name="Modelo Time" errors="0" failures="0" skipped="0" timestamp="2025-05-23T10:50:13" time="1.44" tests="3">
+    <testcase classname="Modelo Time deve criar um time válido com campos obrigatórios" name="Modelo Time deve criar um time válido com campos obrigatórios" time="0.155">
+    </testcase>
+    <testcase classname="Modelo Time deve falhar ao criar time sem nome" name="Modelo Time deve falhar ao criar time sem nome" time="0.033">
+    </testcase>
+    <testcase classname="Modelo Time deve garantir que o nome é único" name="Modelo Time deve garantir que o nome é único" time="0.073">
+    </testcase>
+  </testsuite>
+  <testsuite name="Middleware CORS" errors="0" failures="0" skipped="0" timestamp="2025-05-23T10:50:15" time="1.254" tests="1">
+    <testcase classname="Middleware CORS deve configurar CORS corretamente" name="Middleware CORS deve configurar CORS corretamente" time="0.085">
     </testcase>
   </testsuite>
 </testsuites>

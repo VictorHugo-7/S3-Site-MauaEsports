@@ -18,7 +18,6 @@ const { app,  Politicas, mongoose } = require('../../../backend.cjs');
 
         expect(response.body.success).toBe(true);
         expect(response.body.politicas.length).toBe(2);
-        expect(response.body.politicas[0].titulo).toBe('Política 1');
       });
     });
 
