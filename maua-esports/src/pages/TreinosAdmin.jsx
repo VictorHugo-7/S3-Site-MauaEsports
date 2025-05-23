@@ -8,7 +8,6 @@ import {
   MdClose,
   MdAdd,
 } from "react-icons/md";
-import Rodape from "../components/Rodape";
 import PageBanner from "../components/PageBanner";
 import { useNavigate } from "react-router-dom";
 import { useMsal } from "@azure/msal-react";
