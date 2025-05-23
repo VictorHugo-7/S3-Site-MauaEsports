@@ -163,14 +163,6 @@ const usuarioSchema = new mongoose.Schema({
     required: false,
     unique: true,
     sparse: true,
-    validate: {
-      validator: function (v) {
-        if (!v) return true;
-        return /^\d{18}$/.test(v);
-      },
-      message: (props) =>
-        `${props.value} não é um Discord ID válido! Deve ser exatamente 18 dígitos ou vazio.`,
-    },
   },
   fotoPerfil: {
     data: { type: Buffer, required: false },
