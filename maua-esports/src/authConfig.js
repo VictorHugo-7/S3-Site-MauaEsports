@@ -2,11 +2,11 @@ import { PublicClientApplication } from "@azure/msal-browser";
 
 export const msalConfig = {
   auth: {
-    clientId: import.meta.env.VITE_CLIENT_ID, // Registre um app no Azure AD para obter isso
+    clientId: import.meta.env.VITE_CLIENT_ID, 
     authority: `https://login.microsoftonline.com/${
       import.meta.env.VITE_TENANT_ID
     }`,
-    redirectUri: "localhost:5173/",
+    redirectUri: "http://localhost:5173",
   },
   cache: {
     cacheLocation: "localStorage", // IMPORTANTE: mantém o login após reload
