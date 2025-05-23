@@ -1,9 +1,19 @@
-import { useState } from 'react';
-import PropTypes from 'prop-types';
-import EditarBtn from '../../EditarBtn';
-import CardModal from './CardModal';
+import { useState } from "react";
+import PropTypes from "prop-types";
+import EditarBtn from "../../EditarBtn";
+import CardModal from "./CardModal";
 
-const Card = ({ id, icon, texto, titulo = 'Título', onCardSave, onCardError, onUpdateCard, ...aosProps }) => {
+const Card = ({
+  id,
+  icon,
+  texto,
+  titulo = "Título",
+  onCardSave,
+  onCardError,
+  onUpdateCard,
+  userRole,
+  ...aosProps
+}) => {
   const [modalAberto, setModalAberto] = useState(false);
 
   const abrirModal = () => {
@@ -64,10 +74,13 @@ const Card = ({ id, icon, texto, titulo = 'Título', onCardSave, onCardError, on
         onSave={salvarAlteracoes}
         onCardSave={onCardSave}
         onCardError={onCardError}
+        userRole={userRole}
       />
 
       <div className="flex justify-end mt-2">
-        <EditarBtn onClick={abrirModal} />
+        {["Administrador", "Administrador Geral"].includes(userRole) && (
+          <EditarBtn onClick={abrirModal} />
+        )}
       </div>
     </div>
   );
@@ -81,8 +94,14 @@ Card.propTypes = {
   onCardSave: PropTypes.func,
   onCardError: PropTypes.func,
   onUpdateCard: PropTypes.func,
-  'data-aos': PropTypes.string,
-  'data-aos-delay': PropTypes.string,
+  userRole: PropTypes.oneOf([
+    "Jogador",
+    "Administrador",
+    "Administrador Geral",
+    null,
+  ]),
+  "data-aos": PropTypes.string,
+  "data-aos-delay": PropTypes.string,
 };
 
 export default Card;

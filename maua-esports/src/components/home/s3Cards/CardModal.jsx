@@ -1,22 +1,33 @@
-import { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
-import { RiImageAddLine, RiCloseFill } from 'react-icons/ri';
-import SalvarBtn from '../../SalvarBtn';
-import CancelarBtn from '../../CancelarBtn';
-import { createPortal } from 'react-dom';
-import axios from 'axios';
-import AlertaErro from '../../AlertaErro';
-import { useMsal } from '@azure/msal-react';
+import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
+import { RiImageAddLine, RiCloseFill } from "react-icons/ri";
+import SalvarBtn from "../../SalvarBtn";
+import CancelarBtn from "../../CancelarBtn";
+import { createPortal } from "react-dom";
+import axios from "axios";
+import AlertaErro from "../../AlertaErro";
+import { useMsal } from "@azure/msal-react";
 
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = "http://localhost:3000";
 
-const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, cardId, onSave, onCardSave, onCardError }) => {
-  const [texto, setTexto] = useState('');
-  const [titulo, setTitulo] = useState('');
+const CardModal = ({
+  isOpen,
+  onClose,
+  textoAtual,
+  tituloAtual,
+  iconAtual,
+  cardId,
+  onSave,
+  onCardSave,
+  onCardError,
+  userRole,
+}) => {
+  const [texto, setTexto] = useState("");
+  const [titulo, setTitulo] = useState("");
   const [iconPreview, setIconPreview] = useState(iconAtual);
   const [iconFile, setIconFile] = useState(null);
-  const [erroLocal, setErroLocal] = useState('');
-  const [showAlertaErro, setShowAlertaErro] = useState('');
+  const [erroLocal, setErroLocal] = useState("");
+  const [showAlertaErro, setShowAlertaErro] = useState("");
   const [loading, setLoading] = useState(false);
   const { instance } = useMsal();
 
@@ -25,11 +36,11 @@ const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, cardId
       setTexto(textoAtual);
       setTitulo(tituloAtual);
       setIconPreview(iconAtual);
-      setErroLocal('');
-      setShowAlertaErro('');
+      setErroLocal("");
+      setShowAlertaErro("");
     }
     return () => {
-      if (iconPreview && iconPreview.startsWith('blob:')) {
+      if (iconPreview && iconPreview.startsWith("blob:")) {
         URL.revokeObjectURL(iconPreview);
       }
     };
@@ -38,19 +49,21 @@ const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, cardId
   const handleIconChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const tiposPermitidos = ['image/jpeg', 'image/jpg', 'image/png'];
+      const tiposPermitidos = ["image/jpeg", "image/jpg", "image/png"];
       if (!tiposPermitidos.includes(file.type)) {
-        setErroLocal('Formato de imagem inválido. Use apenas JPG, JPEG ou PNG.');
+        setErroLocal(
+          "Formato de imagem inválido. Use apenas JPG, JPEG ou PNG."
+        );
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        setErroLocal('A imagem deve ter no máximo 5MB');
+        setErroLocal("A imagem deve ter no máximo 5MB");
         return;
       }
-      if (iconPreview && iconPreview.startsWith('blob:')) {
+      if (iconPreview && iconPreview.startsWith("blob:")) {
         URL.revokeObjectURL(iconPreview);
       }
-      setErroLocal('');
+      setErroLocal("");
       setIconFile(file);
       const previewURL = URL.createObjectURL(file);
       setIconPreview(previewURL);
@@ -58,29 +71,35 @@ const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, cardId
   };
 
   const handleRemoveIcon = () => {
-    if (iconPreview && iconPreview.startsWith('blob:')) {
+    if (iconPreview && iconPreview.startsWith("blob:")) {
       URL.revokeObjectURL(iconPreview);
     }
-    setIconPreview('');
+    setIconPreview("");
     setIconFile(null);
   };
 
   const handleSubmit = async () => {
+    // Check if user has permission to save
+    if (!["Administrador", "Administrador Geral"].includes(userRole)) {
+      setErroLocal("Você não tem permissão para salvar alterações.");
+      return;
+    }
+
     if (!titulo || !texto) {
-      setErroLocal('Preencha todos os campos obrigatórios!');
+      setErroLocal("Preencha todos os campos obrigatórios!");
       return;
     }
 
     if (loading) return;
 
     setLoading(true);
-    setErroLocal('');
-    setShowAlertaErro('');
+    setErroLocal("");
+    setShowAlertaErro("");
 
     try {
       const account = instance.getActiveAccount();
       if (!account) {
-        const errorMessage = 'Usuário não autenticado.';
+        const errorMessage = "Usuário não autenticado.";
         setShowAlertaErro(errorMessage);
         if (onCardError) {
           onCardError(errorMessage);
@@ -89,29 +108,33 @@ const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, cardId
         return;
       }
 
-      console.time('acquireTokenSilent');
+      console.time("acquireTokenSilent");
       const tokenResponse = await instance.acquireTokenSilent({
-        scopes: ['User.Read'],
+        scopes: ["User.Read"],
         account,
       });
-      console.timeEnd('acquireTokenSilent');
+      console.timeEnd("acquireTokenSilent");
 
       const formData = new FormData();
-      formData.append('titulo', titulo);
-      formData.append('descricao', texto);
+      formData.append("titulo", titulo);
+      formData.append("descricao", texto);
       if (iconFile) {
-        formData.append('icone', iconFile);
+        formData.append("icone", iconFile);
       }
 
-      console.time('axiosPut');
-      const response = await axios.put(`${API_BASE_URL}/cards/${cardId}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${tokenResponse.accessToken}`,
-        },
-        timeout: 10000,
-      });
-      console.timeEnd('axiosPut');
+      console.time("axiosPut");
+      const response = await axios.put(
+        `${API_BASE_URL}/cards/${cardId}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${tokenResponse.accessToken}`,
+          },
+          timeout: 10000,
+        }
+      );
+      console.timeEnd("axiosPut");
 
       if (response.status === 200) {
         onSave({
@@ -126,7 +149,8 @@ const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, cardId
         onClose();
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.error || 'Erro ao salvar alterações.';
+      const errorMessage =
+        error.response?.data?.error || "Erro ao salvar alterações.";
       setShowAlertaErro(errorMessage);
       if (onCardError) {
         onCardError(errorMessage);
@@ -232,7 +256,11 @@ const CardModal = ({ isOpen, onClose, textoAtual, tituloAtual, iconAtual, cardId
         </div>
 
         <div className="flex justify-end space-x-2 mt-6">
-          <SalvarBtn onClick={handleSubmit} disabled={loading} loading={loading} />
+          <SalvarBtn
+            onClick={handleSubmit}
+            disabled={loading}
+            loading={loading}
+          />
           <CancelarBtn onClick={onClose} disabled={loading} />
         </div>
       </div>
@@ -251,6 +279,12 @@ CardModal.propTypes = {
   onSave: PropTypes.func.isRequired,
   onCardSave: PropTypes.func,
   onCardError: PropTypes.func,
+  userRole: PropTypes.oneOf([
+    "Jogador",
+    "Administrador",
+    "Administrador Geral",
+    null,
+  ]),
 };
 
 export default CardModal;

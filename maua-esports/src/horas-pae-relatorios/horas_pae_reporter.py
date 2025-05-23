@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app)  # Suporte a CORS
+
 def clean_text(text, for_excel=False):
     """
     Limpa o texto para remover caracteres não suportados.
@@ -21,16 +22,26 @@ def clean_text(text, for_excel=False):
     if not text:
         return text
     
-    # Para PDF: manter apenas caracteres Latin-1
     cleaned = ''.join(char for char in text if ord(char) < 256 or char.isspace())
     
-    # Para Excel: remover caracteres inválidos em nomes de abas
     if for_excel:
         invalid_chars = [':', '*', '?', '/', '\\', '[', ']']
         for char in invalid_chars:
             cleaned = cleaned.replace(char, '')
     
     return cleaned
+
+def extract_ra_from_email(email):
+    """
+    Extrai o RA do email institucional (ex: '123456@maua.br' -> '123456').
+    """
+    if not email:
+        return None
+    try:
+        return email.split("@")[0]
+    except IndexError:
+        logger.warning(f"Formato de email inválido: {email}")
+        return None
 
 class HorasPaeReporter:
     def __init__(self):
@@ -65,8 +76,33 @@ class HorasPaeReporter:
                 timeout=60
             )
             mod_response.raise_for_status()
-            self.modalidades = mod_response.json()
-            logger.info(f"Found {len(self.modalidades)} modalities: {list(self.modalidades.keys())}")
+            mod_data = mod_response.json()
+            logger.info(f"Raw modality data: {mod_data}")
+
+            # Handle dictionary or list response
+            if isinstance(mod_data, dict):
+                # Dictionary of modalities (e.g., {"6360944b04a823de3a359357": {"_id": ..., "Name": ...}})
+                self.modalidades = mod_data
+                # Validate that each modality has required fields
+                for mod_id, mod in self.modalidades.items():
+                    if not isinstance(mod, dict) or "_id" not in mod or "Name" not in mod:
+                        logger.warning(f"Invalid modality data for ID {mod_id}: {mod}")
+                        raise ValueError(f"Invalid modality data for ID {mod_id}")
+            elif isinstance(mod_data, list):
+                if mod_data and isinstance(mod_data[0], str):
+                    # List of team names (e.g., ["Valorant Feminino", "ValorantMisBlue"])
+                    self.modalidades = {name: {"Name": name} for name in mod_data}
+                elif mod_data and isinstance(mod_data[0], dict):
+                    # List of dictionaries (e.g., [{"_id": "mod123", "Name": "Valorant Feminino"}])
+                    self.modalidades = {str(mod["_id"]): mod for mod in mod_data}
+                else:
+                    logger.warning("Unexpected modality data format or empty list")
+                    self.modalidades = {}
+            else:
+                logger.error(f"Expected dict or list from /modality/all, got: {type(mod_data)}")
+                raise ValueError("Invalid modality data format")
+
+            logger.info(f"Processed {len(self.modalidades)} modalities: {list(self.modalidades.keys())}")
 
             logger.info("Fetching trains data...")
             trains_response = requests.get(
@@ -87,6 +123,40 @@ class HorasPaeReporter:
             logger.error(f"Error processing data: {str(e)}")
             raise
 
+    def fetch_user_data(self, discord_ids):
+        """
+        Busca dados de usuários por Discord IDs e retorna um mapeamento de Discord ID para RA/email.
+        """
+        try:
+            if not discord_ids:
+                logger.info("Nenhum Discord ID para buscar.")
+                return {}
+            discord_ids_param = ",".join(discord_ids)
+            logger.info(f"Fetching user data for {len(discord_ids)} Discord IDs")
+            response = requests.get(
+                f"{self.api_base_url}/usuarios/por-discord-ids?ids={discord_ids_param}",
+                headers={"Authorization": f"Bearer {self.api_token}"},
+                timeout=10
+            )
+            response.raise_for_status()
+            users = response.json()
+            user_map = {}
+            for user in users:
+                if user.get("discordID"):
+                    ra = extract_ra_from_email(user.get("email"))
+                    user_map[user["discordID"]] = {
+                        "email": user.get("email"),
+                        "ra": ra if ra else user["discordID"],
+                    }
+            logger.info(f"Fetched user data for {len(user_map)} Discord IDs")
+            return user_map
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to fetch user data: {str(e)}")
+            return {}
+        except Exception as e:
+            logger.error(f"Error processing user data: {str(e)}")
+            return {}
+
     def process_data(self, trains_data, start_date=None, end_date=None):
         if not isinstance(trains_data, list):
             raise ValueError("Expected list of trains data")
@@ -98,7 +168,9 @@ class HorasPaeReporter:
         train_count = 0
         player_count = 0
         current_semester_train_count = 0
-    
+        discord_ids = set()
+
+        # Coleta todos os Discord IDs dos treinos válidos
         for train in trains_data:
             if not isinstance(train, dict):
                 logger.warning(f"Invalid train data: {train}")
@@ -108,12 +180,34 @@ class HorasPaeReporter:
             train_timestamp = train.get("StartTimestamp")
             if not train_timestamp or not (start_date <= train_timestamp <= end_date):
                 continue
-            modality_id = train.get("ModalityId")
+            attended_players = train.get("AttendedPlayers", [])
+            if not isinstance(attended_players, list):
+                logger.warning(f"Invalid AttendedPlayers in train: {train}")
+                continue
+            for player in attended_players:
+                if player.get("PlayerId"):
+                    discord_ids.add(str(player["PlayerId"]))
+        
+        # Busca dados de usuários para os Discord IDs coletados
+        user_map = self.fetch_user_data(discord_ids)
+        logger.info(f"User map contains {len(user_map)} entries")
+    
+        # Calcula horas por jogador e por time
+        for train in trains_data:
+            if not isinstance(train, dict):
+                logger.warning(f"Invalid train data: {train}")
+                continue
+            if train.get("Status") != "ENDED":
+                continue
+            train_timestamp = train.get("StartTimestamp")
+            if not train_timestamp or not (start_date <= train_timestamp <= end_date):
+                continue
+            modality_id = str(train.get("ModalityId"))
             if not modality_id:
                 logger.warning(f"Train missing ModalityId: {train}")
                 continue
-            modality = self.modalidades.get(str(modality_id))
-            if not modality or not isinstance(modality, dict):
+            modality = self.modalidades.get(modality_id)
+            if not modality:
                 logger.warning(f"Modality not found for ModalityId: {modality_id}")
                 continue
             attended_players = train.get("AttendedPlayers", [])
@@ -136,15 +230,25 @@ class HorasPaeReporter:
                     player_id = str(player["PlayerId"])
                     duration = (exit_ts - entrance_ts) / (1000 * 60 * 60)
                 
+                    user_data = user_map.get(player_id, {})
+                    display_name = user_data.get("ra", player_id)
+                
                     if player_id not in player_hours:
                         player_hours[player_id] = {
-                            "name": player_id,
-                            "hours": 0,
-                            "team": modality.get("Name", "Unknown"),
+                            "name": display_name,
+                            "total_hours": 0,
+                            "teams": {},
                             "last_train_date": 0
                         }
                 
-                    player_hours[player_id]["hours"] += duration
+                    if modality_id not in player_hours[player_id]["teams"]:
+                        player_hours[player_id]["teams"][modality_id] = {
+                            "hours": 0,
+                            "team_name": modality["Name"]
+                        }
+                
+                    player_hours[player_id]["teams"][modality_id]["hours"] += duration
+                    player_hours[player_id]["total_hours"] += duration
                     player_count += 1
                     if train_timestamp > player_hours[player_id]["last_train_date"]:
                         player_hours[player_id]["last_train_date"] = train_timestamp
@@ -156,24 +260,36 @@ class HorasPaeReporter:
         logger.info(f"Processed {train_count} total trains (current semester: {current_semester_train_count})")
         logger.info(f"Current semester players: {player_count} attendances")
     
-        self.times_data = {mod.get("Name", f"Team_{idx}"): {} 
-                           for idx, mod in enumerate(self.modalidades.values())}
+        # Inicializa times_data com todos os times
+        self.times_data = {mod["Name"]: {} for mod in self.modalidades.values()}
         logger.info(f"Initialized times_data with teams: {list(self.times_data.keys())}")
     
+        # Atribui jogadores ao time principal (com mais horas)
         for player_id, data in player_hours.items():
-            team_name = data["team"]
-            if team_name in self.times_data:
-                self.times_data[team_name][player_id] = data
+            if not data["teams"]:
+                logger.warning(f"Player {player_id} has no team assignments")
+                continue
+            main_team_id = max(data["teams"], key=lambda k: data["teams"][k]["hours"], default=None)
+            if not main_team_id:
+                logger.warning(f"Player {player_id} has no valid main team")
+                continue
+            main_team_name = data["teams"][main_team_id]["team_name"]
+            if main_team_name in self.times_data:
+                self.times_data[main_team_name][player_id] = {
+                    "name": data["name"],
+                    "hours": data["total_hours"],
+                    "team": main_team_name,
+                    "last_train_date": data["last_train_date"]
+                }
             else:
-                logger.warning(f"Team {team_name} not found in times_data")
+                logger.warning(f"Main team {main_team_name} not found in times_data for player {player_id}")
         
-        logger.info(f"Populated times_data: { {k: len(v) for k, v in self.times_data.items()} }")
+        logger.info(f"Populated times_data: {{ {', '.join(f'{k}: {len(v)} players' for k, v in self.times_data.items())} }}")
 
     def generate_pdf(self, teams):
         try:
             logger.info(f"Generating PDF for teams: {teams}")
             pdf = FPDF()
-            # Adicionar fonte DejaVuSans
             pdf.add_font("DejaVu", "", "./fonts/DejaVuSans.ttf", uni=True)
             pdf.set_font("DejaVu", "", 12)
             teams = teams if isinstance(teams, list) else [teams]
@@ -194,7 +310,7 @@ class HorasPaeReporter:
                 
                 pdf.add_page()
                 pdf.set_font("DejaVu", "", 16)
-                pdf.cell(200, 10, f"Relatório PAE - {team_name}", 0, 1, 'C')
+                pdf.cell(200, 10, f"Relatório PAE - {clean_text(team_name)}", 0, 1, 'C')
                 pdf.cell(200, 10, f"Semestre: {self.semestre_atual}", 0, 1, 'C')
                 pdf.ln(10)
                 
@@ -206,7 +322,7 @@ class HorasPaeReporter:
                 for player in sorted(team_data.values(), 
                                     key=lambda x: x["hours"], 
                                     reverse=True):
-                    pdf.cell(100, 10, player["name"], 1)
+                    pdf.cell(100, 10, clean_text(player["name"]), 1)
                     pdf.cell(40, 10, str(round(player["hours"], 1)), 1, 1)
             
             if not pdf.page_no():
@@ -242,7 +358,6 @@ class HorasPaeReporter:
                     df = df[['name', 'Horas']]
                     df.columns = ['Jogador', 'Horas']
                     
-                    # Limpar o nome da equipe para Excel (remover caracteres inválidos para abas)
                     clean_team_name = clean_text(team_name, for_excel=True)[:31]
                     df.to_excel(writer, index=False, sheet_name=clean_team_name)
                     worksheet = writer.sheets[clean_team_name]
@@ -271,15 +386,15 @@ def generate_pdf_report():
             logger.error("No JSON data provided in request")
             return jsonify({"error": "No JSON data provided"}), 400
         
-        teams = data.get('teams')
+        teams = data.get('team')
         if not teams:
-            logger.error("Missing teams parameter in request")
-            return jsonify({"error": "Missing teams parameter"}), 400
+            logger.error("Missing team parameter in request")
+            return jsonify({"error": "Missing team parameter"}), 400
         
         reporter.fetch_data()
         pdf_data = reporter.generate_pdf(teams)
         
-        filename = f'relatorio_pae_{"todas_modalidades" if len(teams) > 1 else teams[0]}_{reporter.semestre_atual}.pdf'
+        filename = f'relatorio_pae_{"todas_modalidades" if len(teams) > 1 else clean_text(teams[0])}_{reporter.semestre_atual}.pdf'
         return Response(
             pdf_data,
             mimetype='application/pdf',
@@ -298,15 +413,15 @@ def generate_excel_report():
             logger.error("No JSON data provided in request")
             return jsonify({"error": "No JSON data provided"}), 400
         
-        teams = data.get('teams')
+        teams = data.get('team')
         if not teams:
-            logger.error("Missing teams parameter in request")
-            return jsonify({"error": "Missing teams parameter"}), 400
+            logger.error("Missing team parameter in request")
+            return jsonify({"error": "Missing team parameter"}), 400
         
         reporter.fetch_data()
         excel_data = reporter.generate_excel(teams)
         
-        filename = f'relatorio_pae_{"todas_modalidades" if len(teams) > 1 else teams[0]}_{reporter.semestre_atual}.xlsx'
+        filename = f'relatorio_pae_{"todas_modalidades" if len(teams) > 1 else clean_text(teams[0])}_{reporter.semestre_atual}.xlsx'
         return Response(
             excel_data,
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

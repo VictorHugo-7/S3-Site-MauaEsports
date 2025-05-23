@@ -51,8 +51,8 @@ const Membros = () => {
         error.response
           ? error.response.data.message || "Erro ao carregar dados"
           : error.message.includes("Network Error")
-            ? "Servidor não responde. Verifique sua conexão ou tente novamente."
-            : error.message
+          ? "Servidor não responde. Verifique sua conexão ou tente novamente."
+          : error.message
       );
     } finally {
       setCarregando(false);
@@ -64,7 +64,7 @@ const Membros = () => {
       try {
         const account = instance.getActiveAccount();
         if (!account) {
-          setUserRole(null); // Usuário não logado
+          setUserRole(null);
           return;
         }
 
@@ -79,7 +79,7 @@ const Membros = () => {
         setUserRole(userData.tipoUsuario);
       } catch (error) {
         console.error("Erro ao carregar dados do usuário:", error);
-        setUserRole(null); // Tratar erro como usuário não logado
+        setUserRole(null);
       }
     };
 
@@ -98,9 +98,7 @@ const Membros = () => {
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Erro ao deletar jogador:", error);
-      setErro(
-        error.response?.data?.message || "Erro ao deletar jogador"
-      );
+      setErro(error.response?.data?.message || "Erro ao deletar jogador");
       setTimeout(() => setErro(null), 3000);
     }
   };
@@ -115,7 +113,6 @@ const Membros = () => {
       formData.append("twitter", updatedData.twitter || "");
       formData.append("twitch", updatedData.twitch || "");
 
-      // Função para converter dataURL para Blob
       const dataURLtoBlob = (dataURL) => {
         const arr = dataURL.split(",");
         const mime = arr[0].match(/:(.*?);/)[1];
@@ -144,19 +141,13 @@ const Membros = () => {
         prev.map((jogador) =>
           jogador._id === jogadorId
             ? {
-              ...jogador,
-              nome: response.data.nome,
-              titulo: response.data.titulo,
-              descricao: response.data.descricao,
-              insta: response.data.insta,
-              twitter: response.data.twitter,
-              twitch: response.data.twitch,
-              fotoUrl: `${API_BASE_URL}/jogadores/${response.data._id}/imagem?${Date.now()}`,
-            }
+                ...response.data.data, // Ajustado para acessar response.data.data
+                fotoUrl: `${API_BASE_URL}/jogadores/${response.data.data._id}/imagem?${Date.now()}`,
+              }
             : jogador
         )
       );
-      carregarDados();
+
       setSuccessMessage("Jogador atualizado com sucesso!");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
@@ -172,7 +163,7 @@ const Membros = () => {
       formData.append("nome", novoJogador.nome);
       formData.append("titulo", novoJogador.titulo);
       formData.append("descricao", novoJogador.descricao);
-      formData.append("time", novoJogador.time);
+      formData.append("time", timeId); // Usar timeId diretamente como _id
 
       if (novoJogador.insta) formData.append("insta", novoJogador.insta);
       if (novoJogador.twitter) formData.append("twitter", novoJogador.twitter);
@@ -190,18 +181,17 @@ const Membros = () => {
         ...prev,
         {
           ...response.data,
-          fotoUrl: `${API_BASE_URL}/jogadores/${response.data._id}/imagem?${Date.now()}`,
+          fotoUrl: `${API_BASE_URL}/jogadores/${
+            response.data._id
+          }/imagem?${Date.now()}`,
         },
       ]);
 
-      carregarDados();
       setSuccessMessage("Jogador adicionado com sucesso!");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Erro ao adicionar jogador:", error);
-      setErro(
-        error.response?.data?.message || "Erro ao adicionar jogador"
-      );
+      setErro(error.response?.data?.message || "Erro ao adicionar jogador");
       setTimeout(() => setErro(null), 3000);
     }
   };
@@ -265,6 +255,7 @@ const Membros = () => {
 Membros.propTypes = {
   userRole: PropTypes.oneOf([
     "Jogador",
+    "Capitão de time",
     "Administrador",
     "Administrador Geral",
     null,
