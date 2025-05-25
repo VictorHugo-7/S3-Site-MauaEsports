@@ -6,8 +6,8 @@ import CancelarBtn from "../../CancelarBtn";
 
 const ApresentacaoModal = ({
   isOpen = false,
-  onClose = () => {},
-  onSave = () => {},
+  onClose = () => { },
+  onSave = () => { },
   dadosIniciais = {},
   userRole = null,
 }) => {
@@ -264,6 +264,7 @@ const ApresentacaoModal = ({
                 />
               </div>
             </div>
+
             <div>
               <label className="block text-sm text-fonte-escura font-semibold mb-2">
                 Descrição 1 <span className="text-vermelho-claro">*</span>
@@ -275,6 +276,16 @@ const ApresentacaoModal = ({
                 rows="3"
                 required
               ></textarea>
+              {/* 
+              **Negrito**
+              *Itálico*
+              <u>Sublinhado</u>
+              ~~Tachado~~
+              <br>
+              <a href="http://localhost:5173/" rel="noopener noreferrer" target="_blank">Link</a>
+              <span style="color: rgb(255, 255, 0);">Cor Texto</span>
+              <span style="background-color: rgb(230, 0, 0);">Cor Fundo</span>
+              */}
             </div>
             <div>
               <label className="block text-sm text-fonte-escura font-semibold mb-2">
@@ -287,7 +298,12 @@ const ApresentacaoModal = ({
                 rows="3"
                 required
               ></textarea>
+              <p className="text-xs text-fonte-escura/50 mt-1">
+                Suporta markdown para formatação (ex.: **negrito**, *itálico*).
+              </p>
             </div>
+
+
           </div>
 
           {/* Seção de Botões */}
@@ -516,8 +532,8 @@ ApresentacaoModal.propTypes = {
 
 ApresentacaoModal.defaultProps = {
   isOpen: false,
-  onClose: () => {},
-  onSave: () => {},
+  onClose: () => { },
+  onSave: () => { },
   dadosIniciais: {
     titulo1: "Título 1",
     titulo2: "Título 2",
