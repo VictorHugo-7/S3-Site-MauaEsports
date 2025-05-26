@@ -181,3 +181,225 @@ body {
 .white-time-picker {
   color-scheme: dark;
 }
+
+/* Primary buttons (for botao1 and botao2) */
+.primary-button {
+  background: linear-gradient(
+    45deg,
+    #1e3a8a,
+    #3b82f6
+  ); /* Gradient from azul-escuro to a lighter blue */
+  color: white;
+  border: none;
+}
+
+.primary-button:hover {
+  transform: translateY(-2px); /* Slight lift effect */
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); /* Glow effect */
+  background: linear-gradient(
+    45deg,
+    #1e40af,
+    #60a5fa
+  ); /* Lighter gradient on hover */
+}
+
+/* Sliding underline effect */
+.primary-button::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: white;
+  transform: scaleX(0);
+  transform-origin: bottom right;
+  transition: transform 0.3s ease-in-out;
+}
+
+.primary-button:hover::after {
+  transform: scaleX(1);
+  transform-origin: bottom left;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Link button (for VER NOTÍCIA) */
+.link-button {
+  color: #60a5fa;
+  background: none;
+  border: none;
+  font-size: 1rem;
+}
+
+.link-button:hover {
+  color: #3b82f6; /* Slightly darker blue on hover */
+  transform: translateY(-2px); /* Subtle lift effect */
+  text-shadow: 0 0 8px rgba(59, 130, 246, 0.5); /* Text glow effect */
+}
+
+/* Sliding underline effect for link button */
+.link-button::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #60a5fa;
+  transform: scaleX(0);
+  transform-origin: bottom right;
+  transition: transform 0.3s ease-in-out;
+}
+
+.link-button:hover::after {
+  transform: scaleX(1);
+  transform-origin: bottom left;
+}
+
+/* Edit button */
+.edit-button {
+  background: linear-gradient(
+    45deg,
+    #284880,
+    #3b82f6
+  ); /* Gradient matching Apresentacao */
+  color: white;
+  border: none;
+  width: 80px;
+  text-align: center;
+  font-size: 1rem; /* Matches text-sm */
+}
+
+.edit-button:hover {
+  transform: scale(1.05); /* Slight scale-up effect */
+  background: linear-gradient(
+    45deg,
+    #162b50,
+    #60a5fa
+  ); /* Lighter gradient on hover */
+  box-shadow: 0 4px 10px rgba(40, 72, 128, 0.3); /* Glow effect */
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Base button styles */
+.custom-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease-in-out;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* Twitch button */
+.twitch-button {
+  background: linear-gradient(
+    45deg,
+    #6441a5,
+    #9146ff
+  ); /* Gradient matching purple-600 to purple-400 */
+  color: white;
+  border: none;
+}
+
+.twitch-button:hover {
+  transform: translateY(-2px); /* Subtle lift effect */
+  background: linear-gradient(
+    45deg,
+    #7e57c2,
+    #a374ff
+  ); /* Lighter gradient on hover */
+  box-shadow: 0 4px 15px rgba(100, 65, 165, 0.4); /* Glow effect */
+}
+
+/* Sliding underline effect */
+.twitch-button::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: white;
+  transform: scaleX(0);
+  transform-origin: bottom right;
+  transition: transform 0.3s ease-in-out;
+}
+
+.twitch-button:hover::after {
+  transform: scaleX(1);
+  transform-origin: bottom left;
+}
+
+/* Icon container for hover effect */
+.custom-icon-container {
+  transition: all 0.3s ease-in-out;
+}
+
+.custom-icon-container:hover {
+  transform: translateX(4px); /* Slight slide effect */
+  color: #a374ff; /* Lighter purple on hover */
+}
+
+/* Icon styles */
+.custom-icon {
+  transition: all 0.3s ease-in-out;
+}
+
+.custom-icon-container:hover .custom-icon {
+  transform: scale(1.2) rotate(5deg); /* Scale and slight rotate on hover */
+}
+
+/* Tag styles */
+.custom-tag {
+  transition: all 0.3s ease-in-out;
+}
+
+.custom-tag:hover {
+  transform: scale(1.1); /* Slight scale-up effect */
+  background: #7e57c2; /* Lighter purple on hover */
+  box-shadow: 0 2px 8px rgba(100, 65, 165, 0.3); /* Subtle shadow */
+}
+
+/* Pulse animation on click for buttons */
+.custom-button:active {
+  animation: pulse 0.2s ease-in-out;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}

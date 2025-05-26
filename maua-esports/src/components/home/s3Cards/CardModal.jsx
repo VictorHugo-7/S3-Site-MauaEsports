@@ -29,6 +29,7 @@ const CardModal = ({
   const [erroLocal, setErroLocal] = useState("");
   const [showAlertaErro, setShowAlertaErro] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const { instance } = useMsal();
 
   useEffect(() => {
@@ -38,6 +39,7 @@ const CardModal = ({
       setIconPreview(iconAtual);
       setErroLocal("");
       setShowAlertaErro("");
+      setIsVisible(true);
     }
     return () => {
       if (iconPreview && iconPreview.startsWith("blob:")) {
@@ -45,6 +47,13 @@ const CardModal = ({
       }
     };
   }, [isOpen, textoAtual, tituloAtual, iconAtual, iconPreview]);
+
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(() => {
+      onClose();
+    }, 300);
+  };
 
   const handleIconChange = (e) => {
     const file = e.target.files[0];
@@ -79,7 +88,6 @@ const CardModal = ({
   };
 
   const handleSubmit = async () => {
-    // Check if user has permission to save
     if (!["Administrador", "Administrador Geral"].includes(userRole)) {
       setErroLocal("Você não tem permissão para salvar alterações.");
       return;
@@ -146,7 +154,7 @@ const CardModal = ({
         if (onCardSave) {
           onCardSave();
         }
-        onClose();
+        handleClose();
       }
     } catch (error) {
       const errorMessage =
@@ -163,13 +171,21 @@ const CardModal = ({
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-fundo/80">
-      <div className="bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-96 relative max-h-[90vh] overflow-y-auto">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${
+        isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
+    >
+      <div
+        className={`bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-96 relative max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
+          isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+        }`}
+      >
         {showAlertaErro && <AlertaErro mensagem={showAlertaErro} />}
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-branco">Editar Informações</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-fonte-escura hover:text-vermelho-claro hover:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={loading}
             aria-label="Fechar modal"
@@ -261,7 +277,7 @@ const CardModal = ({
             disabled={loading}
             loading={loading}
           />
-          <CancelarBtn onClick={onClose} disabled={loading} />
+          <CancelarBtn onClick={handleClose} disabled={loading} />
         </div>
       </div>
     </div>,

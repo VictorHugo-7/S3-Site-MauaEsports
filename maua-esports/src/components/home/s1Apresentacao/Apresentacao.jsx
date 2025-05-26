@@ -8,6 +8,9 @@ import axios from "axios";
 import { useMsal } from "@azure/msal-react";
 import AlertaOk from "../../AlertaOk";
 import AlertaErro from "../../AlertaErro";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -155,15 +158,26 @@ const Apresentacao = () => {
             </span>
           </h4>
           <p className="text-fonte-escura mb-3">
-            {apresentacaoData.descricao1}
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]} // Permite HTML no markdown
+            >
+              {apresentacaoData.descricao1}
+            </ReactMarkdown>
           </p>
-          <p className="text-fonte-escura mb-7">
-            {apresentacaoData.descricao2}
+
+          <p className="text-fonte-escura mb-3">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
+            >
+              {apresentacaoData.descricao2}
+            </ReactMarkdown>
           </p>
           <div className="flex flex-col lg:flex-row lg:justify-between gap-4">
             <div className="flex flex-col sm:flex-row gap-5">
               <Link to={apresentacaoData.botao1Link}>
-                <button className="bg-azul-escuro hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition duration-300 flex items-center cursor-pointer">
+                <button className="custom-button primary-button">
                   {apresentacaoData.botao1Nome}
                   <svg
                     className="ml-2 w-4 h-4"
@@ -182,7 +196,7 @@ const Apresentacao = () => {
                 </button>
               </Link>
               <Link to={apresentacaoData.botao2Link}>
-                <button className="bg-azul-escuro hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition duration-300 flex items-center cursor-pointer">
+                <button className="custom-button primary-button">
                   {apresentacaoData.botao2Nome}
                   <svg
                     className="ml-2 w-4 h-4"
@@ -204,7 +218,7 @@ const Apresentacao = () => {
             {["Administrador", "Administrador Geral"].includes(userRole) && (
               <button
                 onClick={() => setModalOpen(true)}
-                className="bg-[#284880] font-bold text-white border-0 py-2 px-4 rounded text-center transition-colors hover:bg-[#162b50] cursor-pointer w-[80px]"
+                className="custom-button edit-button"
               >
                 Editar
               </button>

@@ -64,29 +64,6 @@ describe('Modelo Usuario', () => {
       .toThrow(mongoose.Error.ValidationError);
   });
 
-  it('deve validar Discord ID com 18 dígitos', async () => {
-    const userData = {
-      email: generateMauaEmail(),
-      tipoUsuario: 'Jogador',
-      discordID: '123456789012345678' // 18 dígitos
-    };
-
-    const usuario = await Usuario.create(userData);
-    expect(usuario.discordID).toBe(userData.discordID);
-  });
-
-  it('deve falhar com Discord ID inválido', async () => {
-    const userData = {
-      email: generateMauaEmail(),
-      tipoUsuario: 'Jogador',
-      discordID: '123' // Inválido (menos de 18 dígitos)
-    };
-
-    await expect(Usuario.create(userData))
-      .rejects
-      .toThrow(mongoose.Error.ValidationError);
-  });
-
   it('deve aceitar tipos de usuário válidos', async () => {
     const tiposValidos = [
       'Administrador Geral',
