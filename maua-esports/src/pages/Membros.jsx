@@ -142,7 +142,9 @@ const Membros = () => {
           jogador._id === jogadorId
             ? {
                 ...response.data.data, // Ajustado para acessar response.data.data
-                fotoUrl: `${API_BASE_URL}/jogadores/${response.data.data._id}/imagem?${Date.now()}`,
+                fotoUrl: `${API_BASE_URL}/jogadores/${
+                  response.data.data._id
+                }/imagem?${Date.now()}`,
               }
             : jogador
         )

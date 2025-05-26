@@ -34,13 +34,6 @@ const CardModal = ({
 
   useEffect(() => {
     if (isOpen) {
-      console.log("CardModal opened with props:", {
-        textoAtual,
-        tituloAtual,
-        iconAtual,
-        cardId,
-        userRole,
-      });
       setTexto(textoAtual);
       setTitulo(tituloAtual);
       setIconPreview(iconAtual);

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import EditarBtn from "./EditarBtn";
 import DeletarBtn from "./DeletarBtn";
+import ModalConfirmarExclusao from "../components/modalConfirmarExclusao";
 import PropTypes from "prop-types";
 
 const CardTime = ({
@@ -17,6 +18,7 @@ const CardTime = ({
   const [imgError, setImgError] = useState(false);
   const [jogoError, setJogoError] = useState(false);
   const [error, setError] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const isAdmin = ["Administrador", "Administrador Geral"].includes(userRole);
   const defaultFoto = "/path/to/default-team.jpg";
   const defaultJogo = "/path/to/default-game.png";
@@ -24,13 +26,18 @@ const CardTime = ({
   const handleDeleteClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const isConfirmed = window.confirm(
-      `Tem certeza que deseja deletar o time ${nome}?`
-    );
+    setShowConfirmModal(true);
+  };
 
-    if (isConfirmed && onDelete) {
+  const confirmDelete = () => {
+    if (onDelete) {
       onDelete(timeId);
+      setShowConfirmModal(false);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowConfirmModal(false);
   };
 
   const handleEditClick = (e) => {
@@ -87,29 +94,30 @@ const CardTime = ({
 
             {isAdmin && (
               <div className="flex justify-center space-x-4">
-                <EditarBtn
-                  onClick={handleEditClick}
-                  role="button"
-                  aria-label={`Editar time ${nome}`}
-                />
+                <EditarBtn onClick={handleEditClick} role="button" />
                 <DeletarBtn
                   itemId={timeId}
                   onDelete={handleDeleteClick}
                   tipo="time"
                   role="button"
-                  aria-label={`Deletar time ${nome}`}
                 />
               </div>
             )}
           </div>
         </div>
       </div>
+      <ModalConfirmarExclusao
+        isOpen={showConfirmModal}
+        mensagem={`Tem certeza que deseja deletar o time ${nome}?`}
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 };
 
 CardTime.propTypes = {
-  timeId: PropTypes.string.isRequired, // Alterado de number para string
+  timeId: PropTypes.string.isRequired,
   nome: PropTypes.string.isRequired,
   foto: PropTypes.string.isRequired,
   jogo: PropTypes.string.isRequired,

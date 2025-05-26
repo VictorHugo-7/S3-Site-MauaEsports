@@ -6,6 +6,7 @@ import Menu from "../components/politicas/Menu";
 import ContentSection from "../components/politicas/ContentSection";
 import AlertaOk from "../components/AlertaOk";
 import AlertaErro from "../components/AlertaErro";
+import ModalConfirmarExclusao from "../components/modalConfirmarExclusao";
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -50,7 +51,9 @@ const Politicas = () => {
           token = response.accessToken;
 
           const userResponse = await fetch(
-            `${API_BASE_URL}/usuarios/por-email?email=${encodeURIComponent(account.username)}`,
+            `${API_BASE_URL}/usuarios/por-email?email=${encodeURIComponent(
+              account.username
+            )}`,
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -58,7 +61,9 @@ const Politicas = () => {
           const userData = await userResponse.json();
 
           if (!userResponse.ok) {
-            throw new Error(userData.error || "Erro ao carregar dados do usuário");
+            throw new Error(
+              userData.error || "Erro ao carregar dados do usuário"
+            );
           }
 
           setUserRole(userData.usuario.tipoUsuario);
@@ -192,12 +197,15 @@ const Politicas = () => {
         account,
       });
 
-      const response = await fetch(`${API_BASE_URL}/politicas/${sectionToDelete}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${tokenResponse.accessToken}`,
-        },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/politicas/${sectionToDelete}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${tokenResponse.accessToken}`,
+          },
+        }
+      );
 
       const data = await response.json();
 
@@ -307,13 +315,8 @@ const Politicas = () => {
 
   return (
     <div className="min-h-screen bg-[#0D1117]">
-      {successMessage && (
-          <AlertaOk mensagem={successMessage} />
-        
-      )}
-      {errorMessage && (
-          <AlertaErro mensagem={errorMessage} />
-      )}
+      {successMessage && <AlertaOk mensagem={successMessage} />}
+      {errorMessage && <AlertaErro mensagem={errorMessage} />}
       <div className="bg-[#010409] h-[104px]"></div>
 
       <PageBanner pageName="Políticas e Termos" />
@@ -364,27 +367,12 @@ const Politicas = () => {
         </div>
       </div>
 
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#1E252F] p-6 rounded-xl shadow-lg text-white">
-            <p className="mb-4">Tem certeza que deseja excluir esta seção?</p>
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={cancelDelete}
-                className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-              >
-                Excluir
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ModalConfirmarExclusao
+        isOpen={showConfirmModal}
+        mensagem="Tem certeza que deseja excluir esta seção?"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 };

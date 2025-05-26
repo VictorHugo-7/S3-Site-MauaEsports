@@ -85,8 +85,8 @@ const Times = () => {
         error.response
           ? error.response.data.message || "Erro ao carregar times"
           : error.message.includes("Network Error")
-            ? "Servidor não responde. Verifique sua conexão ou tente novamente."
-            : error.message
+          ? "Servidor não responde. Verifique sua conexão ou tente novamente."
+          : error.message
       );
       setTimes([]);
     } finally {
@@ -99,6 +99,10 @@ const Times = () => {
   }, []);
 
   const handleDeleteTime = async (timeId) => {
+    if (userRole !== "Administrador" && userRole !== "Administrador Geral") {
+      setErroCarregamento("Você não tem permissão para excluir times");
+      return;
+    }
     try {
       await axios.delete(`${API_BASE_URL}/times/${timeId}`);
       setTimes(times.filter((time) => time._id !== timeId));
@@ -107,7 +111,7 @@ const Times = () => {
       console.error("Erro ao deletar time:", error);
       setErroCarregamento(
         error.response?.data?.message ||
-        "Não foi possível excluir o time. Verifique se não há jogadores associados."
+          "Não foi possível excluir o time. Verifique se não há jogadores associados."
       );
     }
   };
@@ -148,10 +152,14 @@ const Times = () => {
         times.map((time) =>
           time._id === timeAtualizado._id
             ? {
-              ...response.data,
-              fotoUrl: `${API_BASE_URL}/times/${response.data._id}/foto?${Date.now()}`,
-              jogoUrl: `${API_BASE_URL}/times/${response.data._id}/jogo?${Date.now()}`,
-            }
+                ...response.data,
+                fotoUrl: `${API_BASE_URL}/times/${
+                  response.data._id
+                }/foto?${Date.now()}`,
+                jogoUrl: `${API_BASE_URL}/times/${
+                  response.data._id
+                }/jogo?${Date.now()}`,
+              }
             : time
         )
       );
@@ -189,8 +197,12 @@ const Times = () => {
         ...times,
         {
           ...response.data,
-          fotoUrl: `${API_BASE_URL}/times/${response.data._id}/foto?${Date.now()}`,
-          jogoUrl: `${API_BASE_URL}/times/${response.data._id}/jogo?${Date.now()}`,
+          fotoUrl: `${API_BASE_URL}/times/${
+            response.data._id
+          }/foto?${Date.now()}`,
+          jogoUrl: `${API_BASE_URL}/times/${
+            response.data._id
+          }/jogo?${Date.now()}`,
         },
       ]);
 
@@ -252,7 +264,10 @@ const Times = () => {
               <p className="text-xl mb-4">Nenhum time encontrado</p>
             </div>
           )}
-          <AdicionarTime onAdicionarTime={handleCreateTime} userRole={userRole} />
+          <AdicionarTime
+            onAdicionarTime={handleCreateTime}
+            userRole={userRole}
+          />
         </div>
       </div>
       {timeEditando && (
