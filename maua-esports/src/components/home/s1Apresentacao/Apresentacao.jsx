@@ -167,7 +167,7 @@ const Apresentacao = () => {
 
           </p>
 
-          <p className="text-fonte-escura mb-3">
+          <p className="text-fonte-escura mb-8">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]} 
               rehypePlugins={[rehypeRaw]} 

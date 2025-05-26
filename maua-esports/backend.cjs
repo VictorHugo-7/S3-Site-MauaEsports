@@ -1,5 +1,6 @@
 const express = require("express");
 const { body, validationResult } = require("express-validator");
+const app = express();
 const cors = require("cors");
 const mongoose = require("mongoose");
 const uniqueValidator = require("mongoose-unique-validator");
@@ -8,13 +9,11 @@ const path = require("path");
 const axios = require("axios");
 const PDFDocument = require("pdfkit");
 const ExcelJS = require("exceljs");
+const router = express.Router();
 
 require("dotenv").config();
-
-const app = express();
 app.use(express.json());
 
-// Configuração do CORS
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -29,14 +28,23 @@ app.use(
 // Middleware para headers manuais (como fallback)
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-  );
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers", "*");
   res.header("Access-Control-Allow-Credentials", "true");
   next();
 });
+
+async function conectarAoMongoDB() {
+  const url =
+    process.env.NODE_ENV === "test"
+      ? process.env.MONGO_TEST_URL
+      : process.env.MONGO_URL;
+
+  await mongoose.connect(url, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  });
+}
 
 // Configuração do Multer
 const storage = multer.memoryStorage();
@@ -57,26 +65,8 @@ const upload = multer({
   },
 });
 
-// Conexão com MongoDB
-async function conectarAoMongoDB() {
-  const url =
-    process.env.NODE_ENV === "test"
-      ? process.env.MONGO_TEST_URL
-      : process.env.MONGO_URL;
+///////////////////////////////////////////////////////////////////////////////AREA DE JOGADORES ////////////////////////////////////////////////////////////////////
 
-  try {
-    await mongoose.connect(url, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("Conectado ao MongoDB");
-  } catch (error) {
-    console.error("Erro ao conectar ao MongoDB:", error);
-    throw error;
-  }
-}
-
-// Esquemas e Modelos (mantidos iguais)
 const jogadorSchema = mongoose.Schema({
   nome: { type: String, required: true },
   titulo: { type: String, required: true },
@@ -119,6 +109,7 @@ const tournamentSchema = new mongoose.Schema({
     enum: ["campeonatos", "inscricoes", "passados"],
     default: "campeonatos",
   },
+  // Imagens como buffers
   image: {
     data: Buffer,
     contentType: String,
@@ -142,6 +133,7 @@ const Tournament = mongoose.model("Tournament", tournamentSchema);
 
 const rankingSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  // Imagens como buffers
   image: {
     data: Buffer,
     contentType: String,
@@ -158,6 +150,7 @@ const usuarioSchema = new mongoose.Schema({
     unique: true,
     validate: {
       validator: function (v) {
+        // Regex para o formato específico: XX.XXXXX-Y@maua.br OU esports@maua.br
         const emailRegex = /^([0-9]{2}\.[0-9]{5}-[0-9]{1}|esports)@maua\.br$/;
         return emailRegex.test(v);
       },
@@ -189,7 +182,7 @@ const usuarioSchema = new mongoose.Schema({
   },
   time: {
     type: String,
-    required: false,
+    required: false, // Campo opcional
   },
   createdAt: {
     type: Date,
@@ -202,223 +195,7 @@ usuarioSchema.plugin(uniqueValidator, {
 });
 const Usuario = mongoose.model("Usuario", usuarioSchema);
 
-const timeSchema = mongoose.Schema({
-  nome: { type: String, required: true, unique: true },
-  foto: {
-    data: Buffer,
-    contentType: String,
-    nomeOriginal: String,
-  },
-  jogo: {
-    data: Buffer,
-    contentType: String,
-    nomeOriginal: String,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
-
-const Time = mongoose.model("Time", timeSchema);
-
-const adminSchema = new mongoose.Schema({
-  nome: { type: String, required: true },
-  titulo: { type: String, required: true },
-  descricao: { type: String, required: true },
-  foto: {
-    data: Buffer,
-    contentType: String,
-    nomeOriginal: String,
-  },
-  insta: { type: String },
-  twitter: { type: String },
-  twitch: { type: String },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
-
-const Admin = mongoose.model("Admin", adminSchema);
-
-const novidadeSchema = new mongoose.Schema({
-  imagem: { type: Buffer, required: false },
-  imagemType: { type: String, required: false },
-  titulo: { type: String, required: true },
-  subtitulo: { type: String, required: false },
-  descricao: { type: String, required: true },
-  nomeBotao: { type: String, required: false },
-  urlBotao: { type: String, required: false },
-});
-
-novidadeSchema.plugin(uniqueValidator);
-const Novidade = mongoose.model("Novidade", novidadeSchema);
-
-const apresentacaoSchema = new mongoose.Schema({
-  titulo1: { type: String, required: true },
-  titulo2: { type: String, required: true },
-  descricao1: { type: String, required: true },
-  descricao2: { type: String, required: true },
-  botao1Nome: { type: String, required: true },
-  botao1Link: { type: String, required: true },
-  botao2Nome: { type: String, required: true },
-  botao2Link: { type: String, required: true },
-  imagem: { type: Buffer, required: false },
-  imagemType: { type: String, required: false },
-  icones: [
-    {
-      id: { type: Number, required: true },
-      imagem: { type: Buffer, required: false },
-      imagemType: { type: String, required: false },
-      link: { type: String, required: true },
-    },
-  ],
-});
-
-apresentacaoSchema.plugin(uniqueValidator);
-const Apresentacao = mongoose.model("Apresentacao", apresentacaoSchema);
-
-const cardHomeSchema = mongoose.Schema({
-  titulo: { type: String, required: true },
-  descricao: { type: String, required: true },
-  icone: {
-    data: Buffer,
-    contentType: String,
-    nomeOriginal: String,
-  },
-});
-
-const CardHome = mongoose.model("Card", cardHomeSchema);
-
-const politicasSchema = mongoose.Schema({
-  titulo: { type: String, required: true },
-  descricao: { type: String },
-});
-
-const Politicas = mongoose.model("Politicas", politicasSchema);
-
-// Router para APIs externas
-const externalApiRouter = express.Router();
-
-// Middleware de autenticação
-function authenticate(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || authHeader !== "Bearer frontendmauaesports") {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-  next();
-}
-
-// Rotas de APIs externas
-const trains = [];
-const modality = [];
-
-externalApiRouter.get("/trains/all", authenticate, (req, res) => {
-  res.json(trains);
-});
-
-externalApiRouter.get("/modality/all", authenticate, (req, res) => {
-  res.json(modality);
-});
-
-// Discord API - Callback
-async function getUserId(accessToken) {
-  try {
-    const response = await axios.get("https://discord.com/api/users/@me", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-    return response.data.id;
-  } catch (error) {
-    console.error("Erro ao obter ID do usuário:", error.response?.data);
-    throw error;
-  }
-}
-
-externalApiRouter.get("/discord/callback", async (req, res) => {
-  const { code, state } = req.query;
-
-  if (!code) {
-    return res.status(400).send("Código de autorização não fornecido");
-  }
-
-  if (!state) {
-    return res.status(400).send("State não fornecido");
-  }
-
-  let userId, returnUrl;
-  try {
-    const stateObj = JSON.parse(decodeURIComponent(state));
-    userId = stateObj.userId;
-    returnUrl = stateObj.returnUrl || "/";
-  } catch (error) {
-    console.error("Erro ao parsear state:", error);
-    return res.status(400).send("State inválido");
-  }
-
-  if (!userId) {
-    return res.status(400).send("UserId não fornecido");
-  }
-
-  try {
-    const tokenResponse = await axios.post(
-      "https://discord.com/api/oauth2/token",
-      new URLSearchParams({
-        client_id: process.env.VITE_CLIENT_ID_DISCORD,
-        client_secret: process.env.CLIENT_SECRET_DISCORD,
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: `http://localhost:${
-          process.env.PORT || 3000
-        }/api/external/discord/callback`,
-      }),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
-
-    const { access_token } = tokenResponse.data;
-    const discordID = await getUserId(access_token);
-
-    const usuario = await Usuario.findByIdAndUpdate(
-      userId,
-      { discordID },
-      { new: true, runValidators: true }
-    );
-
-    if (!usuario) {
-      return res.status(404).send("Usuário não encontrado");
-    }
-
-    const redirectUrl = `http://localhost:5173${returnUrl}?discordLinked=true`;
-    res.redirect(redirectUrl);
-  } catch (error) {
-    console.error(
-      "Erro no callback do Discord:",
-      error.response?.data || error.message
-    );
-    res.status(500).send("Erro ao vincular conta");
-  }
-});
-
-// Suposta API "lcstuber" (exemplo genérico, ajustar conforme necessário)
-externalApiRouter.get("/lcstuber", (req, res) => {
-  // Exemplo de endpoint para "lcstuber"
-  res.json({
-    message:
-      "API lcstuber não implementada. Forneça mais detalhes para integração.",
-  });
-});
-
-// Usar o router de APIs externas
-app.use("/api/external", externalApiRouter);
-
-// Rotas existentes (mantidas, mas organizadas)
-// Usuários
+///////////////////////////////////////////////////////////////////////////////AREA DE USUÁRIOS ////////////////////////////////////////////////////////////////////
 app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
   try {
     const { email, discordID, tipoUsuario, time } = req.body;
@@ -430,18 +207,11 @@ app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
       });
     }
 
-    if (!/^\d{2}\.\d{5}-\d@maua\.br$/.test(email)) {
-      return res.status(400).json({
-        success: false,
-        message: "Formato de email inválido. Esperado: xx.xxxxx-x@maua.br",
-      });
-    }
-
     const usuarioData = {
       email,
-      discordID: discordID || null,
+      ...(discordID && { discordID }),
       tipoUsuario: tipoUsuario?.trim() || "Jogador",
-      time: time || null,
+      ...(time && { time }),
       ...(req.file && {
         fotoPerfil: {
           data: req.file.buffer,
@@ -451,52 +221,45 @@ app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
       }),
     };
 
-    const usuario = await Usuario.findOneAndUpdate({ email }, usuarioData, {
-      upsert: true,
-      new: true,
-      runValidators: true,
-    });
+    const novoUsuario = new Usuario(usuarioData);
+    await novoUsuario.save();
 
     res.status(201).json({
       success: true,
       usuario: {
-        _id: usuario._id,
-        email: usuario.email,
-        discordID: usuario.discordID || null,
-        tipoUsuario: usuario.tipoUsuario,
-        time: usuario.time || null,
-        createdAt: usuario.createdAt,
+        _id: novoUsuario._id,
+        email: novoUsuario.email,
+        ...(novoUsuario.discordID && { discordID: novoUsuario.discordID }),
+        tipoUsuario: novoUsuario.tipoUsuario,
+        ...(novoUsuario.time && { time: novoUsuario.time }),
+        createdAt: novoUsuario.createdAt,
       },
-      message: "Usuário criado/atualizado com sucesso",
+      message: "Usuário criado com sucesso",
     });
   } catch (error) {
-    console.error("Erro ao criar/atualizar usuário:", error);
+    console.error("Erro ao criar usuário:", error);
+
     if (error.name === "ValidationError") {
       const messages = Object.values(error.errors).map((e) => e.message);
+      return res
+        .status(400)
+        .json({ success: false, message: messages.join(", ") });
+    }
+
+    // No bloco catch da rota POST /usuarios
+    if (error.code === 11000) {
       return res.status(400).json({
         success: false,
-        message: messages.join(", "),
+        message: "Email já está em uso",
       });
     }
 
-    if (error.code === 11000) {
-      if (error.keyValue.discordID) {
-        return res.status(400).json({
-          success: false,
-          message: "Discord ID já está em uso por outro usuário",
-        });
-      }
-    }
-
-    res.status(500).json({
-      success: false,
-      message: "Erro interno do servidor",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
+    res
+      .status(500)
+      .json({ success: false, message: "Erro interno do servidor" });
   }
 });
 
-// Outras rotas de usuários (mantidas sem alterações)
 app.get("/usuarios/verificar-email", async (req, res) => {
   try {
     const email = req.query.email;
@@ -531,9 +294,9 @@ app.get("/usuarios/verificar-email", async (req, res) => {
     });
   }
 });
-
 app.get("/usuarios/por-discord-ids", async (req, res) => {
   try {
+    // Recebe os IDs como query parameter (ex: ?ids=123,456,789)
     const idsString = req.query.ids;
 
     if (!idsString) {
@@ -543,8 +306,10 @@ app.get("/usuarios/por-discord-ids", async (req, res) => {
       });
     }
 
+    // Converte a string de IDs para array
     const discordIds = idsString.split(",");
 
+    // Verifica se há IDs válidos
     if (!discordIds.length || discordIds.some((id) => !id.trim())) {
       return res.status(400).json({
         success: false,
@@ -566,7 +331,7 @@ app.get("/usuarios/por-discord-ids", async (req, res) => {
     });
   }
 });
-
+// GET - Buscar usuário por email
 app.get("/usuarios/por-email", async (req, res) => {
   try {
     const { email } = req.query;
@@ -594,7 +359,7 @@ app.get("/usuarios/por-email", async (req, res) => {
       usuario: {
         ...usuario._doc,
         discordID: usuario.discordID || null,
-        time: usuario.time || null,
+        time: usuario.time || null, // Inclui time ou null
       },
     });
   } catch (error) {
@@ -606,7 +371,7 @@ app.get("/usuarios/por-email", async (req, res) => {
     });
   }
 });
-
+// GET - Buscar usuário por ID
 app.get("/usuarios/:id", async (req, res) => {
   try {
     const usuario = await Usuario.findById(req.params.id).select(
@@ -655,7 +420,7 @@ app.get("/usuarios/:id/foto", async (req, res) => {
     });
   }
 });
-
+// GET - Listar todos os usuários
 app.get("/usuarios", async (req, res) => {
   try {
     const usuarios = await Usuario.find()
@@ -682,9 +447,12 @@ app.put("/usuarios/:id", upload.single("fotoPerfil"), async (req, res) => {
   try {
     const { removeFoto, ...updateData } = req.body;
 
+    // Se foi solicitado para remover a foto
     if (removeFoto === "true") {
       updateData.fotoPerfil = null;
-    } else if (req.file) {
+    }
+    // Se foi enviada uma nova foto
+    else if (req.file) {
       updateData.fotoPerfil = {
         data: req.file.buffer,
         contentType: req.file.mimetype,
@@ -711,6 +479,8 @@ app.put("/usuarios/:id", upload.single("fotoPerfil"), async (req, res) => {
     });
   } catch (error) {
     console.error("Erro ao atualizar usuário:", error);
+
+    // Captura erros de validação do Mongoose (incluindo unique)
     if (error.name === "ValidationError") {
       const messages = Object.values(error.errors).map((e) => e.message);
       return res.status(400).json({
@@ -719,6 +489,7 @@ app.put("/usuarios/:id", upload.single("fotoPerfil"), async (req, res) => {
       });
     }
 
+    // Trata erros de duplicidade (unique)
     if (error.code === 11000) {
       if (error.keyValue.email) {
         return res.status(400).json({
@@ -742,6 +513,7 @@ app.put("/usuarios/:id", upload.single("fotoPerfil"), async (req, res) => {
   }
 });
 
+// DELETE - Remover usuário
 app.delete("/usuarios/:id", async (req, res) => {
   try {
     const usuario = await Usuario.findByIdAndDelete(req.params.id);
@@ -768,7 +540,8 @@ app.delete("/usuarios/:id", async (req, res) => {
   }
 });
 
-// Rankings
+///////////////////////////////////////////////AREA DE RAANKING/////////////////////////////////////////////////////////////////
+// POST - Criar novo ranking com upload de imagem
 app.post("/rankings", upload.single("image"), async (req, res) => {
   try {
     const { name } = req.body;
@@ -788,6 +561,7 @@ app.post("/rankings", upload.single("image"), async (req, res) => {
 
     const savedRanking = await newRanking.save();
 
+    // Retorna o ranking sem os dados binários da imagem
     res.status(201).json({
       _id: savedRanking._id,
       name: savedRanking.name,
@@ -805,6 +579,7 @@ app.get("/rankings/:id/image", async (req, res) => {
       return res.status(404).json({ message: "Imagem não encontrada" });
     }
 
+    // Configura headers de cache (1 ano)
     res.set({
       "Content-Type": ranking.image.contentType,
       "Cache-Control": "public, max-age=31536000, immutable",
@@ -833,7 +608,8 @@ app.get("/rankings", async (req, res) => {
   }
 });
 
-// Jogadores
+/////////////////////////////////////////////////////////////////////////// AREA DE JOGADORES ////////////////////////////////////////////////////////////////////////////////////
+
 app.post("/jogadores", upload.single("foto"), async (req, res) => {
   try {
     const { nome, titulo, descricao, insta, twitter, twitch, time } = req.body;
@@ -859,6 +635,7 @@ app.post("/jogadores", upload.single("foto"), async (req, res) => {
 
     await novoJogador.save();
 
+    // Retorna todos os campos, incluindo redes sociais
     res.status(201).json({
       _id: novoJogador._id,
       nome: novoJogador.nome,
@@ -875,7 +652,6 @@ app.post("/jogadores", upload.single("foto"), async (req, res) => {
     res.status(500).json({ message: "Erro ao criar jogador", error });
   }
 });
-
 app.get("/jogadores/:id/imagem", async (req, res) => {
   try {
     const jogador = await Jogador.findById(req.params.id);
@@ -887,9 +663,27 @@ app.get("/jogadores/:id/imagem", async (req, res) => {
     res.set("Content-Type", jogador.foto.contentType);
     res.send(jogador.foto.data);
   } catch (error) {
-    console.error("Erro ao buscar imagem do jogador:", error);
+    console.error("Erro ao criar jogador:", error);
+
+    // Tratamento de erros específicos (igual ao PUT)
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        message: "Erro de validação",
+        errors: Object.values(error.errors).map((e) => e.message),
+      });
+    }
+
+    if (error.code === 11000) {
+      const campo = Object.keys(error.keyPattern)[0];
+      const valor = error.keyValue[campo];
+      return res.status(400).json({
+        message: `${campo} "${valor}" já está em uso`,
+        campo: campo,
+      });
+    }
+
     res.status(500).json({
-      message: "Erro ao carregar imagem",
+      message: "Erro ao criar jogador",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
@@ -897,7 +691,9 @@ app.get("/jogadores/:id/imagem", async (req, res) => {
 
 app.get("/jogadores", async (req, res) => {
   try {
-    const jogadores = await Jogador.find().populate("time", "nome _id").lean();
+    const jogadores = await Jogador.find()
+      .populate("time", "nome _id") // Popula o campo time com nome e _id
+      .lean();
 
     const resultado = jogadores.map((jogador) => ({
       ...jogador,
@@ -932,14 +728,17 @@ app.delete("/jogadores/:id", async (req, res) => {
 
 app.put("/jogadores/:id", upload.single("foto"), async (req, res) => {
   try {
+    // Extrai os dados do corpo da requisição
     const { nome, titulo, descricao, insta, twitter, twitch } = req.body;
 
+    // Verifica campos obrigatórios
     if (!nome || !titulo || !descricao) {
       return res.status(400).json({
         message: "Nome, título e descrição são obrigatórios",
       });
     }
 
+    // Prepara os dados para atualização
     const updateData = {
       nome,
       titulo,
@@ -949,6 +748,7 @@ app.put("/jogadores/:id", upload.single("foto"), async (req, res) => {
       twitch: twitch || undefined,
     };
 
+    // Se uma nova imagem foi enviada
     if (req.file) {
       updateData.foto = {
         data: req.file.buffer,
@@ -957,6 +757,7 @@ app.put("/jogadores/:id", upload.single("foto"), async (req, res) => {
       };
     }
 
+    // Atualiza no banco de dados
     const jogadorAtualizado = await Jogador.findByIdAndUpdate(
       req.params.id,
       updateData,
@@ -964,7 +765,7 @@ app.put("/jogadores/:id", upload.single("foto"), async (req, res) => {
         new: true,
         runValidators: true,
       }
-    ).select("-foto.data -__v");
+    ).select("-foto.data -__v"); // Remove dados binários da imagem e versão
 
     if (!jogadorAtualizado) {
       return res.status(404).json({
@@ -972,12 +773,15 @@ app.put("/jogadores/:id", upload.single("foto"), async (req, res) => {
       });
     }
 
+    // Resposta com os dados atualizados
     res.status(200).json({
       message: "Jogador atualizado com sucesso",
       data: jogadorAtualizado,
     });
   } catch (error) {
     console.error("Erro ao atualizar jogador:", error);
+
+    // Tratamento de erros específicos
     if (error.name === "ValidationError") {
       return res.status(400).json({
         message: "Erro de validação",
@@ -1000,7 +804,29 @@ app.put("/jogadores/:id", upload.single("foto"), async (req, res) => {
   }
 });
 
-// Times
+///////////////////////////////////////////////////////////////////////////////AREA DE TIMES ////////////////////////////////////////////////////////////////////////////////////
+
+const timeSchema = mongoose.Schema({
+  nome: { type: String, required: true, unique: true },
+  foto: {
+    data: Buffer,
+    contentType: String,
+    nomeOriginal: String,
+  },
+  jogo: {
+    data: Buffer,
+    contentType: String,
+    nomeOriginal: String,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+const Time = mongoose.model("Time", timeSchema);
+
+// Rota para buscar time por _id
 app.get("/times/:_id", async (req, res) => {
   try {
     const time = await Time.findById(req.params._id)
@@ -1025,6 +851,7 @@ app.get("/times/:_id", async (req, res) => {
   }
 });
 
+// Rota para servir a logo do time
 app.get("/times/:_id/logo", async (req, res) => {
   try {
     const time = await Time.findById(req.params._id);
@@ -1041,6 +868,7 @@ app.get("/times/:_id/logo", async (req, res) => {
   }
 });
 
+// Rota para buscar jogadores por time _id
 app.get("/times/:_id/jogadores", async (req, res) => {
   try {
     const jogadores = await Jogador.find({ time: req.params._id })
@@ -1062,6 +890,7 @@ app.get("/times/:_id/jogadores", async (req, res) => {
   }
 });
 
+// Rota para obter a foto do time
 app.get("/times/:_id/foto", async (req, res) => {
   try {
     const time = await Time.findById(req.params._id);
@@ -1077,6 +906,7 @@ app.get("/times/:_id/foto", async (req, res) => {
   }
 });
 
+// Rota para obter o logo do jogo
 app.get("/times/:_id/jogo", async (req, res) => {
   try {
     const time = await Time.findById(req.params._id);
@@ -1092,6 +922,7 @@ app.get("/times/:_id/jogo", async (req, res) => {
   }
 });
 
+// Rota para criar time
 app.post(
   "/times",
   upload.fields([
@@ -1101,9 +932,10 @@ app.post(
   async (req, res) => {
     try {
       const { nome } = req.body;
-      const fotoFile = req.files["foto"]?.[0];
-      const jogoFile = req.files["jogo"]?.[0];
+      const fotoFile = req.files["foto"][0];
+      const jogoFile = req.files["jogo"][0];
 
+      // Validações
       if (!nome) {
         return res.status(400).json({ message: "Nome é obrigatório" });
       }
@@ -1144,6 +976,7 @@ app.post(
   }
 );
 
+// Rota para atualizar time
 app.put(
   "/times/:_id",
   upload.fields([
@@ -1196,6 +1029,7 @@ app.put(
   }
 );
 
+// Rota para deletar time
 app.delete("/times/:_id", async (req, res) => {
   try {
     const jogadoresDoTime = await Jogador.countDocuments({
@@ -1224,6 +1058,7 @@ app.delete("/times/:_id", async (req, res) => {
   }
 });
 
+// Rota para listar todos os times
 app.get("/times", async (req, res) => {
   try {
     const times = await Time.find().select("-foto.data -jogo.data");
@@ -1233,10 +1068,11 @@ app.get("/times", async (req, res) => {
   }
 });
 
-// Campeonatos
+///////////////////////////////////////////////////////////////CAMPEONATOS///////////////////////////////////////////////////////////////////////////////////////
+
 const campUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: function (req, file, cb) {
     const filetypes = /jpeg|jpg|png|svg/;
     const mimetype = filetypes.test(file.mimetype);
@@ -1250,11 +1086,12 @@ const campUpload = multer({
     cb(new Error("Apenas imagens são permitidas (jpeg, jpg, png, svg)"));
   },
 }).fields([
-  { name: "image", maxCount: 1 },
-  { name: "gameIcon", maxCount: 1 },
-  { name: "organizerImage", maxCount: 1 },
+  { name: "image", maxCount: 1 }, // Imagem principal
+  { name: "gameIcon", maxCount: 1 }, // Ícone do jogo
+  { name: "organizerImage", maxCount: 1 }, // Logo do organizador
 ]);
 
+// Criar campeonato com upload de imagens
 app.post("/campeonatos", (req, res) => {
   campUpload(req, res, async (err) => {
     if (err) {
@@ -1298,6 +1135,7 @@ app.post("/campeonatos", (req, res) => {
         status: status || "campeonatos",
       };
 
+      // Processar imagens
       if (req.files) {
         if (req.files["image"]) {
           tournamentData.image = {
@@ -1337,6 +1175,7 @@ app.post("/campeonatos", (req, res) => {
   });
 });
 
+// Atualizar campeonato com imagens
 app.put("/campeonatos/:id", (req, res) => {
   campUpload(req, res, async (err) => {
     if (err) {
@@ -1346,6 +1185,7 @@ app.put("/campeonatos/:id", (req, res) => {
     try {
       const updateData = { ...req.body };
 
+      // Processar imagens
       if (req.files) {
         if (req.files["image"]) {
           updateData.image = {
@@ -1387,6 +1227,7 @@ app.put("/campeonatos/:id", (req, res) => {
   });
 });
 
+// Rotas para servir imagens
 app.get("/campeonatos/:id/image", async (req, res) => {
   try {
     const tournament = await Tournament.findById(req.params.id);
@@ -1430,6 +1271,7 @@ app.get("/campeonatos/:id/organizerImage", async (req, res) => {
   }
 });
 
+// Obter campeonato sem dados binários das imagens
 app.get("/campeonatos/:id", async (req, res) => {
   try {
     const tournament = await Tournament.findById(req.params.id).select(
@@ -1440,6 +1282,7 @@ app.get("/campeonatos/:id", async (req, res) => {
       return res.status(404).json({ error: "Campeonato não encontrado" });
     }
 
+    // Adiciona URLs para as imagens
     const result = tournament.toObject();
     result.imageUrl = `/campeonatos/${tournament._id}/image`;
     result.gameIconUrl = `/campeonatos/${tournament._id}/gameIcon`;
@@ -1451,12 +1294,14 @@ app.get("/campeonatos/:id", async (req, res) => {
   }
 });
 
+// Obter todos os campeonatos (sem dados binários)
 app.get("/campeonatos", async (req, res) => {
   try {
     const tournaments = await Tournament.find()
       .select("-image.data -gameIcon.data -organizerImage.data")
       .sort({ createdAt: -1 });
 
+    // Adiciona URLs para as imagens
     const tournamentsWithUrls = tournaments.map((tournament) => {
       const result = tournament.toObject();
       result.imageUrl = `/campeonatos/${tournament._id}/image`;
@@ -1465,6 +1310,7 @@ app.get("/campeonatos", async (req, res) => {
       return result;
     });
 
+    // Organiza por status
     const boardData = {
       campeonatos: tournamentsWithUrls.filter(
         (t) => t.status === "campeonatos"
@@ -1479,6 +1325,7 @@ app.get("/campeonatos", async (req, res) => {
   }
 });
 
+// Mover campeonato entre colunas (atualizar status)
 app.patch("/campeonatos/:id/move", async (req, res) => {
   try {
     const { status } = req.body;
@@ -1503,6 +1350,7 @@ app.patch("/campeonatos/:id/move", async (req, res) => {
   }
 });
 
+// Deletar campeonato
 app.delete("/campeonatos/:id", async (req, res) => {
   try {
     const tournament = await Tournament.findByIdAndDelete(req.params.id);
@@ -1511,20 +1359,44 @@ app.delete("/campeonatos/:id", async (req, res) => {
       return res.status(404).json({ error: "Campeonato não encontrado" });
     }
 
+    // Aqui você pode adicionar lógica para remover imagens associadas se estiver armazenando localmente
+
     res.json({ message: "Campeonato removido com sucesso" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Administradores
+////////////////////////////////////////////////////////////////////////////////AREA DE ADMINISTRADORES ////////////////////////////////////////////////////////////////////
+const adminSchema = new mongoose.Schema({
+  nome: { type: String, required: true },
+  titulo: { type: String, required: true },
+  descricao: { type: String, required: true },
+  foto: {
+    data: Buffer,
+    contentType: String,
+    nomeOriginal: String,
+  },
+  insta: { type: String },
+  twitter: { type: String },
+  twitch: { type: String },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+const Admin = mongoose.model("Admin", adminSchema);
+
+// Rota para listar todos os administradores
 app.get("/admins", async (req, res) => {
   try {
     const admins = await Admin.find({})
-      .select("-foto.data -__v")
-      .sort({ createdAt: -1 })
+      .select("-foto.data -__v") // Exclui os dados binários da foto e versão
+      .sort({ createdAt: -1 }) // Ordena por mais recente primeiro
       .lean();
 
+    // Adiciona a URL para acessar a foto de cada admin
     const adminsComFotoUrl = admins.map((admin) => ({
       ...admin,
       fotoUrl: admin.foto
@@ -1541,6 +1413,7 @@ app.get("/admins", async (req, res) => {
   }
 });
 
+// Rota para servir a foto do admin
 app.get("/admins/:id/foto", async (req, res) => {
   try {
     const admin = await Admin.findById(req.params.id);
@@ -1557,11 +1430,14 @@ app.get("/admins/:id/foto", async (req, res) => {
   }
 });
 
+// Rota para criar novo admin
 app.post("/admins", upload.single("foto"), async (req, res) => {
   try {
+    // Verifique se os campos estão vindo no body ou no form-data
     const { nome, titulo, descricao, insta, twitter, twitch } = req.body;
-    const fotoFile = req.file;
+    const fotoFile = req.file; // Agora usando req.file do multer
 
+    // Validação mais robusta
     const camposFaltantes = [];
     if (!nome?.trim()) camposFaltantes.push("nome");
     if (!titulo?.trim()) camposFaltantes.push("título");
@@ -1584,9 +1460,10 @@ app.post("/admins", upload.single("foto"), async (req, res) => {
       twitch: twitch?.trim() || null,
     };
 
+    // Processar foto se foi enviada
     if (fotoFile) {
       adminData.foto = {
-        data: fotoFile.buffer,
+        data: fotoFile.buffer, // Usando buffer do multer
         contentType: fotoFile.mimetype,
         nomeOriginal: fotoFile.originalname,
       };
@@ -1606,6 +1483,7 @@ app.post("/admins", upload.single("foto"), async (req, res) => {
     });
   } catch (error) {
     console.error("Erro ao criar admin:", error);
+
     if (error.code === 11000) {
       const campo = Object.keys(error.keyPattern)[0];
       return res.status(400).json({
@@ -1623,6 +1501,7 @@ app.post("/admins", upload.single("foto"), async (req, res) => {
   }
 });
 
+// Rota PUT (Edição)
 app.put("/admins/:id", upload.single("foto"), async (req, res) => {
   try {
     const { id } = req.params;
@@ -1630,6 +1509,7 @@ app.put("/admins/:id", upload.single("foto"), async (req, res) => {
       nome: req.body.nome?.trim(),
       titulo: req.body.titulo?.trim(),
       descricao: req.body.descricao?.trim(),
+      // Remova campos vazios em vez de definir como null
       ...(req.body.insta && { insta: req.body.insta.trim() }),
       ...(req.body.twitter && { twitter: req.body.twitter.trim() }),
       ...(req.body.twitch && { twitch: req.body.twitch.trim() }),
@@ -1644,7 +1524,7 @@ app.put("/admins/:id", upload.single("foto"), async (req, res) => {
 
     const updated = await Admin.findByIdAndUpdate(
       id,
-      { $set: updateData },
+      { $set: updateData }, // Use $set para atualização parcial
       { new: true, runValidators: true }
     );
 
@@ -1659,7 +1539,7 @@ app.put("/admins/:id", upload.single("foto"), async (req, res) => {
       nome: updated.nome,
       titulo: updated.titulo,
       descricao: updated.descricao,
-      insta: updated.insta || undefined,
+      insta: updated.insta || undefined, // Envie undefined em vez de null
       twitter: updated.twitter || undefined,
       twitch: updated.twitch || undefined,
       fotoUrl: `${req.protocol}://${req.get("host")}/admins/${
@@ -1672,12 +1552,35 @@ app.put("/admins/:id", upload.single("foto"), async (req, res) => {
   }
 });
 
+app.get("/admins/:id/foto", async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).send("ID inválido");
+    }
+
+    const admin = await Admin.findById(req.params.id);
+
+    if (!admin || !admin.foto || !admin.foto.data) {
+      // Retorna uma imagem padrão se não encontrar
+      const defaultImage = path.join(__dirname, "path/para/imagem-padrao.jpg");
+      return res.sendFile(defaultImage);
+    }
+
+    res.set("Content-Type", admin.foto.contentType);
+    res.send(admin.foto.data);
+  } catch (error) {
+    console.error("Erro ao buscar foto:", error);
+    res.status(500).send("Erro ao carregar imagem");
+  }
+});
+
 app.delete("/admins/:id", async (req, res) => {
   try {
     const admin = await Admin.findByIdAndDelete(req.params.id);
     if (!admin) {
       return res.status(404).json({ message: "Admin não encontrado" });
     }
+    console.log(`Admin removido: ${req.params.id}`);
     res.status(200).json({ success: true });
   } catch (error) {
     console.error("Erro ao remover admin:", error);
@@ -1687,14 +1590,236 @@ app.delete("/admins/:id", async (req, res) => {
   }
 });
 
-// Home Novidade
+/////////////////////////////////////////////////////////////////////    API   ///////////////////////////////////////////////////////////////////////////////////////////////
+
+function authenticate(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || authHeader !== "Bearer frontendmauaesports") {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  next();
+}
+
+const PORT = process.env.PORT || 3001;
+
+const trains = [];
+const modality = [];
+
+app.get("/trains/all", authenticate, (req, res) => {
+  res.json(trains);
+});
+app.get("/modality/all", authenticate, (req, res) => {
+  res.json(modality);
+});
+
+/////////////////////////////////////////////////////////////////////////  RELATORIOS  //////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Função auxiliar para obter o semestre atual
+function getCurrentSemester() {
+  const now = new Date();
+  const year = now.getFullYear();
+  return now.getMonth() < 6 ? `${year}.1` : `${year}.2`;
+}
+
+// Rota para gerar PDF
+router.post("/api/generate-pdf-report", async (req, res) => {
+  try {
+    const { team } = req.body;
+
+    // Crie o documento PDF
+    const doc = new PDFDocument();
+
+    // Configura o cabeçalho da resposta
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=relatorio_pae_${team}.pdf`
+    );
+
+    // Pipe do PDF para a resposta
+    doc.pipe(res);
+
+    // Adicione conteúdo ao PDF
+    doc.fontSize(25).text(`Relatório PAE - ${team}`, { align: "center" });
+    doc.moveDown();
+    doc
+      .fontSize(12)
+      .text(`Semestre: ${getCurrentSemester()}`, { align: "center" });
+    doc.moveDown(2);
+
+    // Adicione tabela de jogadores (exemplo)
+    doc.fontSize(14).text("Jogadores e Horas:", { underline: true });
+    doc.moveDown();
+
+    // Aqui você deve adicionar os dados reais dos jogadores
+    doc.fontSize(12).text("Jogador 1 - 45 horas (Experiente - Azul)");
+    doc.text("Jogador 2 - 30 horas (Avançado - Ouro)");
+    // ...
+
+    // Finalize o PDF
+    doc.end();
+  } catch (error) {
+    console.error("Erro ao gerar PDF:", error);
+    res.status(500).json({ error: "Erro ao gerar relatório PDF" });
+  }
+});
+
+// Rota para gerar Excel
+router.post("/api/generate-excel-report", async (req, res) => {
+  try {
+    const { team } = req.body;
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Relatório PAE");
+
+    // Adicione cabeçalhos
+    worksheet.columns = [
+      { header: "Jogador", key: "name", width: 30 },
+      { header: "Horas", key: "hours", width: 15 },
+      { header: "Rank", key: "rank", width: 25 },
+    ];
+
+    // Adicione dados (substitua pelos dados reais da sua aplicação)
+    worksheet.addRow({
+      name: "Jogador 1",
+      hours: 45,
+      rank: "Experiente (Azul)",
+    });
+    worksheet.addRow({
+      name: "Jogador 2",
+      hours: 28,
+      rank: "Avançado (Ouro)",
+    });
+
+    // Configura o cabeçalho da resposta
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=relatorio_pae_${team}.xlsx`
+    );
+
+    // Envie o arquivo
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Erro ao gerar Excel:", error);
+    res.status(500).json({ error: "Erro ao gerar relatório Excel" });
+  }
+});
+/////////////////////////////////////////////////////////////////////////DISCORD API //////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Função para obter o discordID
+async function getUserId(accessToken) {
+  try {
+    const response = await axios.get("https://discord.com/api/users/@me", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    return response.data.id; // Retorna apenas o ID do usuário
+  } catch (error) {
+    console.error("Erro ao obter ID do usuário:", error.response?.data);
+    throw error;
+  }
+}
+
+// Endpoint para lidar com o callback do Discord
+app.get("/auth/discord/callback", async (req, res) => {
+  const { code, state } = req.query;
+
+  if (!code) {
+    return res.status(400).send("Código de autorização não fornecido");
+  }
+
+  if (!state) {
+    return res.status(400).send("State não fornecido");
+  }
+
+  let userId, returnUrl;
+  try {
+    // Decodificar e parsear o state
+    const stateObj = JSON.parse(decodeURIComponent(state));
+    userId = stateObj.userId;
+    returnUrl = stateObj.returnUrl || "/"; // Fallback para a página inicial
+  } catch (error) {
+    console.error("Erro ao parsear state:", error);
+    return res.status(400).send("State inválido");
+  }
+
+  if (!userId) {
+    return res.status(400).send("UserId não fornecido");
+  }
+
+  try {
+    // Trocar o code por access_token
+    const tokenResponse = await axios.post(
+      "https://discord.com/api/oauth2/token",
+      new URLSearchParams({
+        client_id: process.env.VITE_CLIENT_ID_DISCORD,
+        client_secret: process.env.CLIENT_SECRET_DISCORD,
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: "http://localhost:3005/auth/discord/callback",
+      }),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+
+    const { access_token } = tokenResponse.data;
+
+    // Obter o discordID
+    const discordID = await getUserId(access_token);
+
+    // Atualizar o documento do usuário
+    const usuario = await Usuario.findByIdAndUpdate(
+      userId,
+      { discordID },
+      { new: true, runValidators: true }
+    );
+
+    if (!usuario) {
+      return res.status(404).send("Usuário não encontrado");
+    }
+
+    // Redirecionar para a página original com discordLinked=true
+    const redirectUrl = `http://localhost:5173${returnUrl}?discordLinked=true`;
+    res.redirect(redirectUrl);
+  } catch (error) {
+    console.error("Erro no callback:", error.response?.data || error.message);
+    res.status(500).send("Erro ao vincular conta");
+  }
+});
+
+///////////////////////////////////////////////////////////////////////// HOME_NOVIDADE //////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Modelo da Novidade
+const novidadeSchema = new mongoose.Schema({
+  imagem: { type: Buffer, required: false }, // Armazena a imagem como Buffer
+  imagemType: { type: String, required: false }, // Tipo MIME da imagem
+  titulo: { type: String, required: true },
+  subtitulo: { type: String, required: false },
+  descricao: { type: String, required: true },
+  nomeBotao: { type: String, required: false },
+  urlBotao: { type: String, required: false },
+});
+
+novidadeSchema.plugin(uniqueValidator);
+const Novidade = mongoose.model("Novidade", novidadeSchema);
+
+// Endpoint para buscar a novidade
 app.get("/api/homeNovidade", async (req, res) => {
   try {
-    const novidade = await Novidade.findOne();
+    const novidade = await Novidade.findOne(); // Busca a primeira novidade
     if (!novidade) {
       return res.status(404).json({ message: "Nenhuma novidade encontrada" });
     }
 
+    // Converte a imagem para base64, se existir
     const imagemBase64 = novidade.imagem
       ? `data:${novidade.imagemType};base64,${novidade.imagem.toString(
           "base64"
@@ -1710,16 +1835,19 @@ app.get("/api/homeNovidade", async (req, res) => {
   }
 });
 
+// Endpoint para criar ou atualizar a novidade
 app.post("/api/homeNovidade", upload.single("imagem"), async (req, res) => {
   try {
     const { titulo, subtitulo, descricao, nomeBotao, urlBotao } = req.body;
 
+    // Validação básica
     if (!titulo || !descricao) {
       return res
         .status(400)
         .json({ message: "Título e descrição são obrigatórios" });
     }
 
+    // Verifica se já existe uma novidade
     let novidade = await Novidade.findOne();
 
     const novidadeData = {
@@ -1737,14 +1865,17 @@ app.post("/api/homeNovidade", upload.single("imagem"), async (req, res) => {
     };
 
     if (novidade) {
+      // Atualiza a novidade existente
       novidade = await Novidade.findOneAndUpdate({}, novidadeData, {
         new: true,
       });
     } else {
+      // Cria uma nova novidade
       novidade = new Novidade(novidadeData);
       await novidade.save();
     }
 
+    // Converte a imagem para base64 para retorno
     const imagemBase64 = novidade.imagem
       ? `data:${novidade.imagemType};base64,${novidade.imagem.toString(
           "base64"
@@ -1760,7 +1891,31 @@ app.post("/api/homeNovidade", upload.single("imagem"), async (req, res) => {
   }
 });
 
-// Home Apresentação
+///////////////////////////////////////////////////////////////////////// HOME_APRESENTACAO //////////////////////////////////////////////////////////////////////////////////////////////////
+const apresentacaoSchema = new mongoose.Schema({
+  titulo1: { type: String, required: true },
+  titulo2: { type: String, required: true },
+  descricao1: { type: String, required: true },
+  descricao2: { type: String, required: true },
+  botao1Nome: { type: String, required: true },
+  botao1Link: { type: String, required: true },
+  botao2Nome: { type: String, required: true },
+  botao2Link: { type: String, required: true },
+  imagem: { type: Buffer, required: false }, // Armazena a imagem como Buffer
+  imagemType: { type: String, required: false }, // Tipo MIME da imagem
+  icones: [
+    {
+      id: { type: Number, required: true },
+      imagem: { type: Buffer, required: false }, // Imagem do ícone como Buffer
+      imagemType: { type: String, required: false }, // Tipo MIME do ícone
+      link: { type: String, required: true },
+    },
+  ],
+});
+
+apresentacaoSchema.plugin(uniqueValidator);
+const Apresentacao = mongoose.model("Apresentacao", apresentacaoSchema);
+
 app.get("/api/apresentacao", async (req, res) => {
   try {
     const apresentacao = await Apresentacao.findOne();
@@ -1770,12 +1925,14 @@ app.get("/api/apresentacao", async (req, res) => {
         .json({ message: "Nenhuma apresentação encontrada" });
     }
 
+    // Converte a imagem principal para base64
     const imagemBase64 = apresentacao.imagem
       ? `data:${apresentacao.imagemType};base64,${apresentacao.imagem.toString(
           "base64"
         )}`
       : null;
 
+    // Converte as imagens dos ícones para base64
     const iconesComBase64 = apresentacao.icones.map((icone) => ({
       ...icone._doc,
       imagem: icone.imagem
@@ -1793,144 +1950,146 @@ app.get("/api/apresentacao", async (req, res) => {
   }
 });
 
-app.post("/api/apresentacao", upload.any(), async (req, res) => {
-  try {
-    const {
-      titulo1,
-      titulo2,
-      descricao1,
-      descricao2,
-      botao1Nome,
-      botao1Link,
-      botao2Nome,
-      botao2Link,
-      icones: iconesJson,
-    } = req.body;
-
-    if (
-      !titulo1 ||
-      !titulo2 ||
-      !descricao1 ||
-      !descricao2 ||
-      !botao1Nome ||
-      !botao1Link ||
-      !botao2Nome ||
-      !botao2Link
-    ) {
-      return res
-        .status(400)
-        .json({ message: "Todos os campos são obrigatórios" });
-    }
-
-    let iconesParsed;
+app.post(
+  "/api/apresentacao",
+  upload.fields([{ name: "imagem" }, { name: "icones" }]),
+  async (req, res) => {
     try {
-      iconesParsed = JSON.parse(iconesJson);
-      if (!Array.isArray(iconesParsed)) {
+      const {
+        titulo1,
+        titulo2,
+        descricao1,
+        descricao2,
+        botao1Nome,
+        botao1Link,
+        botao2Nome,
+        botao2Link,
+        icones: iconesJson,
+      } = req.body;
+
+      // Validação básica
+      if (
+        !titulo1 ||
+        !titulo2 ||
+        !descricao1 ||
+        !descricao2 ||
+        !botao1Nome ||
+        !botao1Link ||
+        !botao2Nome ||
+        !botao2Link
+      ) {
         return res
           .status(400)
-          .json({ message: "O campo 'icones' deve ser um array" });
-      }
-    } catch (error) {
-      return res.status(400).json({
-        message: "Erro ao parsear o campo 'icones'",
-        error: error.message,
-      });
-    }
-
-    let apresentacao = await Apresentacao.findOne();
-
-    const imagemFile = req.files.find((file) => file.fieldname === "imagem");
-    const imagemBuffer = imagemFile
-      ? imagemFile.buffer
-      : apresentacao
-      ? apresentacao.imagem
-      : null;
-    const imagemType = imagemFile
-      ? imagemFile.mimetype
-      : apresentacao
-      ? apresentacao.imagemType
-      : null;
-
-    const iconesFiles = {};
-    req.files.forEach((file) => {
-      const match = file.fieldname.match(/icones\[(\d+)\]/);
-      if (match) {
-        const index = parseInt(match[1], 10);
-        iconesFiles[index] = file;
-      }
-    });
-
-    const iconesData = iconesParsed.map((icone, index) => {
-      if (!icone.id || !icone.link) {
-        throw new Error(
-          `Ícone no índice ${index} está faltando 'id' ou 'link'`
-        );
+          .json({ message: "Todos os campos são obrigatórios" });
       }
 
-      return {
+      // Parseia os ícones enviados como JSON
+      const iconesParsed = JSON.parse(iconesJson);
+
+      // Verifica se já existe uma apresentação
+      let apresentacao = await Apresentacao.findOne();
+
+      // Processa a imagem principal
+      const imagemFile = req.files["imagem"] ? req.files["imagem"][0] : null;
+      const imagemBuffer = imagemFile
+        ? imagemFile.buffer
+        : apresentacao
+        ? apresentacao.imagem
+        : null;
+      const imagemType = imagemFile
+        ? imagemFile.mimetype
+        : apresentacao
+        ? apresentacao.imagemType
+        : null;
+
+      // Processa as imagens dos ícones
+      const iconesFiles = req.files["icones"] || [];
+      const iconesData = iconesParsed.map((icone, index) => ({
         id: icone.id,
         imagem: iconesFiles[index]
           ? iconesFiles[index].buffer
-          : apresentacao?.icones.find((i) => i.id === icone.id)?.imagem || null,
+          : apresentacao?.icones[index]?.imagem || null,
         imagemType: iconesFiles[index]
           ? iconesFiles[index].mimetype
-          : apresentacao?.icones.find((i) => i.id === icone.id)?.imagemType ||
-            null,
+          : apresentacao?.icones[index]?.imagemType || null,
         link: icone.link,
+      }));
+
+      const apresentacaoData = {
+        titulo1,
+        titulo2,
+        descricao1,
+        descricao2,
+        botao1Nome,
+        botao1Link,
+        botao2Nome,
+        botao2Link,
+        imagem: imagemBuffer,
+        imagemType,
+        icones: iconesData,
       };
-    });
 
-    const apresentacaoData = {
-      titulo1,
-      titulo2,
-      descricao1,
-      descricao2,
-      botao1Nome,
-      botao1Link,
-      botao2Nome,
-      botao2Link,
-      imagem: imagemBuffer,
-      imagemType,
-      icones: iconesData,
-    };
+      if (apresentacao) {
+        // Atualiza a apresentação existente
+        apresentacao = await Apresentacao.findOneAndUpdate(
+          {},
+          apresentacaoData,
+          { new: true }
+        );
+      } else {
+        // Cria uma nova apresentação
+        apresentacao = new Apresentacao(apresentacaoData);
+        await apresentacao.save();
+      }
 
-    if (apresentacao) {
-      apresentacao = await Apresentacao.findOneAndUpdate({}, apresentacaoData, {
-        new: true,
+      // Converte a imagem principal para base64 para retorno
+      const imagemBase64 = apresentacao.imagem
+        ? `data:${
+            apresentacao.imagemType
+          };base64,${apresentacao.imagem.toString("base64")}`
+        : null;
+
+      // Converte as imagens dos ícones para base64 para retorno
+      const iconesComBase64 = apresentacao.icones.map((icone) => ({
+        ...icone._doc,
+        imagem: icone.imagem
+          ? `data:${icone.imagemType};base64,${icone.imagem.toString("base64")}`
+          : null,
+      }));
+
+      res.status(200).json({
+        ...apresentacao._doc,
+        imagem: imagemBase64,
+        icones: iconesComBase64,
       });
-    } else {
-      apresentacao = new Apresentacao(apresentacaoData);
-      await apresentacao.save();
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao salvar apresentação", error });
     }
-
-    const imagemBase64 = apresentacao.imagem
-      ? `data:${apresentacao.imagemType};base64,${apresentacao.imagem.toString(
-          "base64"
-        )}`
-      : null;
-
-    const iconesComBase64 = apresentacao.icones.map((icone) => ({
-      ...icone._doc,
-      imagem: icone.imagem
-        ? `data:${icone.imagemType};base64,${icone.imagem.toString("base64")}`
-        : null,
-    }));
-
-    res.status(200).json({
-      ...apresentacao._doc,
-      imagem: imagemBase64,
-      icones: iconesComBase64,
-    });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Erro ao salvar apresentação", error: error.message });
   }
-});
+);
 
-// Cards e Políticas
+//////////////////////////////////////////////////////////////////////////HOME_INFORMACOES////////////////////////////////////////////////////////
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+// Criando routers separados para cards e políticas
 const cardsRouter = express.Router();
 
+// Definindo o esquema e modelo do Card
+const cardHomeSchema = mongoose.Schema({
+  titulo: { type: String, required: true },
+  descricao: { type: String, required: true },
+  icone: {
+    data: Buffer,
+    contentType: String,
+    nomeOriginal: String,
+  },
+});
+
+const CardHome = mongoose.model("Card", cardHomeSchema);
+
+// Rota para buscar todos os cards
 cardsRouter.get("/", async (req, res) => {
   try {
     const cards = await CardHome.find().select("titulo descricao icone");
@@ -1955,6 +2114,7 @@ cardsRouter.get("/", async (req, res) => {
   }
 });
 
+// Rota para atualizar um card
 cardsRouter.put(
   "/:id",
   upload.single("icone"),
@@ -2023,6 +2183,7 @@ cardsRouter.put(
   }
 );
 
+// Rota para servir a imagem do ícone
 cardsRouter.get("/:id/icone", async (req, res) => {
   try {
     const card = await CardHome.findById(req.params.id);
@@ -2042,10 +2203,19 @@ cardsRouter.get("/:id/icone", async (req, res) => {
   }
 });
 
+// Usando o router para as rotas com prefixo '/cards'
 app.use("/cards", cardsRouter);
-
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Definindo o esquema e modelo de politicas
 const politicasRouter = express.Router();
+const politicasSchema = mongoose.Schema({
+  titulo: { type: String, required: true },
+  descricao: { type: String },
+});
 
+const Politicas = mongoose.model("Politicas", politicasSchema);
+
+// Rota para buscar todas as politicas
 politicasRouter.get("/", async (req, res) => {
   try {
     const politicas = await Politicas.find().select("titulo descricao");
@@ -2058,6 +2228,7 @@ politicasRouter.get("/", async (req, res) => {
   }
 });
 
+// Rota para atualizar uma política
 politicasRouter.put(
   "/:id",
   [body("titulo").trim().notEmpty().withMessage("O título é obrigatório")],
@@ -2108,6 +2279,7 @@ politicasRouter.put(
   }
 );
 
+// Rota para criar uma nova política
 politicasRouter.post(
   "/",
   [body("titulo").trim().notEmpty().withMessage("O título é obrigatório")],
@@ -2142,6 +2314,7 @@ politicasRouter.post(
   }
 );
 
+// Rota para excluir uma política
 politicasRouter.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -2168,27 +2341,10 @@ politicasRouter.delete("/:id", async (req, res) => {
   }
 });
 
+// Usando o router para as rotas com prefixo '/politicas'
 app.use("/politicas", politicasRouter);
 
-// Inicialização do servidor
-const PORT = process.env.PORT || 3000;
-
-if (process.env.NODE_ENV !== "test") {
-  (async () => {
-    try {
-      await conectarAoMongoDB();
-      app.listen(PORT, () => {
-        console.log(`Servidor rodando na porta ${PORT}`);
-        console.log(`CORS configurado para: http://localhost:5173`);
-        console.log(`API externa disponível em: /api/external`);
-      });
-    } catch (error) {
-      console.error("Erro ao iniciar o servidor:", error);
-    }
-  })();
-}
-
-// Exporte para testes
+// Exporte o que os testes precisam
 module.exports = {
   app,
   Usuario,
@@ -2202,3 +2358,25 @@ module.exports = {
   Apresentacao,
   Politicas,
 };
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Só inicia os servidores se NÃO estiver em ambiente de teste
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+    console.log(`CORS configurado para: http://localhost:5173`);
+  });
+
+  app.listen(3005, () => {
+    console.log("Discord API rodando na porta 3005");
+  });
+
+  app.listen(3000, () => {
+    try {
+      conectarAoMongoDB();
+      console.log("up and running");
+    } catch (e) {
+      console.log("Erro", e);
+    }
+  });
+}
