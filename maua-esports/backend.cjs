@@ -2073,6 +2073,8 @@ app.post(
 // Middleware
 app.use(cors());
 app.use(express.json());
+// Criando routers separados para cards e políticas
+const cardsRouter = express.Router();
 
 // Definindo o esquema e modelo do Card
 const cardHomeSchema = mongoose.Schema({
