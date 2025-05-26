@@ -1962,7 +1962,7 @@ app.get("/api/apresentacao", async (req, res) => {
 
 app.post(
   "/api/apresentacao",
-  upload.fields([{ name: "imagem" }, { name: "icones" }]),
+  upload.fields([{ name: "imagem", maxCount: 1 }, { name: "icones", maxCount: 5 }]),
   async (req, res) => {
     try {
       const {
@@ -2014,16 +2014,24 @@ app.post(
 
       // Processa as imagens dos ícones
       const iconesFiles = req.files["icones"] || [];
-      const iconesData = iconesParsed.map((icone, index) => ({
-        id: icone.id,
-        imagem: iconesFiles[index]
-          ? iconesFiles[index].buffer
-          : apresentacao?.icones[index]?.imagem || null,
-        imagemType: iconesFiles[index]
-          ? iconesFiles[index].mimetype
-          : apresentacao?.icones[index]?.imagemType || null,
-        link: icone.link,
-      }));
+      const existingIcones = apresentacao ? apresentacao.icones : [];
+
+      // Mapear os ícones, preservando os existentes e atualizando apenas os modificados
+      const iconesData = iconesParsed.map((icone, index) => {
+        const newImageFile = iconesFiles[index]; // Imagem nova, se enviada
+        const existingIcon = existingIcones.find((ei) => ei.id === icone.id);
+
+        return {
+          id: icone.id,
+          link: icone.link,
+          imagem:
+            newImageFile?.buffer ||
+            (icone.imagem && !newImageFile ? existingIcon?.imagem : null), // Usa a imagem nova ou mantém a existente
+          imagemType:
+            newImageFile?.mimetype ||
+            (icone.imagem && !newImageFile ? existingIcon?.imagemType : null),
+        };
+      });
 
       const apresentacaoData = {
         titulo1,
@@ -2073,6 +2081,7 @@ app.post(
         icones: iconesComBase64,
       });
     } catch (error) {
+      console.error("Erro ao salvar apresentação:", error);
       res.status(500).json({ message: "Erro ao salvar apresentação", error });
     }
   }

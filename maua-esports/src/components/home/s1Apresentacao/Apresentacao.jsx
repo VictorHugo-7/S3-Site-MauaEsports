@@ -108,19 +108,22 @@ const Apresentacao = () => {
       data.append("botao2Nome", formData.botao2Nome);
       data.append("botao2Link", formData.botao2Link);
 
+      // Stringify the icones array (excluding images)
       const iconesParaEnviar = formData.icones.map(({ id, link }) => ({
         id,
         link,
       }));
       data.append("icones", JSON.stringify(iconesParaEnviar));
 
+      // Append the main image
       if (formData.imagem instanceof File) {
         data.append("imagem", formData.imagem);
       }
 
-      formData.icones.forEach((icone, index) => {
+      // Append all icon images under the "icones" field
+      formData.icones.forEach((icone) => {
         if (icone.imagem instanceof File) {
-          data.append(`icones[${index}]`, icone.imagem);
+          data.append("icones", icone.imagem); // Use "icones" as the field name
         }
       });
 
@@ -159,7 +162,7 @@ const Apresentacao = () => {
           </h4>
           <p className="text-fonte-escura mb-3">
             <ReactMarkdown
-              remarkPlugins={[remarkGfm]} 
+              remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw]} // Permite HTML no markdown
             >
               {apresentacaoData.descricao1}
@@ -168,8 +171,8 @@ const Apresentacao = () => {
 
           <p className="text-fonte-escura mb-8">
             <ReactMarkdown
-              remarkPlugins={[remarkGfm]} 
-              rehypePlugins={[rehypeRaw]} 
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
             >
               {apresentacaoData.descricao2}
             </ReactMarkdown>
