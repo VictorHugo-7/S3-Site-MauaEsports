@@ -150,7 +150,6 @@ const usuarioSchema = new mongoose.Schema({
     unique: true,
     validate: {
       validator: function (v) {
-        // Regex para o formato específico: XX.XXXXX-Y@maua.br OU esports@maua.br
         const emailRegex = /^([0-9]{2}\.[0-9]{5}-[0-9]{1}|esports)@maua\.br$/;
         return emailRegex.test(v);
       },
@@ -161,8 +160,19 @@ const usuarioSchema = new mongoose.Schema({
   discordID: {
     type: String,
     required: false,
-    unique: true,
-    sparse: true,
+    sparse: true, // Keep sparse to avoid indexing null values
+    validate: {
+      validator: async function (value) {
+        // Skip validation if discordID is null or undefined
+        if (!value) return true;
+
+        // Check if a document with the same discordID already exists
+        const existingUser = await this.constructor.findOne({ discordID: value });
+        // Return true if no other document exists or if the document is the same as the current one
+        return !existingUser || (this._id && existingUser._id.equals(this._id));
+      },
+      message: (props) => `O discordID ${props.value} já está em uso.`,
+    },
   },
   fotoPerfil: {
     data: { type: Buffer, required: false },
@@ -182,7 +192,7 @@ const usuarioSchema = new mongoose.Schema({
   },
   time: {
     type: String,
-    required: false, // Campo opcional
+    required: false,
   },
   createdAt: {
     type: Date,

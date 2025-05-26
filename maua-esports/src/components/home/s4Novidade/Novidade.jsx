@@ -146,7 +146,7 @@ const Novidade = () => {
           <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mt-5">
             <a
               href={novidadeData.urlBotao}
-              className="text-blue-400 font-bold flex items-center"
+              className="custom-button link-button"
             >
               {novidadeData.nomeBotao}
               <svg
@@ -166,7 +166,7 @@ const Novidade = () => {
 
             {["Administrador", "Administrador Geral"].includes(userRole) && (
               <button
-                className="bg-[#284880] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#162b50] cursor-pointer w-[80px]"
+                className="custom-button edit-button"
                 onClick={() => setModalOpen(true)}
               >
                 Editar

@@ -42,9 +42,23 @@ const ApresentacaoModal = ({
   );
   const [erroLocal, setErroLocal] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   const fileInputRef = useRef(null);
   const iconeFileInputRefs = useRef({});
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true);
+    }
+  }, [isOpen]);
+
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(() => {
+      onClose();
+    }, 300);
+  };
 
   useEffect(() => {
     if (dadosIniciais) {
@@ -152,7 +166,6 @@ const ApresentacaoModal = ({
   };
 
   const salvarAlteracoes = async () => {
-    // Check if user has permission to save
     if (!["Administrador", "Administrador Geral"].includes(userRole)) {
       setErroLocal("Você não tem permissão para salvar alterações.");
       return;
@@ -212,14 +225,22 @@ const ApresentacaoModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-fundo/80">
-      <div className="bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${
+        isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
+    >
+      <div
+        className={`bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-full max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
+          isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+        }`}
+      >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-branco">
             Editar Seção Apresentação
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-fonte-escura hover:text-vermelho-claro hover:cursor-pointer"
           >
             <RiCloseFill size={24} />
@@ -233,7 +254,6 @@ const ApresentacaoModal = ({
         )}
 
         <div className="space-y-6">
-          {/* Seção de Títulos e Descrições */}
           <div className="space-y-4">
             <h3 className="text-sm text-fonte-escura font-semibold">
               Títulos e Descrições
@@ -306,7 +326,6 @@ const ApresentacaoModal = ({
 
           </div>
 
-          {/* Seção de Botões */}
           <div className="space-y-4">
             <h3 className="text-sm text-fonte-escura font-semibold">Botões</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -359,7 +378,6 @@ const ApresentacaoModal = ({
             </div>
           </div>
 
-          {/* Seção de Imagem */}
           <div className="space-y-4">
             <h3 className="text-sm text-fonte-escura font-semibold">Imagem</h3>
             <div className="flex flex-col items-center">
@@ -406,7 +424,6 @@ const ApresentacaoModal = ({
             </div>
           </div>
 
-          {/* Seção de Ícones */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-sm text-fonte-escura font-semibold">
@@ -492,7 +509,7 @@ const ApresentacaoModal = ({
 
         <div className="flex justify-end mt-6 space-x-2">
           <SalvarBtn onClick={salvarAlteracoes} disabled={isSubmitting} />
-          <CancelarBtn onClick={onClose} disabled={isSubmitting} />
+          <CancelarBtn onClick={handleClose} disabled={isSubmitting} />
         </div>
       </div>
     </div>

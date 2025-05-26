@@ -164,7 +164,6 @@ const Apresentacao = () => {
             >
               {apresentacaoData.descricao1}
             </ReactMarkdown>
-
           </p>
 
           <p className="text-fonte-escura mb-8">
@@ -174,12 +173,11 @@ const Apresentacao = () => {
             >
               {apresentacaoData.descricao2}
             </ReactMarkdown>
-
           </p>
           <div className="flex flex-col lg:flex-row lg:justify-between gap-4">
             <div className="flex flex-col sm:flex-row gap-5">
               <Link to={apresentacaoData.botao1Link}>
-                <button className="bg-azul-escuro hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition duration-300 flex items-center cursor-pointer">
+                <button className="custom-button primary-button">
                   {apresentacaoData.botao1Nome}
                   <svg
                     className="ml-2 w-4 h-4"
@@ -198,7 +196,7 @@ const Apresentacao = () => {
                 </button>
               </Link>
               <Link to={apresentacaoData.botao2Link}>
-                <button className="bg-azul-escuro hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition duration-300 flex items-center cursor-pointer">
+                <button className="custom-button primary-button">
                   {apresentacaoData.botao2Nome}
                   <svg
                     className="ml-2 w-4 h-4"
@@ -220,7 +218,7 @@ const Apresentacao = () => {
             {["Administrador", "Administrador Geral"].includes(userRole) && (
               <button
                 onClick={() => setModalOpen(true)}
-                className="bg-[#284880] font-bold text-white border-0 py-2 px-4 rounded text-center transition-colors hover:bg-[#162b50] cursor-pointer w-[80px]"
+                className="custom-button edit-button"
               >
                 Editar
               </button>
