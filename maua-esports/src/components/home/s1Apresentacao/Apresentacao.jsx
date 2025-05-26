@@ -8,9 +8,9 @@ import axios from "axios";
 import { useMsal } from "@azure/msal-react";
 import AlertaOk from "../../AlertaOk";
 import AlertaErro from "../../AlertaErro";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -159,17 +159,17 @@ const Apresentacao = () => {
           </h4>
           <p className="text-fonte-escura mb-3">
             <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
+              remarkPlugins={[remarkGfm]} 
               rehypePlugins={[rehypeRaw]} // Permite HTML no markdown
             >
               {apresentacaoData.descricao1}
             </ReactMarkdown>
           </p>
 
-          <p className="text-fonte-escura mb-3">
+          <p className="text-fonte-escura mb-8">
             <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeRaw]}
+              remarkPlugins={[remarkGfm]} 
+              rehypePlugins={[rehypeRaw]} 
             >
               {apresentacaoData.descricao2}
             </ReactMarkdown>
