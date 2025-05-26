@@ -13,6 +13,14 @@ import {
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiUserCircle } from "react-icons/hi2";
+import rank1 from '../assets/images/rank1.png';
+import rank2 from '../assets/images/rank2.png';
+import rank3 from '../assets/images/rank3.png';
+import rank4 from '../assets/images/rank4.png';
+import rank5 from '../assets/images/rank5.png';
+import rank6 from '../assets/images/rank6.png';
+import rank7 from '../assets/images/rank7.png';
+import rank8 from '../assets/images/rank8.png';
 
 function HorasPaePage() {
   const [generatingReport, setGeneratingReport] = useState(false);
@@ -34,16 +42,6 @@ function HorasPaePage() {
 
   const API_BASE_URL = "http://localhost:3000";
 
-  const getRankings = async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/rankings`);
-      return response.data;
-    } catch (error) {
-      console.error("Erro ao buscar rankings:", error);
-      throw error;
-    }
-  };
-
   const extractRAFromEmail = (email) => {
     if (!email) return "";
     const raPart = email.split("@")[0];
@@ -51,17 +49,17 @@ function HorasPaePage() {
   };
 
   useEffect(() => {
-    const fetchRanks = async () => {
-      try {
-        const ranksData = await getRankings();
-        setRanks(ranksData);
-      } catch (error) {
-        console.error("Erro ao carregar rankings:", error);
-        setRanks([]);
-      }
-    };
-
-    fetchRanks();
+    const localRanks = [
+      { id: 1, name: "Iniciante", image: rank1 },
+      { id: 2, name: "Novato", image: rank2 },
+      { id: 3, name: "Intermediário", image: rank3 },
+      { id: 4, name: "Avançado", image: rank4 },
+      { id: 5, name: "Experiente", image: rank5 },
+      { id: 6, name: "Veterano", image: rank6 },
+      { id: 7, name: "Elite", image: rank7 },
+      { id: 8, name: "Lenda", image: rank8 }
+    ];
+    setRanks(localRanks);
   }, []);
 
   const getCurrentSemesterStart = () => {
@@ -139,13 +137,6 @@ function HorasPaePage() {
     } finally {
       setGeneratingReport(false);
     }
-  };
-
-  const getRankImage = (hours) => {
-    const rankIndex = getCurrentRank(hours);
-    if (rankIndex <= 0) return null; // Sem rank para menos de 1h
-    if (rankIndex >= ranks.length) return ranks[ranks.length - 1]; // Se ultrapassar, pega o último
-    return ranks[rankIndex - 1]; // Retorna o rank correspondente
   };
 
   const generateExcel = async () => {
@@ -499,6 +490,13 @@ function HorasPaePage() {
     return `${totalPosition}%`;
   };
 
+  const getRankImage = (hours) => {
+    const rankIndex = getCurrentRank(hours);
+    if (rankIndex <= 0) return null; // Sem rank para menos de 1h
+    if (rankIndex >= ranks.length) return ranks[ranks.length - 1]; // Se ultrapassar, pega o último
+    return ranks[rankIndex - 1]; // Retorna o rank correspondente
+  };
+
   const handleImageError = (userId) => {
     setImageErrors((prev) => ({ ...prev, [userId]: true }));
   };
@@ -588,7 +586,7 @@ function HorasPaePage() {
 
   return (
     <div
-      className="bg-[#0D1117] min-h-screen flex flex-col  text-white"
+      className="bg-[#0D1117] min-h-screen flex flex-col text-white"
       onMouseMove={handleMouseMove}
     >
       <div className="bg-[#010409] h-[104px]"></div>
@@ -696,13 +694,13 @@ function HorasPaePage() {
               <div className="flex-1 grid grid-cols-8 gap-1 relative">
                 {ranks.map((rank) => (
                   <motion.div
-                    key={rank._id}
+                    key={rank.id}
                     className="flex flex-col items-center"
                     whileHover={{ scale: 1.1 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
                     <img
-                      src={`data:${rank.imageType};base64,${rank.imageData}`}
+                      src={rank.image}
                       alt={rank.name}
                       className="w-16 h-16 md:w-20 md:h-20 object-contain mb-1"
                     />
@@ -960,11 +958,7 @@ function HorasPaePage() {
                   getRankImage(hoveredPlayer.totalHours) ? (
                     <div className="ml-4">
                       <img
-                        src={`data:${
-                          getRankImage(hoveredPlayer.totalHours).imageType
-                        };base64,${
-                          getRankImage(hoveredPlayer.totalHours).imageData
-                        }`}
+                        src={getRankImage(hoveredPlayer.totalHours).image}
                         alt={`Rank ${getCurrentRank(hoveredPlayer.totalHours)}`}
                         className="w-16 h-16 object-contain"
                       />
