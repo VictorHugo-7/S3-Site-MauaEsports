@@ -42,7 +42,6 @@ const CardAdmin = ({
     });
   };
 
-
   const normalizeSocialLink = (link, platform) => {
     if (!link) return null;
     if (link.startsWith("http")) return link;
@@ -73,7 +72,7 @@ const CardAdmin = ({
 
   return (
     <>
-      <div className="border-2 border-borda relative w-[300px] h-[450px] bg-fundo shadow-lg flex flex-col items-center hover:scale-110 transition-transform duration-300 cursor-pointer animate-fadeInUp rounded-md">
+      <div className="border-2 border-borda relative w-[300px] h-[450px] bg-gray-900 shadow-lg flex flex-col items-center hover:scale-110 transition-transform duration-300 cursor-pointer animate-fadeInUp rounded-md">
         {error && (
           <div className="absolute top-2 left-2 bg-red-500 text-white p-2 rounded">
             {error}
@@ -104,7 +103,11 @@ const CardAdmin = ({
           <div className="w-full border-b-2 py-2 border-borda">
             <p
               className="text-sm text-left mt-2 ml-4 font-blinker w-full text-fonte-escura"
-              onMouseEnter={() => descricao && descricao.length > MAX_DESC_CHARS && setShowTooltip(true)}
+              onMouseEnter={() =>
+                descricao &&
+                descricao.length > MAX_DESC_CHARS &&
+                setShowTooltip(true)
+              }
               onMouseLeave={() => setShowTooltip(false)}
               onMouseMove={handleMouseMove}
             >
@@ -129,7 +132,6 @@ const CardAdmin = ({
                     href={normalizeSocialLink(twitter, "twitter")}
                     target="_blank"
                     rel="noopener noreferrer"
-
                   >
                     <RiTwitterXFill className="cursor-pointer hover:scale-110 hover:text-azul-escuro transition-transform duration-300" />
                   </a>

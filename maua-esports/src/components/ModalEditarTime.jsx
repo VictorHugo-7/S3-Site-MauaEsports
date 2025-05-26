@@ -8,7 +8,7 @@ import { UseImageCrop } from "./UseImageCrop";
 
 const ModalEditarTime = ({ time, onSave, onClose }) => {
   const [formData, setFormData] = useState({
-    id: time.id,
+    _id: time._id,
     nome: time.nome,
   });
   const [errors, setErrors] = useState({});
@@ -81,7 +81,7 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
         const dataToSave = {
           ...formData,
           foto: fotoCropped || time.foto,
-          jogo: jogoPreview || time.jogo
+          jogo: jogoPreview || time.jogo,
         };
         
         await onSave(dataToSave);
@@ -137,9 +137,8 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
             </label>
             <input
               type="text"
-              name="id"
-              value={formData.id}
-              onChange={handleChange}
+              name="_id"
+              value={formData._id}
               className="w-full border border-borda rounded p-2 text-branco bg-preto focus:outline-none"
               disabled
             />
@@ -262,7 +261,7 @@ const ModalEditarTime = ({ time, onSave, onClose }) => {
 
 ModalEditarTime.propTypes = {
   time: PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    _id: PropTypes.string.isRequired, // Alterado de id para _id
     nome: PropTypes.string.isRequired,
     foto: PropTypes.string.isRequired,
     jogo: PropTypes.string.isRequired,

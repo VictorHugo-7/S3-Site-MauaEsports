@@ -4,18 +4,29 @@ import NovidadeModal from "./NovidadeModal";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import axios from "axios";
+import { useMsal } from "@azure/msal-react";
+import AlertaOk from "../../AlertaOk";
+import AlertaErro from "../../AlertaErro";
+
+const API_BASE_URL = "http://localhost:3000";
 
 const Novidade = () => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [userRole, setUserRole] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [erro, setErro] = useState(null);
   const [novidadeData, setNovidadeData] = useState({
-    imagem: "https://static.tildacdn.net/tild6639-6566-4661-b631-343234376339/matty.jpeg",
+    imagem:
+      "https://static.tildacdn.net/tild6639-6566-4661-b631-343234376339/matty.jpeg",
     titulo: "Título Teste",
-    subtyleg: "LOREM ISPSUM DOLOR SIT AMET CONSECTETUR",
+    subtitulo: "LOREM ISPSUM DOLOR SIT AMET CONSECTETUR",
     descricao:
       "Lorem ipsum, dolor sit amet consectetur adipisicing elit. Sequi soluta voluptate nostrum provident nulla modi cumque placeat adipisci nobis delectus, amet neque inventore necessitatibus vero voluptatem consequatur quo! Perferendis, dolorum. Lorem ipsum dolor sit amet consectetur adipisicing elit. Similique officiis praesentium labore vitae excepturi sit, libero nostrum culpa molestiae aut veniam aliquid ea qui placeat officia voluptas? Numquam, iure perferendis. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Nemo iusto necessitatibus culpa natus amet labore quod praesentium eius excepturi illo. Doloribus minima quod quia eius voluptatum assumenda numquam. Animi, numquam.Doloribus minima quod quia eius voluptatum assumenda numquam. Animi, numquam.Doloribus minima quod quia eius voluptatum assumenda numquam. Animi, numquam.",
     nomeBotao: "VER NOTÍCIA",
     urlBotao: "#",
   });
+
+  const { instance } = useMsal();
 
   useEffect(() => {
     AOS.init({
@@ -23,36 +34,77 @@ const Novidade = () => {
       once: true,
     });
 
-    // Buscar dados do backend
-    const fetchNovidade = async () => {
+    // Fetch user role
+    const loadUserData = async () => {
       try {
-        const response = await axios.get("http://localhost:3000/api/homeNovidade");
-        setNovidadeData(response.data);
+        const account = instance.getActiveAccount();
+        if (!account) {
+          setUserRole(null); // User not logged in
+          return;
+        }
+
+        const response = await axios.get(
+          `${API_BASE_URL}/usuarios/por-email?email=${encodeURIComponent(
+            account.username
+          )}`,
+          { headers: { Accept: "application/json" } }
+        );
+        const userData = response.data.usuario;
+        setUserRole(userData.tipoUsuario);
       } catch (error) {
-        console.error("Erro ao buscar novidade:", error);
+        console.error("Erro ao carregar dados do usuário:", error);
+        setUserRole(null); // Treat error as user not logged in
       }
     };
 
+    // Fetch novidade data
+    const fetchNovidade = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/api/homeNovidade`);
+        setNovidadeData(response.data);
+      } catch (error) {
+        console.error("Erro ao buscar novidade:", error);
+        setErro("Erro ao carregar dados da novidade");
+        setTimeout(() => setErro(null), 3000);
+      }
+    };
+
+    loadUserData();
     fetchNovidade();
-  }, []);
+  }, [instance]);
+
+  useEffect(() => {
+    if (successMessage || erro) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+        setErro(null);
+      }, 3000); // Clear alerts after 3 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage, erro]);
 
   const handleSave = async (formData) => {
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/homeNovidade",
+        `${API_BASE_URL}/api/homeNovidade`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
         }
       );
       setNovidadeData(response.data);
+      setModalOpen(false);
+      setSuccessMessage("Novidade atualizada com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar novidade:", error);
+      setErro(error.response?.data?.message || "Erro ao salvar novidade");
     }
   };
 
   return (
     <Margin horizontal="60px">
+      {erro && <AlertaErro mensagem={erro} />}
+      {successMessage && <AlertaOk mensagem={successMessage} />}
       {/* Divisão Conteúdo e Imagem */}
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between text-white">
         {/* Imagem - Esquerda em telas maiores */}
@@ -94,7 +146,7 @@ const Novidade = () => {
           <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mt-5">
             <a
               href={novidadeData.urlBotao}
-              className="text-blue-400 font-bold flex items-center"
+              className="custom-button link-button"
             >
               {novidadeData.nomeBotao}
               <svg
@@ -112,12 +164,14 @@ const Novidade = () => {
               </svg>
             </a>
 
-            <button
-              className="bg-[#284880] text-white border-0 py-2 px-4 rounded text-sm transition-colors hover:bg-[#162b50] cursor-pointer w-[80px]"
-              onClick={() => setModalOpen(true)}
-            >
-              Editar
-            </button>
+            {["Administrador", "Administrador Geral"].includes(userRole) && (
+              <button
+                className="custom-button edit-button"
+                onClick={() => setModalOpen(true)}
+              >
+                Editar
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -127,6 +181,7 @@ const Novidade = () => {
         onClose={() => setModalOpen(false)}
         onSave={handleSave}
         initialData={novidadeData}
+        userRole={userRole}
       />
     </Margin>
   );

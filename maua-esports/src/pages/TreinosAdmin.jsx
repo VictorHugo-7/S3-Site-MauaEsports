@@ -4,19 +4,19 @@ import {
   MdChevronRight,
   MdChevronLeft,
   MdClear,
-  MdEdit,
   MdSave,
   MdClose,
   MdAdd,
 } from "react-icons/md";
-import Rodape from "../components/Rodape";
 import PageBanner from "../components/PageBanner";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useMsal } from "@azure/msal-react";
 import AlertaErro from "../components/AlertaErro";
 import AlertaOk from "../components/AlertaOk";
 import DeletarBtn from "../components/DeletarBtn";
+import EditarBtn from "../components/EditarBtn";
 
+// Componente Agendamento
 const Agendamento = ({
   inicio,
   fim,
@@ -25,7 +25,7 @@ const Agendamento = ({
   status,
   onEditar,
   onExcluir,
-  userRole, // Nova prop adicionada
+  userRole,
 }) => {
   const diasDaSemana = [
     "Domingo",
@@ -36,48 +36,39 @@ const Agendamento = ({
     "Sexta",
     "Sábado",
   ];
-  const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between p-4 sm:mx-4 my-0 min-h-[80px] border-b border-borda">
-      <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-8 w-full sm:w-auto">
+    <div className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 my-0 min-h-[80px] bg-gray-800 border border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+      <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 w-full sm:w-auto">
         <div className="flex flex-col items-center w-full sm:w-40">
-          <span className="text-branco font-bold">
+          <span className="text-white font-semibold text-base">
             {inicio} - {fim}
           </span>
-          <span className="text-azul-claro text-sm">
+          <span className="text-blue-400 text-sm">
             Duração: {calcularDuracao(inicio, fim)}
           </span>
         </div>
 
         <div className="w-32 text-center">
-          <span className="text-branco">{diasDaSemana[diaSemana]}</span>
+          <span className="text-white font-medium text-base">
+            {diasDaSemana[diaSemana]}
+          </span>
         </div>
 
-        <div className="ml-3 text-sm w-full sm:w-48 text-center sm:text-left">
-          <p className="font-semibold text-white font-blinker">{time}</p>
+        <div className="text-sm w-full sm:w-48 text-center sm:text-left">
+          <p className="font-semibold text-white font-blinker text-base">
+            {time}
+          </p>
         </div>
       </div>
 
-      {userRole !== "Jogador" && ( // Usa a prop userRole diretamente
-        <div className="flex flex-row justify-center items-center sm:w-1/4 mt-2 sm:mt-0">
-          <button
-            onClick={onEditar}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            className="text-azul-claro text-2xl cursor-pointer mx-2"
-          >
-            <MdEdit
-              className="w-6 h-6"
-              style={{
-                animation: isHovered ? "shake 0.7s ease-in-out" : "none",
-                transformOrigin: "center center",
-              }}
-            />
-          </button>
+      {userRole !== "Jogador" && (
+        <div className="flex flex-row justify-center items-center mt-3 sm:mt-0 gap-2">
+          <EditarBtn onClick={onEditar} isEditing={false} />
           <DeletarBtn
             onDelete={onExcluir}
-            className="text-vermelho-claro text-2xl cursor-pointer mx-2 hover:text-red-500"
+            className="text-red-400 hover:text-red-500 text-2xl transition-colors duration-200"
+            aria-label="Excluir treino"
           />
         </div>
       )}
@@ -98,6 +89,17 @@ function calcularDuracao(inicio, fim) {
   const minutos = diferencaMinutos % 60;
 
   return `${horas}h${minutos.toString().padStart(2, "0")}min`;
+}
+
+// Função auxiliar para validar horários
+function isHorarioValido(inicio, fim) {
+  const [horaInicio, minutoInicio] = inicio.split(":").map(Number);
+  const [horaFim, minutoFim] = fim.split(":").map(Number);
+
+  const totalMinutosInicio = horaInicio * 60 + minutoInicio;
+  const totalMinutosFim = horaFim * 60 + minutoFim;
+
+  return totalMinutosFim > totalMinutosInicio;
 }
 
 const TreinosAdmin = () => {
@@ -140,6 +142,29 @@ const TreinosAdmin = () => {
     { value: 5, label: "Sexta" },
     { value: 6, label: "Sábado" },
   ];
+
+  // Função para resetar alertas após 5 segundos
+  useEffect(() => {
+    if (alertaErro) {
+      console.log("Exibindo alertaErro:", alertaErro);
+      const timer = setTimeout(() => {
+        console.log("Resetando alertaErro");
+        setAlertaErro("");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [alertaErro]);
+
+  useEffect(() => {
+    if (alertaOk) {
+      console.log("Exibindo alertaOk:", alertaOk);
+      const timer = setTimeout(() => {
+        console.log("Resetando alertaOk");
+        setAlertaOk("");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [alertaOk]);
 
   // Verifica autenticação e carrega dados do usuário
   useEffect(() => {
@@ -184,7 +209,7 @@ const TreinosAdmin = () => {
 
   const determineUserModality = (mods, trainsData) => {
     if (userRole === "Administrador" || userRole === "Administrador Geral") {
-      return null; // Admins podem ver tudo
+      return null;
     }
 
     const modalityHours = {};
@@ -203,9 +228,15 @@ const TreinosAdmin = () => {
         (p) => p.PlayerId === discordId
       );
 
-      if (playerAttendance && playerAttendance.EntranceTimestamp && playerAttendance.ExitTimestamp) {
+      if (
+        playerAttendance &&
+        playerAttendance.EntranceTimestamp &&
+        playerAttendance.ExitTimestamp
+      ) {
         const durationHours =
-          (playerAttendance.ExitTimestamp - playerAttendance.EntranceTimestamp) / (1000 * 60 * 60);
+          (playerAttendance.ExitTimestamp -
+            playerAttendance.EntranceTimestamp) /
+          (1000 * 60 * 60);
         modalityHours[modalityId] += durationHours;
       }
     });
@@ -224,7 +255,7 @@ const TreinosAdmin = () => {
   };
 
   useEffect(() => {
-    if (!userRole) return; // Espera até ter os dados do usuário
+    if (!userRole) return;
 
     const fetchData = async () => {
       try {
@@ -240,11 +271,9 @@ const TreinosAdmin = () => {
         const mods = modResponse.data;
         const userModalityId = determineUserModality(mods, trainsResponse.data);
 
-        // Se não for admin e não tiver modalidade, não mostra nada
         if (
           !(
-            userRole === "Administrador" ||
-            userRole === "Administrador Geral"
+            userRole === "Administrador" || userRole === "Administrador Geral"
           ) &&
           !userModalityId
         ) {
@@ -259,11 +288,9 @@ const TreinosAdmin = () => {
         const todosAgendamentos = [];
 
         for (const modId in mods) {
-          // Se não for admin, filtra apenas a modalidade do usuário
           if (
             !(
-              userRole === "Administrador" ||
-              userRole === "Administrador Geral"
+              userRole === "Administrador" || userRole === "Administrador Geral"
             ) &&
             modId !== userModalityId
           ) {
@@ -293,7 +320,6 @@ const TreinosAdmin = () => {
         setAgendamentosOriginais(todosAgendamentos);
         setAgendamentosFiltrados(todosAgendamentos);
 
-        // Define a modalidade inicial
         if (
           userRole === "Administrador" ||
           userRole === "Administrador Geral"
@@ -351,7 +377,6 @@ const TreinosAdmin = () => {
   };
 
   const iniciarEdicao = (treino) => {
-    // Verifica se o usuário pode editar este treino
     if (
       userRole !== "Administrador" &&
       userRole !== "Administrador Geral" &&
@@ -384,7 +409,7 @@ const TreinosAdmin = () => {
       inicio: "",
       fim: "",
       diaSemana: 0,
-      modalidadeId: userModality || "",
+      modalidadeId: userModality || modalidadeSelecionada || "",
     });
   };
 
@@ -405,6 +430,11 @@ const TreinosAdmin = () => {
   const salvarEdicao = async () => {
     if (!editandoTreino || !formEdicao.inicio || !formEdicao.fim) {
       setAlertaErro("Preencha todos os campos obrigatórios");
+      return;
+    }
+
+    if (!isHorarioValido(formEdicao.inicio, formEdicao.fim)) {
+      setAlertaErro("O horário de término deve ser posterior ao de início");
       return;
     }
 
@@ -441,30 +471,53 @@ const TreinosAdmin = () => {
       const updatedAgendamentos = agendamentosOriginais.map((a) =>
         a.id === editandoTreino.id
           ? {
-            ...a,
-            inicio: formEdicao.inicio,
-            fim: formEdicao.fim,
-            diaSemana: parseInt(formEdicao.diaSemana),
-            cronInicio: novaCronInicio,
-            cronFim: novaCronFim,
-          }
+              ...a,
+              inicio: formEdicao.inicio,
+              fim: formEdicao.fim,
+              diaSemana: parseInt(formEdicao.diaSemana),
+              cronInicio: novaCronInicio,
+              cronFim: novaCronFim,
+            }
           : a
       );
 
       setAgendamentosOriginais(updatedAgendamentos);
+      setModalidades((prev) => ({
+        ...prev,
+        [editandoTreino.ModalityId]: {
+          ...prev[editandoTreino.ModalityId],
+          ScheduledTrainings: updatedTrainings,
+        },
+      }));
       setEditandoTreino(null);
       setFormEdicao({ inicio: "", fim: "", diaSemana: 0 });
 
+      console.log("Setando alertaOk: Treino atualizado com sucesso!");
       setAlertaOk("Treino atualizado com sucesso!");
     } catch (error) {
       console.error("Erro ao atualizar treino:", error);
-      setAlertaErro("Erro ao atualizar treino");
+      console.log(
+        "Setando alertaErro:",
+        error.response?.data?.message || "Erro ao atualizar treino"
+      );
+      setAlertaErro(
+        error.response?.data?.message || "Erro ao atualizar treino"
+      );
     }
   };
 
   const criarTreino = async () => {
     if (!formCriacao.inicio || !formCriacao.fim || !formCriacao.modalidadeId) {
+      console.log("Setando alertaErro: Preencha todos os campos obrigatórios");
       setAlertaErro("Preencha todos os campos obrigatórios");
+      return;
+    }
+
+    if (!isHorarioValido(formCriacao.inicio, formCriacao.fim)) {
+      console.log(
+        "Setando alertaErro: O horário de término deve ser posterior ao de início"
+      );
+      setAlertaErro("O horário de término deve ser posterior ao de início");
       return;
     }
 
@@ -477,6 +530,7 @@ const TreinosAdmin = () => {
 
       const modalidade = modalidades[formCriacao.modalidadeId];
       if (!modalidade) {
+        console.log("Setando alertaErro: Modalidade não encontrada");
         setAlertaErro("Modalidade não encontrada");
         throw new Error("Modalidade não encontrada");
       }
@@ -491,7 +545,7 @@ const TreinosAdmin = () => {
         novoTreino,
       ];
 
-      await axios.patch(
+      const response = await axios.patch(
         "/api/modality",
         {
           _id: formCriacao.modalidadeId,
@@ -505,6 +559,8 @@ const TreinosAdmin = () => {
         }
       );
 
+      console.log("Resposta do servidor ao criar treino:", response.data);
+
       const novoAgendamento = {
         id: `${formCriacao.modalidadeId}-${novaCronInicio}`,
         inicio: formCriacao.inicio,
@@ -517,28 +573,42 @@ const TreinosAdmin = () => {
       };
 
       setAgendamentosOriginais([...agendamentosOriginais, novoAgendamento]);
+      setModalidades((prev) => ({
+        ...prev,
+        [formCriacao.modalidadeId]: {
+          ...prev[formCriacao.modalidadeId],
+          ScheduledTrainings: updatedTrainings,
+        },
+      }));
       setCriandoTreino(false);
       setFormCriacao({
         inicio: "",
         fim: "",
         diaSemana: 0,
-        modalidadeId: userModality || "",
+        modalidadeId: userModality || modalidadeSelecionada || "",
       });
 
+      console.log("Setando alertaOk: Treino criado com sucesso!");
       setAlertaOk("Treino criado com sucesso!");
     } catch (error) {
       console.error("Erro ao criar treino:", error);
-      setAlertaErro("Erro ao criar treino");
+      console.log(
+        "Setando alertaErro:",
+        error.response?.data?.message || "Erro ao criar treino"
+      );
+      setAlertaErro(error.response?.data?.message || "Erro ao criar treino");
     }
   };
 
   const excluirTreino = async (treino) => {
-    // Verifica se o usuário pode excluir este treino
     if (
       userRole !== "Administrador" &&
       userRole !== "Administrador Geral" &&
       treino.ModalityId !== userModality
     ) {
+      console.log(
+        "Setando alertaErro: Você não tem permissão para excluir este treino"
+      );
       setAlertaErro("Você não tem permissão para excluir este treino");
       return;
     }
@@ -554,6 +624,7 @@ const TreinosAdmin = () => {
     try {
       const modalidade = modalidades[treino.ModalityId];
       if (!modalidade) {
+        console.log("Setando alertaErro: Modalidade não encontrada");
         setAlertaErro("Modalidade não encontrada");
         throw new Error("Modalidade não encontrada");
       }
@@ -581,10 +652,22 @@ const TreinosAdmin = () => {
       );
 
       setAgendamentosOriginais(updatedAgendamentos);
+      setModalidades((prev) => ({
+        ...prev,
+        [treino.ModalityId]: {
+          ...prev[treino.ModalityId],
+          ScheduledTrainings: updatedTrainings,
+        },
+      }));
+      console.log("Setando alertaOk: Treino excluído com sucesso!");
       setAlertaOk("Treino excluído com sucesso!");
     } catch (error) {
       console.error("Erro ao excluir treino:", error);
-      setAlertaErro("Erro ao excluir treino");
+      console.log(
+        "Setando alertaErro:",
+        error.response?.data?.message || "Erro ao excluir treino"
+      );
+      setAlertaErro(error.response?.data?.message || "Erro ao excluir treino");
     }
   };
 
@@ -612,15 +695,16 @@ const TreinosAdmin = () => {
     const { diasNoMes, diaInicial } = obterDiasNoMes(mesAtual);
 
     return (
-      <div className="w-full h-full">
-        <div className="flex justify-between items-center mb-4">
+      <div className="w-full">
+        <div className="flex justify-between items-center mb-3">
           <button
             onClick={() => mudarMes(-1)}
-            className="text-azul-claro hover:text-azul-escuro text-2xl"
+            className="text-blue-400 hover:text-blue-300 text-xl transition-colors duration-200"
+            aria-label="Mês anterior"
           >
             <MdChevronLeft />
           </button>
-          <h3 className="text-lg sm:text-xl font-bold text-white text-center">
+          <h3 className="text-lg font-semibold text-white text-center capitalize">
             {mesAtual.toLocaleString("pt-BR", {
               month: "long",
               year: "numeric",
@@ -628,24 +712,22 @@ const TreinosAdmin = () => {
           </h3>
           <button
             onClick={() => mudarMes(1)}
-            className="text-azul-claro hover:text-azul-escuro text-2xl"
+            className="text-blue-400 hover:text-blue-300 text-xl transition-colors duration-200"
+            aria-label="Próximo mês"
           >
             <MdChevronRight />
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-1 text-center">
           {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((dia) => (
-            <div
-              key={dia}
-              className="text-center text-xs sm:text-sm text-white font-semibold py-1 sm:py-2"
-            >
+            <div key={dia} className="text-sm font-medium text-gray-300 py-1">
               {dia}
             </div>
           ))}
 
           {Array.from({ length: diaInicial }).map((_, index) => (
-            <div key={`empty-${index}`} className="h-6 sm:h-8" />
+            <div key={`empty-${index}`} className="h-8" />
           ))}
 
           {Array.from({ length: diasNoMes }, (_, i) => i + 1).map((dia) => {
@@ -667,12 +749,13 @@ const TreinosAdmin = () => {
                   setDataSelecionada(diaAtual);
                   setFiltroDataAtivo(true);
                 }}
-                className={`h-6 sm:h-8 text-xs sm:text-sm rounded-full flex items-center justify-center
-                  ${isSelecionado
-                    ? "bg-azul-claro text-white"
-                    : isHoje
-                      ? "border-2 border-azul-claro text-white"
-                      : "hover:bg-fundo/70 text-white"
+                className={`h-8 w-8 text-sm rounded-full flex items-center justify-center transition-colors duration-200
+                  ${
+                    isSelecionado
+                      ? "bg-blue-500 text-white"
+                      : isHoje
+                      ? "border border-blue-400 text-white"
+                      : "text-gray-300 hover:bg-gray-700"
                   }`}
               >
                 {dia}
@@ -700,15 +783,15 @@ const TreinosAdmin = () => {
   ) {
     return (
       <div className="min-h-screen bg-[#0D1117] text-white flex items-center justify-center">
-        <div className="text-center p-6 max-w-md bg-gray-800 rounded-lg border border-gray-700">
-          <h2 className="text-2xl font-bold mb-4">Nenhum time encontrado</h2>
-          <p className="mb-6">
+        <div className="text-center p-6 max-w-md bg-gray-800 rounded-lg border border-gray-700 shadow-lg">
+          <h2 className="text-xl font-bold mb-4">Nenhum time encontrado</h2>
+          <p className="mb-6 text-gray-300">
             Você não está registrado em nenhum time ou não tem treinos
             agendados.
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-azul-claro rounded-lg hover:bg-azul-escuro transition-colors"
+            className="px-6 py-2 bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors text-sm"
           >
             Recarregar
           </button>
@@ -718,40 +801,44 @@ const TreinosAdmin = () => {
   }
 
   return (
-    <div className="w-full min-h-screen bg-fundo flex flex-col items-center">
+    <div className="w-full min-h-screen bg-[#0D1117] flex flex-col items-center">
       {/* Alertas de sucesso/erro */}
-      <AlertaErro mensagem={alertaErro} />
-      <AlertaOk mensagem={alertaOk} />
+      <AlertaErro
+        key={`erro-${alertaErro}-${Date.now()}`}
+        mensagem={alertaErro}
+      />
+      <AlertaOk key={`ok-${alertaOk}-${Date.now()}`} mensagem={alertaOk} />
 
       {/* Container unificado para NavBar e PageBanner */}
-      <div className="w-full bg-navbar mb-10">
+      <div className="w-full mb-10 bg-navbar">
         <div className="h-[104px]"></div>
-        <PageBanner pageName="Treinos" className="bg-navbar" />
+        <PageBanner pageName="Treinos" />
       </div>
 
       {/* Resumo centralizado */}
-      <div className="bg-navbar p-3 sm:p-4 rounded-lg mb-4 sm:mb-6 w-[95%] sm:w-4/5 lg:w-3/4 text-center mx-auto">
-        <div className="flex flex-col items-center gap-1 sm:gap-2">
-          <h3 className="text-white font-bold text-sm sm:text-base text-center">
+      <div className="bg-gray-800 p-4 rounded-lg mb-6 w-[90%] sm:w-3/4 lg:w-2/3 text-center mx-auto shadow-lg">
+        <div className="flex flex-col items-center gap-2">
+          <h3 className="text-white font-semibold text-base sm:text-lg text-center">
             {filtroDataAtivo
-              ? `Treinos na ${diasDaSemana.find((d) => d.value === dataSelecionada.getDay())
-                ?.label
-              }`
+              ? `Treinos na ${
+                  diasDaSemana.find((d) => d.value === dataSelecionada.getDay())
+                    ?.label
+                }`
               : "Todos os treinos"}
             {modalidadeSelecionada &&
               ` - ${modalidades[modalidadeSelecionada]?.Name}`}
           </h3>
 
-          <div className="text-azul-claro font-bold text-lg sm:text-xl">
+          <div className="text-blue-400 font-semibold text-lg sm:text-xl">
             {contadores.total} {contadores.total === 1 ? "treino" : "treinos"}
           </div>
         </div>
       </div>
 
       {/* Barra de Controles centralizada */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-4 w-[95%] sm:w-4/5 lg:w-3/4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 w-[90%] sm:w-3/4 lg:w-2/3">
         <div className="w-full sm:flex-1">
-          <label className="text-white font-bold text-sm sm:text-lg mr-2">
+          <label className="text-white font-semibold text-sm sm:text-base mr-2">
             Time:
           </label>
           <select
@@ -763,11 +850,10 @@ const TreinosAdmin = () => {
                 modalidadeId: e.target.value,
               }));
             }}
-            className="p-2 rounded-md bg-preto text-white w-full sm:w-[30%]"
+            className="p-2 rounded-md bg-gray-700 text-white w-full sm:w-[40%] border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Todos os times</option>
             {Object.entries(modalidades).map(([id, mod]) => {
-              // Se não for admin, mostra apenas o time do usuário
               if (
                 !(
                   userRole === "Administrador" ||
@@ -786,17 +872,18 @@ const TreinosAdmin = () => {
           </select>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
           <div className="flex items-center w-full sm:w-auto">
-            <label className="text-white text-sm sm:text-base mr-2 ">
+            <label className="text-white text-sm sm:text-base mr-2">
               Filtrar por dia:
             </label>
             <button
               onClick={() => setFiltroDataAtivo(!filtroDataAtivo)}
-              className={`px-3 py-1 rounded ${filtroDataAtivo
-                ? "bg-azul-claro text-white"
-                : "bg-fundo text-white border border-borda"
-                }`}
+              className={`px-4 py-1 rounded text-sm sm:text-base transition-colors duration-200 ${
+                filtroDataAtivo
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-700 text-white border border-gray-600 hover:bg-gray-600"
+              }`}
             >
               {filtroDataAtivo ? "Ativo" : "Inativo"}
             </button>
@@ -805,7 +892,7 @@ const TreinosAdmin = () => {
           {(modalidadeSelecionada || filtroDataAtivo) && (
             <button
               onClick={limparFiltros}
-              className="text-vermelho-claro hover:text-vermelho-escuro flex items-center text-sm sm:text-base hover:cursor-pointer"
+              className="text-red-400 hover:text-red-500 flex items-center text-sm sm:text-base transition-colors duration-200"
             >
               <MdClear className="mr-1" /> Limpar filtros
             </button>
@@ -815,11 +902,11 @@ const TreinosAdmin = () => {
 
       {/* Botões de Criar */}
       {userRole && userRole !== "Jogador" && (
-        <div className="flex justify-end mb-4 w-[95%] sm:w-4/5 lg:w-3/4">
+        <div className="flex justify-end mb-4 w-[90%] sm:w-3/4 lg:w-2/3">
           <button
             type="button"
             onClick={iniciarCriacao}
-            className="bg-verde-claro text-white px-4 py-2 rounded flex items-center text-sm sm:text-base hover:bg-green-700 mr-2 hover:cursor-pointer"
+            className="bg-green-500 text-white px-4 py-2 rounded flex items-center text-sm sm:text-base hover:bg-green-600 transition-colors shadow-md cursor-pointer"
             aria-label="Criar novo treino"
           >
             <MdAdd className="mr-1" /> Criar Treino
@@ -828,11 +915,11 @@ const TreinosAdmin = () => {
       )}
 
       {/* Container principal centralizado */}
-      <div className="flex flex-col lg:flex-row w-[95%] sm:w-4/5 lg:w-3/4 h-auto lg:h-[calc(100vh-180px)] gap-4 sm:gap-6 md:gap-8 mb-10">
+      <div className="flex flex-col lg:flex-row w-[90%] sm:w-3/4 lg:w-2/3 min-h-[400px] gap-6 mb-10">
         {/* Lista de Treinos */}
-        <div className="w-full lg:w-[65%] h-auto lg:h-full bg-navbar border border-borda rounded-xl overflow-y-auto order-2 lg:order-1">
-          <div className="border-b border-borda p-3 sm:p-4 sticky top-0 bg-navbar z-10">
-            <div className="font-blinker text-sm sm:text-base md:text-lg lg:text-xl text-branco hidden sm:flex justify-between">
+        <div className="w-full lg:flex-1 bg-gray-800 border border-gray-700 rounded-xl overflow-y-auto shadow-lg min-h-[400px]">
+          <div className="border-b border-gray-700 p-4 sticky top-0 bg-gray-800 z-10">
+            <div className="font-blinker text-sm sm:text-base md:text-lg text-white hidden sm:flex justify-between">
               <span className="w-1/4">Horário</span>
               <span className="w-1/4">Dia da Semana</span>
               <span className="w-2/4">Time</span>
@@ -840,44 +927,50 @@ const TreinosAdmin = () => {
                 <span className="w-1/4 text-center">Ações</span>
               )}
             </div>
-            <div className="sm:hidden font-blinker text-base text-branco text-center">
+            <div className="sm:hidden font-blinker text-base text-white text-center">
               Lista de Treinos
             </div>
           </div>
 
-          <div className="pb-4 sm:pb-6">
+          <div className="pb-6 space-y-2 px-2 sm:px-4">
             {criandoTreino && (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 gap-3 sm:gap-4 border-b border-borda">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center p-4 gap-4 bg-gray-700 border border-gray-600 rounded-lg">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
                   <div className="flex flex-col w-full sm:w-auto">
-                    <label className="text-cinza-claro text-xs sm:text-sm mb-1">Início</label>
+                    <label className="text-gray-300 text-xs sm:text-sm mb-1">
+                      Início
+                    </label>
                     <input
                       type="time"
                       name="inicio"
                       value={formCriacao.inicio}
                       onChange={(e) => handleFormChange(e, true)}
-                      className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-32 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-100 [color-scheme]:dark"
+                      className="p-2 rounded bg-gray-600 text-white w-full sm:w-32 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
-                  <div className="flex flex-col">
-                    <label className="text-cinza-claro text-sm mb-1">Fim</label>
+                  <div className="flex flex-col w-full sm:w-auto">
+                    <label className="text-gray-300 text-xs sm:text-sm mb-1">
+                      Fim
+                    </label>
                     <input
                       type="time"
                       name="fim"
                       value={formCriacao.fim}
                       onChange={(e) => handleFormChange(e, true)}
-                      className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-32 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-100 [color-scheme]:dark"
+                      className="p-2 rounded bg-gray-600 text-white w-full sm:w-32 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
-                  <div className="flex flex-col">
-                    <label className="text-cinza-claro text-sm mb-1">Dia</label>
+                  <div className="flex flex-col w-full sm:w-auto">
+                    <label className="text-gray-300 text-xs sm:text-sm mb-1">
+                      Dia
+                    </label>
                     <select
                       name="diaSemana"
                       value={formCriacao.diaSemana}
                       onChange={(e) => handleFormChange(e, true)}
-                      className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-40"
+                      className="p-2 rounded bg-gray-600 text-white w-full sm:w-40 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       {diasDaSemana.map((dia) => (
                         <option key={dia.value} value={dia.value}>
@@ -887,15 +980,15 @@ const TreinosAdmin = () => {
                     </select>
                   </div>
 
-                  <div className="flex flex-col">
-                    <label className="text-cinza-claro text-sm mb-1">
+                  <div className="flex flex-col w-full sm:w-auto">
+                    <label className="text-gray-300 text-xs sm:text-sm mb-1">
                       Time
                     </label>
                     <select
                       name="modalidadeId"
                       value={formCriacao.modalidadeId}
                       onChange={(e) => handleFormChange(e, true)}
-                      className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-48"
+                      className="p-2 rounded bg-gray-600 text-white w-full sm:w-48 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       disabled={
                         !(
                           userRole === "Administrador" ||
@@ -912,16 +1005,16 @@ const TreinosAdmin = () => {
                   </div>
                 </div>
 
-                <div className="flex gap-2 ml-4">
+                <div className="flex gap-2 sm:mt-0 mt-4 sm:self-end">
                   <button
                     onClick={criarTreino}
-                    className="bg-verde-claro text-white px-2 sm:px-3 py-1 rounded flex items-center text-xs sm:text-sm hover:bg-green-700 hover:cursor-pointer"
+                    className="bg-green-500 text-white px-3 py-1 rounded flex items-center text-sm hover:bg-green-600 transition-colors hover:cursor-pointer"
                   >
                     <MdSave className="mr-1" /> Salvar
                   </button>
                   <button
                     onClick={cancelarCriacao}
-                    className="bg-vermelho-claro text-white px-2 sm:px-3 py-1 rounded flex items-center text-xs sm:text-sm hover:bg-red-500 hover:cursor-pointer"
+                    className="bg-red-500 text-white px-3 py-1 rounded flex items-center text-sm hover:bg-red-600 transition-colors hover:cursor-pointer"
                   >
                     <MdClose className="mr-1" /> Cancelar
                   </button>
@@ -931,41 +1024,45 @@ const TreinosAdmin = () => {
 
             {agendamentosFiltrados.length > 0 ? (
               agendamentosFiltrados.map((agendamento) => (
-                <div key={agendamento.id} className="border-b border-borda">
+                <div key={agendamento.id}>
                   {editandoTreino?.id === agendamento.id ? (
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 gap-3 sm:gap-4">
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center p-4 gap-4 bg-gray-700 border border-gray-600 rounded-lg">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
                         <div className="flex flex-col w-full sm:w-auto">
-                          <label className="text-cinza-claro text-xs sm:text-sm mb-1">Início</label>
+                          <label className="text-gray-300 text-xs sm:text-sm mb-1">
+                            Início
+                          </label>
                           <input
                             type="time"
                             name="inicio"
                             value={formEdicao.inicio}
                             onChange={handleFormChange}
-                            className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-32 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-100 [color-scheme]:dark"
+                            className="p-2 rounded bg-gray-600 text-white w-full sm:w-32 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
 
-                        <div className="flex flex-col">
-                          <label className="text-cinza-claro text-sm mb-1">Fim</label>
+                        <div className="flex flex-col w-full sm:w-auto">
+                          <label className="text-gray-300 text-xs sm:text-sm mb-1">
+                            Fim
+                          </label>
                           <input
                             type="time"
                             name="fim"
                             value={formEdicao.fim}
                             onChange={handleFormChange}
-                            className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-32 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-100 [color-scheme]:dark"
+                            className="p-2 rounded bg-gray-600 text-white w-full sm:w-32 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
 
-                        <div className="flex flex-col">
-                          <label className="text-cinza-claro text-sm mb-1">
+                        <div className="flex flex-col w-full sm:w-auto">
+                          <label className="text-gray-300 text-xs sm:text-sm mb-1">
                             Dia
                           </label>
                           <select
                             name="diaSemana"
                             value={formEdicao.diaSemana}
                             onChange={handleFormChange}
-                            className="p-1 sm:p-2 rounded bg-fundo text-white w-full sm:w-40"
+                            className="p-2 rounded bg-gray-600 text-white w-full sm:w-40 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
                             {diasDaSemana.map((dia) => (
                               <option key={dia.value} value={dia.value}>
@@ -975,21 +1072,21 @@ const TreinosAdmin = () => {
                           </select>
                         </div>
 
-                        <span className="text-white ml-4">
+                        <span className="text-white text-base ml-0 sm:ml-4">
                           {agendamento.NomeModalidade}
                         </span>
                       </div>
 
-                      <div className="flex gap-2 ml-4">
+                      <div className="flex gap-2 sm:mt-0 mt-4 sm:self-end">
                         <button
                           onClick={salvarEdicao}
-                          className="bg-verde-claro text-white px-2 sm:px-3 py-1 rounded flex items-center text-xs sm:text-sm hover:bg-green-700 hover:cursor-pointer"
+                          className="bg-green-500 text-white px-3 py-1 rounded flex items-center text-sm hover:bg-green-600 transition-colors hover:cursor-pointer"
                         >
                           <MdSave className="mr-1" /> Salvar
                         </button>
                         <button
                           onClick={cancelarEdicao}
-                          className="bg-vermelho-claro text-white px-2 sm:px-3 py-1 rounded flex items-center text-xs sm:text-sm hover:bg-red-500 hover:cursor-pointer"
+                          className="bg-red-500 text-white px-3 py-1 rounded flex items-center text-sm hover:bg-red-600 transition-colors hover:cursor-pointer"
                         >
                           <MdClose className="mr-1" /> Cancelar
                         </button>
@@ -1004,13 +1101,13 @@ const TreinosAdmin = () => {
                       time={agendamento.NomeModalidade}
                       onEditar={() => iniciarEdicao(agendamento)}
                       onExcluir={() => excluirTreino(agendamento)}
-                      userRole={userRole} // Passa userRole como prop
+                      userRole={userRole}
                     />
                   )}
                 </div>
               ))
             ) : (
-              <div className="text-white text-center py-6 sm:py-8 text-sm sm:text-base">
+              <div className="text-gray-300 text-center py-8 text-base">
                 Nenhum treino agendado encontrado com os filtros atuais
               </div>
             )}
@@ -1018,12 +1115,10 @@ const TreinosAdmin = () => {
         </div>
 
         {/* Calendário */}
-        <div className="w-full lg:w-[30%] h-auto sm:h-[400px] lg:h-[90%] bg-navbar border border-borda rounded-xl p-4 sm:p-6 order-1 lg:order-2">
+        <div className="w-full lg:w-[350px] lg:h-[400px] bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-lg overflow-y-auto">
           <Calendario />
         </div>
       </div>
-
-      <Rodape />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 const express = require("express");
-const { body, validationResult } = require('express-validator');
+const { body, validationResult } = require("express-validator");
 const app = express();
 const cors = require("cors");
 const mongoose = require("mongoose");
@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(
   cors({
     origin: "http://localhost:5173",
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], // Adicione PATCH aqui
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
     preflightContinue: false,
@@ -35,21 +35,22 @@ app.use((req, res, next) => {
 });
 
 async function conectarAoMongoDB() {
-  const url = process.env.NODE_ENV === 'test'
-    ? process.env.MONGO_TEST_URL
-    : process.env.MONGO_URL;
+  const url =
+    process.env.NODE_ENV === "test"
+      ? process.env.MONGO_TEST_URL
+      : process.env.MONGO_URL;
 
   await mongoose.connect(url, {
     useNewUrlParser: true,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
   });
 }
 
 // Configuração do Multer
-const storage = multer.memoryStorage(); 
+const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, 
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: function (req, file, cb) {
     const filetypes = /jpeg|jpg|png|svg/;
     const mimetype = filetypes.test(file.mimetype);
@@ -75,13 +76,11 @@ const jogadorSchema = mongoose.Schema({
     contentType: String,
     nomeOriginal: String,
   },
-
   insta: { type: String },
   twitter: { type: String },
   twitch: { type: String },
-
   time: {
-    type: Number,
+    type: mongoose.Schema.Types.ObjectId,
     ref: "Time",
     required: true,
   },
@@ -150,12 +149,13 @@ const usuarioSchema = new mongoose.Schema({
     required: true,
     unique: true,
     validate: {
-      validator: function(v) {
+      validator: function (v) {
         // Regex para o formato específico: XX.XXXXX-Y@maua.br OU esports@maua.br
         const emailRegex = /^([0-9]{2}\.[0-9]{5}-[0-9]{1}|esports)@maua\.br$/;
         return emailRegex.test(v);
       },
-      message: props => `${props.value} não é um email válido! O formato deve ser XX.XXXXX-Y@maua.br (ex: 24.00086-8@maua.br)`
+      message: (props) =>
+        `${props.value} não é um email válido! O formato deve ser XX.XXXXX-Y@maua.br (ex: 24.00086-8@maua.br)`,
     },
   },
   discordID: {
@@ -163,14 +163,6 @@ const usuarioSchema = new mongoose.Schema({
     required: false,
     unique: true,
     sparse: true,
-    validate: {
-      validator: function (v) {
-        if (!v) return true;
-        return /^\d{18}$/.test(v);
-      },
-      message: (props) =>
-        `${props.value} não é um Discord ID válido! Deve ser exatamente 18 dígitos ou vazio.`,
-    },
   },
   fotoPerfil: {
     data: { type: Buffer, required: false },
@@ -219,7 +211,7 @@ app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
       email,
       ...(discordID && { discordID }),
       tipoUsuario: tipoUsuario?.trim() || "Jogador",
-      ...(time && { time }), 
+      ...(time && { time }),
       ...(req.file && {
         fotoPerfil: {
           data: req.file.buffer,
@@ -239,30 +231,32 @@ app.post("/usuarios", upload.single("fotoPerfil"), async (req, res) => {
         email: novoUsuario.email,
         ...(novoUsuario.discordID && { discordID: novoUsuario.discordID }),
         tipoUsuario: novoUsuario.tipoUsuario,
-        ...(novoUsuario.time && { time: novoUsuario.time }), 
+        ...(novoUsuario.time && { time: novoUsuario.time }),
         createdAt: novoUsuario.createdAt,
       },
       message: "Usuário criado com sucesso",
     });
-  } 
-  catch (error) {
+  } catch (error) {
     console.error("Erro ao criar usuário:", error);
 
- 
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(e => e.message);
-      return res.status(400).json({ success: false, message: messages.join(', ') });
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((e) => e.message);
+      return res
+        .status(400)
+        .json({ success: false, message: messages.join(", ") });
     }
 
     // No bloco catch da rota POST /usuarios
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
-        message: "Email já está em uso"
+        message: "Email já está em uso",
       });
     }
 
-    res.status(500).json({ success: false, message: "Erro interno do servidor" });
+    res
+      .status(500)
+      .json({ success: false, message: "Erro interno do servidor" });
   }
 });
 
@@ -300,40 +294,40 @@ app.get("/usuarios/verificar-email", async (req, res) => {
     });
   }
 });
-app.get('/usuarios/por-discord-ids', async (req, res) => {
+app.get("/usuarios/por-discord-ids", async (req, res) => {
   try {
     // Recebe os IDs como query parameter (ex: ?ids=123,456,789)
     const idsString = req.query.ids;
-    
+
     if (!idsString) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Parâmetro 'ids' é obrigatório" 
+      return res.status(400).json({
+        success: false,
+        message: "Parâmetro 'ids' é obrigatório",
       });
     }
 
     // Converte a string de IDs para array
-    const discordIds = idsString.split(',');
-    
+    const discordIds = idsString.split(",");
+
     // Verifica se há IDs válidos
-    if (!discordIds.length || discordIds.some(id => !id.trim())) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Lista de Discord IDs inválida" 
+    if (!discordIds.length || discordIds.some((id) => !id.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: "Lista de Discord IDs inválida",
       });
     }
 
-    const usuarios = await Usuario.find({ 
-      discordID: { $in: discordIds } 
-    }).select('email discordID');
+    const usuarios = await Usuario.find({
+      discordID: { $in: discordIds },
+    }).select("email discordID");
 
     res.status(200).json(usuarios);
   } catch (error) {
     console.error("Erro ao buscar usuários por Discord IDs:", error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: "Erro ao buscar usuários",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
@@ -412,17 +406,17 @@ app.get("/usuarios/:id/foto", async (req, res) => {
     if (!usuario || !usuario.fotoPerfil || !usuario.fotoPerfil.data) {
       return res.status(404).json({
         success: false,
-        message: "Imagem não encontrada"
+        message: "Imagem não encontrada",
       });
     }
 
-    res.set('Content-Type', usuario.fotoPerfil.contentType);
+    res.set("Content-Type", usuario.fotoPerfil.contentType);
     res.send(usuario.fotoPerfil.data);
   } catch (error) {
     console.error("Erro ao buscar foto:", error);
     res.status(500).json({
       success: false,
-      message: "Erro ao carregar imagem"
+      message: "Erro ao carregar imagem",
     });
   }
 });
@@ -487,11 +481,11 @@ app.put("/usuarios/:id", upload.single("fotoPerfil"), async (req, res) => {
     console.error("Erro ao atualizar usuário:", error);
 
     // Captura erros de validação do Mongoose (incluindo unique)
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(e => e.message);
-      return res.status(400).json({ 
-        success: false, 
-        message: messages.join(', ') 
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((e) => e.message);
+      return res.status(400).json({
+        success: false,
+        message: messages.join(", "),
       });
     }
 
@@ -500,19 +494,19 @@ app.put("/usuarios/:id", upload.single("fotoPerfil"), async (req, res) => {
       if (error.keyValue.email) {
         return res.status(400).json({
           success: false,
-          message: "Email já está em uso"
+          message: "Email já está em uso",
         });
       }
       if (error.keyValue.discordID) {
         return res.status(400).json({
           success: false,
-          message: "Discord ID já está em uso"
+          message: "Discord ID já está em uso",
         });
       }
     }
 
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: "Erro ao atualizar usuário",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
@@ -545,9 +539,6 @@ app.delete("/usuarios/:id", async (req, res) => {
     });
   }
 });
-
-
-
 
 ///////////////////////////////////////////////AREA DE RAANKING/////////////////////////////////////////////////////////////////
 // POST - Criar novo ranking com upload de imagem
@@ -592,7 +583,7 @@ app.get("/rankings/:id/image", async (req, res) => {
     res.set({
       "Content-Type": ranking.image.contentType,
       "Cache-Control": "public, max-age=31536000, immutable",
-      "Last-Modified": new Date(ranking.createdAt).toUTCString()
+      "Last-Modified": new Date(ranking.createdAt).toUTCString(),
     });
 
     res.send(ranking.image.data);
@@ -691,32 +682,22 @@ app.get("/jogadores/:id/imagem", async (req, res) => {
       });
     }
 
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Erro ao criar jogador",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
 
-
-
 app.get("/jogadores", async (req, res) => {
   try {
-    const jogadores = await Jogador.find().lean(); // .lean() para objetos JS simples
-
-    // Busca manual dos times
-    const times = await Time.find({
-      id: { $in: jogadores.map((j) => j.time) },
-    });
-
-    const timesMap = times.reduce((acc, time) => {
-      acc[time.id] = time;
-      return acc;
-    }, {});
+    const jogadores = await Jogador.find()
+      .populate("time", "nome _id") // Popula o campo time com nome e _id
+      .lean();
 
     const resultado = jogadores.map((jogador) => ({
       ...jogador,
-      time: timesMap[jogador.time] || null,
+      time: jogador.time || null,
     }));
 
     res.status(200).json(resultado);
@@ -744,8 +725,6 @@ app.delete("/jogadores/:id", async (req, res) => {
     res.status(500).json({ message: "Erro ao remover jogador", error });
   }
 });
-
-
 
 app.put("/jogadores/:id", upload.single("foto"), async (req, res) => {
   try {
@@ -828,7 +807,6 @@ app.put("/jogadores/:id", upload.single("foto"), async (req, res) => {
 ///////////////////////////////////////////////////////////////////////////////AREA DE TIMES ////////////////////////////////////////////////////////////////////////////////////
 
 const timeSchema = mongoose.Schema({
-  id: { type: Number, required: true, unique: true },
   nome: { type: String, required: true, unique: true },
   foto: {
     data: Buffer,
@@ -848,11 +826,10 @@ const timeSchema = mongoose.Schema({
 
 const Time = mongoose.model("Time", timeSchema);
 
-// Rota para buscar time por ID numérico
-app.get("/times/:id", async (req, res) => {
+// Rota para buscar time por _id
+app.get("/times/:_id", async (req, res) => {
   try {
-    const timeId = parseInt(req.params.id);
-    const time = await Time.findOne({ id: timeId })
+    const time = await Time.findById(req.params._id)
       .select("-foto.data -jogo.data -__v")
       .lean();
 
@@ -862,10 +839,9 @@ app.get("/times/:id", async (req, res) => {
         .json({ success: false, message: "Time não encontrado" });
     }
 
-    // Adiciona a URL da logo ao objeto do time
     const timeComLogo = {
       ...time,
-      logoUrl: `${req.protocol}://${req.get("host")}/times/${timeId}/logo`,
+      logoUrl: `${req.protocol}://${req.get("host")}/times/${time._id}/logo`,
     };
 
     res.status(200).json(timeComLogo);
@@ -874,11 +850,11 @@ app.get("/times/:id", async (req, res) => {
     res.status(500).json({ success: false, message: "Erro ao buscar time" });
   }
 });
+
 // Rota para servir a logo do time
-app.get("/times/:id/logo", async (req, res) => {
+app.get("/times/:_id/logo", async (req, res) => {
   try {
-    const timeId = parseInt(req.params.id);
-    const time = await Time.findOne({ id: timeId });
+    const time = await Time.findById(req.params._id);
 
     if (!time || !time.jogo || !time.jogo.data) {
       return res.status(404).send("Logo não encontrada");
@@ -891,19 +867,14 @@ app.get("/times/:id/logo", async (req, res) => {
     res.status(500).send("Erro ao buscar logo");
   }
 });
-// Rota para buscar jogadores por time ID
-app.get("/times/:id/jogadores", async (req, res) => {
+
+// Rota para buscar jogadores por time _id
+app.get("/times/:_id/jogadores", async (req, res) => {
   try {
-    const timeId = parseInt(req.params.id);
-
-    // DEBUG: Verifique no console do servidor
-    console.log(`Buscando jogadores para time ID: ${timeId}`);
-
-    const jogadores = await Jogador.find({ time: timeId })
+    const jogadores = await Jogador.find({ time: req.params._id })
       .select("-foto.data -__v")
       .lean();
 
-    // Adiciona URL da foto para cada jogador
     const jogadoresComImagens = jogadores.map((jogador) => ({
       ...jogador,
       fotoUrl: `/jogadores/${jogador._id}/imagem`,
@@ -918,10 +889,11 @@ app.get("/times/:id/jogadores", async (req, res) => {
     });
   }
 });
+
 // Rota para obter a foto do time
-app.get("/times/:id/foto", async (req, res) => {
+app.get("/times/:_id/foto", async (req, res) => {
   try {
-    const time = await Time.findOne({ id: req.params.id });
+    const time = await Time.findById(req.params._id);
 
     if (!time || !time.foto || !time.foto.data) {
       return res.status(404).send("Imagem não encontrada");
@@ -935,9 +907,9 @@ app.get("/times/:id/foto", async (req, res) => {
 });
 
 // Rota para obter o logo do jogo
-app.get("/times/:id/jogo", async (req, res) => {
+app.get("/times/:_id/jogo", async (req, res) => {
   try {
-    const time = await Time.findOne({ id: req.params.id });
+    const time = await Time.findById(req.params._id);
 
     if (!time || !time.jogo || !time.jogo.data) {
       return res.status(404).send("Imagem não encontrada");
@@ -950,6 +922,7 @@ app.get("/times/:id/jogo", async (req, res) => {
   }
 });
 
+// Rota para criar time
 app.post(
   "/times",
   upload.fields([
@@ -958,15 +931,13 @@ app.post(
   ]),
   async (req, res) => {
     try {
-      const { id, nome } = req.body;
+      const { nome } = req.body;
       const fotoFile = req.files["foto"][0];
       const jogoFile = req.files["jogo"][0];
 
       // Validações
-      if (!id || !nome) {
-        return res
-          .status(400)
-          .json({ message: "ID e nome são obrigatórios" });
+      if (!nome) {
+        return res.status(400).json({ message: "Nome é obrigatório" });
       }
       if (!fotoFile || !jogoFile) {
         return res
@@ -975,7 +946,6 @@ app.post(
       }
 
       const novoTime = new Time({
-        id,
         nome,
         foto: {
           data: fotoFile.buffer,
@@ -991,13 +961,13 @@ app.post(
 
       await novoTime.save();
       res.status(201).json({
-        id: novoTime.id,
+        _id: novoTime._id,
         nome: novoTime.nome,
       });
     } catch (error) {
       if (error.code === 11000) {
         return res.status(400).json({
-          message: "Erro: ID ou nome já existem",
+          message: "Erro: Nome já existe",
           error: error.keyValue,
         });
       }
@@ -1006,59 +976,9 @@ app.post(
   }
 );
 
-app.get("/times", async (req, res) => {
-  try {
-    const times = await Time.find().select("-foto.data -jogo.data");
-    res.status(200).json(times);
-  } catch (error) {
-    res.status(500).json({ message: "Erro ao buscar times", error });
-  }
-});
-
-app.delete("/admins/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Validação robusta do ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Formato de ID inválido",
-        receivedId: id,
-        expectedFormat: "ObjectId (24 caracteres hexadecimais)",
-      });
-    }
-
-    const result = await Admin.deleteOne({
-      _id: new mongoose.Types.ObjectId(id),
-    });
-
-    if (result.deletedCount === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Nenhum admin encontrado com este ID",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Admin excluído com sucesso",
-    });
-  } catch (error) {
-    console.error("Erro no backend:", {
-      message: error.message,
-      stack: error.stack,
-      receivedId: req.params.id,
-    });
-    res.status(500).json({
-      success: false,
-      message: "Erro interno no servidor",
-    });
-  }
-});
-
+// Rota para atualizar time
 app.put(
-  "/times/:id",
+  "/times/:_id",
   upload.fields([
     { name: "foto", maxCount: 1 },
     { name: "jogo", maxCount: 1 },
@@ -1086,8 +1006,8 @@ app.put(
         };
       }
 
-      const timeAtualizado = await Time.findOneAndUpdate(
-        { id: req.params.id },
+      const timeAtualizado = await Time.findByIdAndUpdate(
+        req.params._id,
         updateData,
         { new: true }
       ).select("-foto.data -jogo.data");
@@ -1109,11 +1029,11 @@ app.put(
   }
 );
 
-app.delete("/times/:id", async (req, res) => {
+// Rota para deletar time
+app.delete("/times/:_id", async (req, res) => {
   try {
-    // Verifica se existem jogadores associados
     const jogadoresDoTime = await Jogador.countDocuments({
-      "time.id": parseInt(req.params.id),
+      time: req.params._id,
     });
 
     if (jogadoresDoTime > 0) {
@@ -1123,7 +1043,7 @@ app.delete("/times/:id", async (req, res) => {
       });
     }
 
-    const timeRemovido = await Time.findOneAndDelete({ id: req.params.id });
+    const timeRemovido = await Time.findByIdAndDelete(req.params._id);
 
     if (!timeRemovido) {
       return res.status(404).json({ message: "Time não encontrado" });
@@ -1131,10 +1051,20 @@ app.delete("/times/:id", async (req, res) => {
 
     res.status(200).json({
       message: "Time removido com sucesso",
-      id: timeRemovido.id,
+      _id: timeRemovido._id,
     });
   } catch (error) {
     res.status(500).json({ message: "Erro ao remover time", error });
+  }
+});
+
+// Rota para listar todos os times
+app.get("/times", async (req, res) => {
+  try {
+    const times = await Time.find().select("-foto.data -jogo.data");
+    res.status(200).json(times);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao buscar times", error });
   }
 });
 
@@ -1545,8 +1475,9 @@ app.post("/admins", upload.single("foto"), async (req, res) => {
       success: true,
       admin: {
         ...novoAdmin.toObject(),
-        fotoUrl: `${req.protocol}://${req.get("host")}/admins/${novoAdmin._id
-          }/foto`,
+        fotoUrl: `${req.protocol}://${req.get("host")}/admins/${
+          novoAdmin._id
+        }/foto`,
         foto: undefined,
       },
     });
@@ -1611,8 +1542,9 @@ app.put("/admins/:id", upload.single("foto"), async (req, res) => {
       insta: updated.insta || undefined, // Envie undefined em vez de null
       twitter: updated.twitter || undefined,
       twitch: updated.twitch || undefined,
-      fotoUrl: `${req.protocol}://${req.get("host")}/admins/${updated._id
-        }/foto`,
+      fotoUrl: `${req.protocol}://${req.get("host")}/admins/${
+        updated._id
+      }/foto`,
     });
   } catch (error) {
     console.error("Erro na edição:", error);
@@ -1641,6 +1573,23 @@ app.get("/admins/:id/foto", async (req, res) => {
     res.status(500).send("Erro ao carregar imagem");
   }
 });
+
+app.delete("/admins/:id", async (req, res) => {
+  try {
+    const admin = await Admin.findByIdAndDelete(req.params.id);
+    if (!admin) {
+      return res.status(404).json({ message: "Admin não encontrado" });
+    }
+    console.log(`Admin removido: ${req.params.id}`);
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Erro ao remover admin:", error);
+    res
+      .status(500)
+      .json({ message: "Erro ao remover admin", error: error.message });
+  }
+});
+
 /////////////////////////////////////////////////////////////////////    API   ///////////////////////////////////////////////////////////////////////////////////////////////
 
 function authenticate(req, res, next) {
@@ -1653,14 +1602,14 @@ function authenticate(req, res, next) {
 
 const PORT = process.env.PORT || 3001;
 
-const trains = []; // Array vazio ou com dados de teste
+const trains = [];
 const modality = [];
 
-app.get('/trains/all', authenticate, (req, res) => {
-  res.json(trains); // Retorna array vazio ou dados de teste
+app.get("/trains/all", authenticate, (req, res) => {
+  res.json(trains);
 });
-app.get('/modality/all', authenticate, (req, res) => {
-  res.json(modality); // Retorna array vazio ou dados de teste
+app.get("/modality/all", authenticate, (req, res) => {
+  res.json(modality);
 });
 
 /////////////////////////////////////////////////////////////////////////  RELATORIOS  //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1846,19 +1795,6 @@ app.get("/auth/discord/callback", async (req, res) => {
   }
 });
 
-
-// Exporte o que os testes precisam
-module.exports = {
-  app,
-  Usuario,
-  Jogador,
-  Time,
-  Tournament,
-  Admin,
-  Ranking,
-  mongoose
-};
-
 ///////////////////////////////////////////////////////////////////////// HOME_NOVIDADE //////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Modelo da Novidade
@@ -1885,7 +1821,9 @@ app.get("/api/homeNovidade", async (req, res) => {
 
     // Converte a imagem para base64, se existir
     const imagemBase64 = novidade.imagem
-      ? `data:${novidade.imagemType};base64,${novidade.imagem.toString("base64")}`
+      ? `data:${novidade.imagemType};base64,${novidade.imagem.toString(
+          "base64"
+        )}`
       : null;
 
     res.json({
@@ -1919,7 +1857,11 @@ app.post("/api/homeNovidade", upload.single("imagem"), async (req, res) => {
       nomeBotao: nomeBotao || null,
       urlBotao: urlBotao || null,
       imagem: req.file ? req.file.buffer : novidade ? novidade.imagem : null,
-      imagemType: req.file ? req.file.mimetype : novidade ? novidade.imagemType : null,
+      imagemType: req.file
+        ? req.file.mimetype
+        : novidade
+        ? novidade.imagemType
+        : null,
     };
 
     if (novidade) {
@@ -1935,7 +1877,9 @@ app.post("/api/homeNovidade", upload.single("imagem"), async (req, res) => {
 
     // Converte a imagem para base64 para retorno
     const imagemBase64 = novidade.imagem
-      ? `data:${novidade.imagemType};base64,${novidade.imagem.toString("base64")}`
+      ? `data:${novidade.imagemType};base64,${novidade.imagem.toString(
+          "base64"
+        )}`
       : null;
 
     res.status(200).json({
@@ -1972,17 +1916,20 @@ const apresentacaoSchema = new mongoose.Schema({
 apresentacaoSchema.plugin(uniqueValidator);
 const Apresentacao = mongoose.model("Apresentacao", apresentacaoSchema);
 
-
 app.get("/api/apresentacao", async (req, res) => {
   try {
     const apresentacao = await Apresentacao.findOne();
     if (!apresentacao) {
-      return res.status(404).json({ message: "Nenhuma apresentação encontrada" });
+      return res
+        .status(404)
+        .json({ message: "Nenhuma apresentação encontrada" });
     }
 
     // Converte a imagem principal para base64
     const imagemBase64 = apresentacao.imagem
-      ? `data:${apresentacao.imagemType};base64,${apresentacao.imagem.toString("base64")}`
+      ? `data:${apresentacao.imagemType};base64,${apresentacao.imagem.toString(
+          "base64"
+        )}`
       : null;
 
     // Converte as imagens dos ícones para base64
@@ -2003,95 +1950,125 @@ app.get("/api/apresentacao", async (req, res) => {
   }
 });
 
-app.post("/api/apresentacao", upload.fields([{ name: "imagem" }, { name: "icones" }]), async (req, res) => {
-  try {
-    const {
-      titulo1,
-      titulo2,
-      descricao1,
-      descricao2,
-      botao1Nome,
-      botao1Link,
-      botao2Nome,
-      botao2Link,
-      icones: iconesJson,
-    } = req.body;
+app.post(
+  "/api/apresentacao",
+  upload.fields([{ name: "imagem" }, { name: "icones" }]),
+  async (req, res) => {
+    try {
+      const {
+        titulo1,
+        titulo2,
+        descricao1,
+        descricao2,
+        botao1Nome,
+        botao1Link,
+        botao2Nome,
+        botao2Link,
+        icones: iconesJson,
+      } = req.body;
 
-    // Validação básica
-    if (!titulo1 || !titulo2 || !descricao1 || !descricao2 || !botao1Nome || !botao1Link || !botao2Nome || !botao2Link) {
-      return res.status(400).json({ message: "Todos os campos são obrigatórios" });
+      // Validação básica
+      if (
+        !titulo1 ||
+        !titulo2 ||
+        !descricao1 ||
+        !descricao2 ||
+        !botao1Nome ||
+        !botao1Link ||
+        !botao2Nome ||
+        !botao2Link
+      ) {
+        return res
+          .status(400)
+          .json({ message: "Todos os campos são obrigatórios" });
+      }
+
+      // Parseia os ícones enviados como JSON
+      const iconesParsed = JSON.parse(iconesJson);
+
+      // Verifica se já existe uma apresentação
+      let apresentacao = await Apresentacao.findOne();
+
+      // Processa a imagem principal
+      const imagemFile = req.files["imagem"] ? req.files["imagem"][0] : null;
+      const imagemBuffer = imagemFile
+        ? imagemFile.buffer
+        : apresentacao
+        ? apresentacao.imagem
+        : null;
+      const imagemType = imagemFile
+        ? imagemFile.mimetype
+        : apresentacao
+        ? apresentacao.imagemType
+        : null;
+
+      // Processa as imagens dos ícones
+      const iconesFiles = req.files["icones"] || [];
+      const iconesData = iconesParsed.map((icone, index) => ({
+        id: icone.id,
+        imagem: iconesFiles[index]
+          ? iconesFiles[index].buffer
+          : apresentacao?.icones[index]?.imagem || null,
+        imagemType: iconesFiles[index]
+          ? iconesFiles[index].mimetype
+          : apresentacao?.icones[index]?.imagemType || null,
+        link: icone.link,
+      }));
+
+      const apresentacaoData = {
+        titulo1,
+        titulo2,
+        descricao1,
+        descricao2,
+        botao1Nome,
+        botao1Link,
+        botao2Nome,
+        botao2Link,
+        imagem: imagemBuffer,
+        imagemType,
+        icones: iconesData,
+      };
+
+      if (apresentacao) {
+        // Atualiza a apresentação existente
+        apresentacao = await Apresentacao.findOneAndUpdate(
+          {},
+          apresentacaoData,
+          { new: true }
+        );
+      } else {
+        // Cria uma nova apresentação
+        apresentacao = new Apresentacao(apresentacaoData);
+        await apresentacao.save();
+      }
+
+      // Converte a imagem principal para base64 para retorno
+      const imagemBase64 = apresentacao.imagem
+        ? `data:${
+            apresentacao.imagemType
+          };base64,${apresentacao.imagem.toString("base64")}`
+        : null;
+
+      // Converte as imagens dos ícones para base64 para retorno
+      const iconesComBase64 = apresentacao.icones.map((icone) => ({
+        ...icone._doc,
+        imagem: icone.imagem
+          ? `data:${icone.imagemType};base64,${icone.imagem.toString("base64")}`
+          : null,
+      }));
+
+      res.status(200).json({
+        ...apresentacao._doc,
+        imagem: imagemBase64,
+        icones: iconesComBase64,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao salvar apresentação", error });
     }
-
-    // Parseia os ícones enviados como JSON
-    const iconesParsed = JSON.parse(iconesJson);
-
-    // Verifica se já existe uma apresentação
-    let apresentacao = await Apresentacao.findOne();
-
-    // Processa a imagem principal
-    const imagemFile = req.files["imagem"] ? req.files["imagem"][0] : null;
-    const imagemBuffer = imagemFile ? imagemFile.buffer : apresentacao ? apresentacao.imagem : null;
-    const imagemType = imagemFile ? imagemFile.mimetype : apresentacao ? apresentacao.imagemType : null;
-
-    // Processa as imagens dos ícones
-    const iconesFiles = req.files["icones"] || [];
-    const iconesData = iconesParsed.map((icone, index) => ({
-      id: icone.id,
-      imagem: iconesFiles[index] ? iconesFiles[index].buffer : apresentacao?.icones[index]?.imagem || null,
-      imagemType: iconesFiles[index] ? iconesFiles[index].mimetype : apresentacao?.icones[index]?.imagemType || null,
-      link: icone.link,
-    }));
-
-    const apresentacaoData = {
-      titulo1,
-      titulo2,
-      descricao1,
-      descricao2,
-      botao1Nome,
-      botao1Link,
-      botao2Nome,
-      botao2Link,
-      imagem: imagemBuffer,
-      imagemType,
-      icones: iconesData,
-    };
-
-    if (apresentacao) {
-      // Atualiza a apresentação existente
-      apresentacao = await Apresentacao.findOneAndUpdate({}, apresentacaoData, { new: true });
-    } else {
-      // Cria uma nova apresentação
-      apresentacao = new Apresentacao(apresentacaoData);
-      await apresentacao.save();
-    }
-
-    // Converte a imagem principal para base64 para retorno
-    const imagemBase64 = apresentacao.imagem
-      ? `data:${apresentacao.imagemType};base64,${apresentacao.imagem.toString("base64")}`
-      : null;
-
-    // Converte as imagens dos ícones para base64 para retorno
-    const iconesComBase64 = apresentacao.icones.map((icone) => ({
-      ...icone._doc,
-      imagem: icone.imagem
-        ? `data:${icone.imagemType};base64,${icone.imagem.toString("base64")}`
-        : null,
-    }));
-
-    res.status(200).json({
-      ...apresentacao._doc,
-      imagem: imagemBase64,
-      icones: iconesComBase64,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Erro ao salvar apresentação", error });
   }
-});
-
-
+);
 
 //////////////////////////////////////////////////////////////////////////HOME_INFORMACOES////////////////////////////////////////////////////////
-
 
 // Middleware
 app.use(cors());
@@ -2108,110 +2085,281 @@ const cardHomeSchema = mongoose.Schema({
   },
 });
 
-const CardHome = mongoose.model('Card', cardHomeSchema);
+const CardHome = mongoose.model("Card", cardHomeSchema);
 
 // Rota para buscar todos os cards
-router.get('/', async (req, res) => {
+cardsRouter.get("/", async (req, res) => {
   try {
-    const cards = await CardHome.find().select('titulo descricao icone');
-    const formattedCards = cards.map(card => ({
+    const cards = await CardHome.find().select("titulo descricao icone");
+    const formattedCards = cards.map((card) => ({
       _id: card._id,
       titulo: card.titulo,
       descricao: card.descricao,
       icone: card.icone
         ? {
             contentType: card.icone.contentType,
-            data: card.icone.data.toString('base64'),
+            data: card.icone.data.toString("base64"),
             nomeOriginal: card.icone.nomeOriginal,
           }
         : null,
     }));
     res.status(200).json(formattedCards);
   } catch (error) {
-    console.error('Erro ao buscar cards:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor.' });
+    console.error("Erro ao buscar cards:", error);
+    res
+      .status(500)
+      .json({ success: false, error: "Erro interno do servidor." });
   }
 });
 
 // Rota para atualizar um card
-router.put('/:id', upload.single('icone'), [
-  body('titulo').trim().notEmpty().withMessage('O título é obrigatório'),
-  body('descricao').trim().notEmpty().withMessage('A descrição é obrigatória'),
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
-    }
+cardsRouter.put(
+  "/:id",
+  upload.single("icone"),
+  [
+    body("titulo").trim().notEmpty().withMessage("O título é obrigatório"),
+    body("descricao")
+      .trim()
+      .notEmpty()
+      .withMessage("A descrição é obrigatória"),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+      }
 
-    const { id } = req.params;
-    const updateData = {
-      titulo: req.body.titulo?.trim(),
-      descricao: req.body.descricao?.trim(),
-    };
-
-    if (req.file) {
-      updateData.icone = {
-        data: req.file.buffer,
-        contentType: req.file.mimetype,
-        nomeOriginal: req.file.originalname,
+      const { id } = req.params;
+      const updateData = {
+        titulo: req.body.titulo?.trim(),
+        descricao: req.body.descricao?.trim(),
       };
+
+      if (req.file) {
+        updateData.icone = {
+          data: req.file.buffer,
+          contentType: req.file.mimetype,
+          nomeOriginal: req.file.originalname,
+        };
+      }
+
+      const updated = await CardHome.findByIdAndUpdate(
+        id,
+        { $set: updateData },
+        { new: true, runValidators: true }
+      );
+
+      if (!updated) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Card não encontrado" });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Card atualizado com sucesso!",
+        card: {
+          _id: updated._id,
+          titulo: updated.titulo,
+          descricao: updated.descricao,
+          icone: updated.icone
+            ? {
+                contentType: updated.icone.contentType,
+                nomeOriginal: updated.icone.nomeOriginal,
+                iconeUrl: `${req.protocol}://${req.get("host")}/cards/${
+                  updated._id
+                }/icone`,
+              }
+            : undefined,
+        },
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar card:", error);
+      res.status(500).json({ success: false, error: error.message });
     }
-
-    const updated = await CardHome.findByIdAndUpdate(
-      id,
-      { $set: updateData },
-      { new: true, runValidators: true }
-    );
-
-    if (!updated) {
-      return res.status(404).json({ success: false, message: 'Card não encontrado' });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Card atualizado com sucesso!',
-      card: {
-        _id: updated._id,
-        titulo: updated.titulo,
-        descricao: updated.descricao,
-        icone: updated.icone
-          ? {
-              contentType: updated.icone.contentType,
-              nomeOriginal: updated.icone.nomeOriginal,
-              iconeUrl: `${req.protocol}://${req.get('host')}/cards/${updated._id}/icone`,
-            }
-          : undefined,
-      },
-    });
-  } catch (error) {
-    console.error('Erro ao atualizar card:', error);
-    res.status(500).json({ success: false, error: error.message });
   }
-});
+);
 
 // Rota para servir a imagem do ícone
-router.get('/:id/icone', async (req, res) => {
+cardsRouter.get("/:id/icone", async (req, res) => {
   try {
     const card = await CardHome.findById(req.params.id);
     if (!card || !card.icone) {
-      return res.status(404).json({ success: false, message: 'Ícone não encontrado' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Ícone não encontrado" });
     }
 
-    res.set('Content-Type', card.icone.contentType);
+    res.set("Content-Type", card.icone.contentType);
     res.send(card.icone.data);
   } catch (error) {
-    console.error('Erro ao buscar ícone:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor.' });
+    console.error("Erro ao buscar ícone:", error);
+    res
+      .status(500)
+      .json({ success: false, error: "Erro interno do servidor." });
   }
 });
 
 // Usando o router para as rotas com prefixo '/cards'
-app.use('/cards', router);
+app.use("/cards", cardsRouter);
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Definindo o esquema e modelo de politicas
+const politicasRouter = express.Router();
+const politicasSchema = mongoose.Schema({
+  titulo: { type: String, required: true },
+  descricao: { type: String },
+});
 
+const Politicas = mongoose.model("Politicas", politicasSchema);
+
+// Rota para buscar todas as politicas
+politicasRouter.get("/", async (req, res) => {
+  try {
+    const politicas = await Politicas.find().select("titulo descricao");
+    res.status(200).json({ success: true, politicas });
+  } catch (error) {
+    console.error("Erro ao buscar políticas:", error);
+    res
+      .status(500)
+      .json({ success: false, error: "Erro interno do servidor." });
+  }
+});
+
+// Rota para atualizar uma política
+politicasRouter.put(
+  "/:id",
+  [body("titulo").trim().notEmpty().withMessage("O título é obrigatório")],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+      }
+
+      const { id } = req.params;
+      if (!mongoose.isValidObjectId(id)) {
+        return res.status(400).json({ success: false, message: "ID inválido" });
+      }
+
+      const updateData = {
+        titulo: req.body.titulo.trim(),
+        descricao: req.body.descricao.trim(),
+      };
+
+      const updated = await Politicas.findByIdAndUpdate(
+        id,
+        { $set: updateData },
+        { new: true, runValidators: true }
+      );
+
+      if (!updated) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Política não encontrada" });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Política atualizada com sucesso!",
+        politica: {
+          _id: updated._id,
+          titulo: updated.titulo,
+          descricao: updated.descricao,
+        },
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar política:", error);
+      res
+        .status(500)
+        .json({ success: false, error: "Erro interno do servidor." });
+    }
+  }
+);
+
+// Rota para criar uma nova política
+politicasRouter.post(
+  "/",
+  [body("titulo").trim().notEmpty().withMessage("O título é obrigatório")],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+      }
+
+      const novaPolitica = new Politicas({
+        titulo: req.body.titulo.trim(),
+        descricao: req.body.descricao.trim(),
+      });
+
+      const saved = await novaPolitica.save();
+      res.status(201).json({
+        success: true,
+        message: "Política criada com sucesso!",
+        politica: {
+          _id: saved._id,
+          titulo: saved.titulo,
+          descricao: saved.descricao,
+        },
+      });
+    } catch (error) {
+      console.error("Erro ao criar política:", error);
+      res
+        .status(500)
+        .json({ success: false, error: "Erro interno do servidor." });
+    }
+  }
+);
+
+// Rota para excluir uma política
+politicasRouter.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: "ID inválido" });
+    }
+
+    const deleted = await Politicas.findByIdAndDelete(id);
+    if (!deleted) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Política não encontrada" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Política excluída com sucesso!",
+    });
+  } catch (error) {
+    console.error("Erro ao excluir política:", error);
+    res
+      .status(500)
+      .json({ success: false, error: "Erro interno do servidor." });
+  }
+});
+
+// Usando o router para as rotas com prefixo '/politicas'
+app.use("/politicas", politicasRouter);
+
+// Exporte o que os testes precisam
+module.exports = {
+  app,
+  Usuario,
+  Jogador,
+  Time,
+  Tournament,
+  Admin,
+  Ranking,
+  mongoose,
+  Novidade,
+  Apresentacao,
+  Politicas,
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Só inicia os servidores se NÃO estiver em ambiente de teste
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== "test") {
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
     console.log(`CORS configurado para: http://localhost:5173`);
@@ -2230,12 +2378,3 @@ if (process.env.NODE_ENV !== 'test') {
     }
   });
 }
-
-
-
-
-
-
-
-
-

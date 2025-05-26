@@ -7,7 +7,6 @@ describe('Modelo Jogador', () => {
   beforeAll(async () => {
     // Cria um time de teste para associar aos jogadores
     timeTeste = await Time.create({
-      id: 999,
       nome: 'Time de Teste para Jogadores'
     });
   });
@@ -25,7 +24,7 @@ describe('Modelo Jogador', () => {
       nome: 'Jogador de Teste',
       titulo: 'Título do Jogador',
       descricao: 'Descrição do jogador',
-      time: timeTeste.id
+      time: timeTeste._id
     };
 
     const jogador = await Jogador.create(jogadorData);
@@ -34,7 +33,7 @@ describe('Modelo Jogador', () => {
     expect(jogador.nome).toBe(jogadorData.nome);
     expect(jogador.titulo).toBe(jogadorData.titulo);
     expect(jogador.descricao).toBe(jogadorData.descricao);
-    expect(jogador.time).toBe(timeTeste.id);
+    expect(jogador.time.toString()).toBe(timeTeste._id.toString());
     expect(jogador.createdAt).toBeInstanceOf(Date);
   });
 
@@ -42,7 +41,7 @@ describe('Modelo Jogador', () => {
     const jogadorData = {
       titulo: 'Título sem nome',
       descricao: 'Descrição sem nome',
-      time: timeTeste.id
+      time: timeTeste._id
     };
 
     await expect(Jogador.create(jogadorData))
@@ -67,7 +66,7 @@ describe('Modelo Jogador', () => {
       nome: 'Jogador com redes sociais',
       titulo: 'Título do jogador',
       descricao: 'Descrição do jogador',
-      time: timeTeste.id,
+      time: timeTeste._id,
       insta: 'instagram_user',
       twitter: 'twitter_user',
       twitch: 'twitch_user'
@@ -79,14 +78,15 @@ describe('Modelo Jogador', () => {
     expect(jogador.twitter).toBe(jogadorData.twitter);
     expect(jogador.twitch).toBe(jogadorData.twitch);
   });
+
   it('deve aceitar foto como Buffer', async () => {
-    const mockImage = Buffer.from('../../src/assets/images/cs2.jpg, base64');
+    const mockImage = Buffer.from('mock-image-data'); // Ajustado para evitar erro de base64 inválido
 
     const jogadorData = {
       nome: 'Jogador com Foto',
       titulo: 'Título do Jogador',
       descricao: 'Descrição do jogador',
-      time: timeTeste.id,
+      time: timeTeste._id,
       foto: {
         data: mockImage,
         contentType: 'image/png',
@@ -96,7 +96,6 @@ describe('Modelo Jogador', () => {
 
     const jogador = await Jogador.create(jogadorData);
 
-    // Verificações robustas:
     expect(jogador.foto).toBeDefined();
     expect(Buffer.isBuffer(jogador.foto.data)).toBe(true);
     expect(jogador.foto.data.toString()).toBe(mockImage.toString());

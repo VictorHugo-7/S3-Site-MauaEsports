@@ -8,7 +8,7 @@ const ChannelTags = ({ tags }) => (
     {tags.map((tag, index) => (
       <span
         key={index}
-        className="bg-purple-900 text-purple-200 text-xs px-2 py-1 rounded"
+        className="custom-tag bg-purple-900 text-purple-200 text-xs px-2 py-1 rounded"
       >
         {tag}
       </span>
@@ -38,18 +38,18 @@ const ChannelInfo = ({ channel }) => (
       </p>
 
       <div className="space-y-3">
-        <div className="flex items-center text-gray-400">
-          <Users size={18} className="mr-2" />
+        <div className="flex items-center text-gray-400 custom-icon-container">
+          <Users size={18} className="mr-2 custom-icon" />
           <span>Seja um de nós, seja um tigre!</span>
         </div>
 
-        <div className="flex items-center text-gray-400">
-          <Heart size={18} className="mr-2" />
+        <div className="flex items-center text-gray-400 custom-icon-container">
+          <Heart size={18} className="mr-2 custom-icon" />
           <span>A preferida da Mauá</span>
         </div>
 
-        <div className="flex items-center text-gray-400">
-          <Calendar size={18} className="mr-2" />
+        <div className="flex items-center text-gray-400 custom-icon-container">
+          <Calendar size={18} className="mr-2 custom-icon" />
           <span>Transmite campeonatos frequentemente</span>
         </div>
 
@@ -63,9 +63,9 @@ const ChannelInfo = ({ channel }) => (
       href="https://www.twitch.tv/mauaesports"
       target="_blank"
       rel="noopener noreferrer"
-      className="mt-6 flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+      className="custom-button twitch-button mt-6 flex items-center justify-center"
     >
-      <ExternalLink size={18} className="mr-2" />
+      <ExternalLink size={18} className="mr-2 custom-icon" />
       Acessar o Canal na Twitch
     </a>
   </div>

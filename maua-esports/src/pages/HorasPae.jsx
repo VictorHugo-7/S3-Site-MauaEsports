@@ -145,7 +145,7 @@ function HorasPaePage() {
     const rankIndex = getCurrentRank(hours);
     if (rankIndex <= 0) return null; // Sem rank para menos de 1h
     if (rankIndex >= ranks.length) return ranks[ranks.length - 1]; // Se ultrapassar, pega o último
-    return ranks[rankIndex -1]; // Retorna o rank correspondente
+    return ranks[rankIndex - 1]; // Retorna o rank correspondente
   };
 
   const generateExcel = async () => {
@@ -587,8 +587,10 @@ function HorasPaePage() {
       : modalityPlayers[selectedModalityId] || [];
 
   return (
-    <div className="bg-[#0D1117] min-h-screen flex flex-col  text-white"
-    onMouseMove={handleMouseMove}>
+    <div
+      className="bg-[#0D1117] min-h-screen flex flex-col  text-white"
+      onMouseMove={handleMouseMove}
+    >
       <div className="bg-[#010409] h-[104px]"></div>
       <PageBanner
         pageName={`Horas PAEs - ${
