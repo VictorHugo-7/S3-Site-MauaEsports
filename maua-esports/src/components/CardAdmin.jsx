@@ -5,6 +5,7 @@ import { RiTwitterXFill } from "react-icons/ri";
 import { IoLogoTwitch } from "react-icons/io";
 import DeletarBtn from "./DeletarBtn";
 import EditarBtn from "./EditarBtn";
+import ModalConfirmarExclusao from "./modalConfirmarExclusao";
 
 const CardAdmin = ({
   adminId,
@@ -23,7 +24,7 @@ const CardAdmin = ({
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const hasSocialMedia = instagram || twitter || twitch;
   const isAdmin = ["Administrador", "Administrador Geral"].includes(userRole);
-  const defaultFoto = "/path/to/default-admin.jpg"; // Substitua pelo caminho real
+  const defaultFoto = "/path/to/default-admin.jpg";
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const MAX_DESC_CHARS = 85;
@@ -57,17 +58,21 @@ const CardAdmin = ({
     }
   };
 
-  const handleDelete = (e) => {
+  const handleDeleteClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    setShowConfirmModal(true);
+  };
 
-    const isConfirmed = window.confirm(
-      `Tem certeza que deseja deletar o admin ${nome}?`
-    );
-
-    if (isConfirmed && onDelete) {
+  const confirmDelete = () => {
+    if (onDelete) {
       onDelete(adminId);
     }
+    setShowConfirmModal(false);
+  };
+
+  const cancelDelete = () => {
+    setShowConfirmModal(false);
   };
 
   return (
@@ -156,7 +161,7 @@ const CardAdmin = ({
                   />
                   <DeletarBtn
                     itemId={adminId}
-                    onDelete={handleDelete}
+                    onDelete={handleDeleteClick}
                     tipo="admin"
                     role="button"
                     aria-label={`Deletar administrador ${nome}`}
@@ -168,26 +173,13 @@ const CardAdmin = ({
         </div>
       </div>
 
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-4 rounded">
-            <p>Tem certeza que deseja deletar o admin {nome}?</p>
-            <button
-              onClick={confirmDelete}
-              className="bg-red-500 text-white p-2 mr-2"
-            >
-              Confirmar
-            </button>
-            <button
-              onClick={() => setShowConfirmModal(false)}
-              className="bg-gray-500 text-white p-2"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
-      {/* Adicione o tooltip no final do componente */}
+      <ModalConfirmarExclusao
+        isOpen={showConfirmModal}
+        mensagem={`Tem certeza que deseja deletar o admin ${nome}?`}
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
+
       {showTooltip && (
         <div
           className="fixed bg-black text-white p-2 rounded text-sm max-w-xs z-50 pointer-events-none"

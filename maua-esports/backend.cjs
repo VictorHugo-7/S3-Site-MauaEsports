@@ -149,37 +149,55 @@ const usuarioSchema = mongoose.Schema({
     required: true,
     unique: true,
     validate: {
-      validator: (v) => /^([0-9]{2}\.[0-9]{5}-[0-9]{1}|esports)@maua\.br$/.test(v),
-      message: (props) => `${props.value} não é um email válido!`,
+      validator: function (v) {
+        const emailRegex = /^([0-9]{2}\.[0-9]{5}-[0-9]{1}|esports)@maua\.br$/;
+        return emailRegex.test(v);
+      },
+      message: (props) =>
+        `${props.value} não é um email válido! O formato deve ser XX.XXXXX-Y@maua.br (ex: 24.00086-8@maua.br)`,
     },
   },
   discordID: {
     type: String,
+    required: false,
     sparse: true,
     validate: {
-      validator: async function (v) {
-        if (!v) return true; 
-        const existing = await mongoose.model('Usuario').findOne({ discordID: v, _id: { $ne: this._id } });
-        return !existing; 
+      validator: async function (value) {
+        if (!value) return true;
+        const existingUser = await mongoose.model("Usuario").findOne({
+          discordID: value,
+        });
+        return !existingUser || (this._id && existingUser._id.equals(this._id));
       },
-      message: 'DiscordID já está em uso',
+      message: (props) => `O discordID ${props.value} já está em uso.`,
     },
   },
-  fotoPerfil: { data: Buffer, contentType: String, nomeOriginal: String },
+  fotoPerfil: {
+    data: { type: Buffer, required: false },
+    contentType: { type: String, required: false },
+    nomeOriginal: { type: String, required: false },
+  },
   tipoUsuario: {
     type: String,
     required: true,
     enum: ["Administrador Geral", "Administrador", "Capitão de time", "Jogador"],
     default: "Jogador",
   },
-  time: String,
-  createdAt: { type: Date, default: Date.now },
+  time: {
+    type: String,
+    required: false,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 
 usuarioSchema.plugin(uniqueValidator, {
   message: "O {PATH} {VALUE} já está em uso.",
 });
+
 const Usuario = mongoose.model("Usuario", usuarioSchema);
 
 ///////////////////////////////////////////////////////////////////////////////AREA DE USUÁRIOS ////////////////////////////////////////////////////////////////////
@@ -1704,14 +1722,16 @@ async function getUserId(accessToken) {
         Authorization: `Bearer ${accessToken}`,
       },
     });
-    return response.data.id; // Retorna apenas o ID do usuário
+    return response.data.id;
   } catch (error) {
-    console.error("Erro ao obter ID do usuário:", error.response?.data);
+    console.error(
+      "Erro ao obter ID do usuário:",
+      error.response?.data || error.message
+    );
     throw error;
   }
 }
 
-// Endpoint para lidar com o callback do Discord
 app.get("/auth/discord/callback", async (req, res) => {
   const { code, state } = req.query;
 
@@ -1725,10 +1745,9 @@ app.get("/auth/discord/callback", async (req, res) => {
 
   let userId, returnUrl;
   try {
-    // Decodificar e parsear o state
     const stateObj = JSON.parse(decodeURIComponent(state));
     userId = stateObj.userId;
-    returnUrl = stateObj.returnUrl || "/"; // Fallback para a página inicial
+    returnUrl = stateObj.returnUrl || "/";
   } catch (error) {
     console.error("Erro ao parsear state:", error);
     return res.status(400).send("State inválido");
@@ -1739,7 +1758,6 @@ app.get("/auth/discord/callback", async (req, res) => {
   }
 
   try {
-    // Trocar o code por access_token
     const tokenResponse = await axios.post(
       "https://discord.com/api/oauth2/token",
       new URLSearchParams({
@@ -1757,11 +1775,8 @@ app.get("/auth/discord/callback", async (req, res) => {
     );
 
     const { access_token } = tokenResponse.data;
-
-    // Obter o discordID
     const discordID = await getUserId(access_token);
 
-    // Atualizar o documento do usuário
     const usuario = await Usuario.findByIdAndUpdate(
       userId,
       { discordID },
@@ -1772,7 +1787,6 @@ app.get("/auth/discord/callback", async (req, res) => {
       return res.status(404).send("Usuário não encontrado");
     }
 
-    // Redirecionar para a página original com discordLinked=true
     const redirectUrl = `http://localhost:5173${returnUrl}?discordLinked=true`;
     res.redirect(redirectUrl);
   } catch (error) {
@@ -1938,7 +1952,7 @@ app.get("/api/apresentacao", async (req, res) => {
 
 app.post(
   "/api/apresentacao",
-  upload.fields([{ name: "imagem" }, { name: "icones" }]),
+  upload.fields([{ name: "imagem", maxCount: 1 }, { name: "icones", maxCount: 5 }]),
   async (req, res) => {
     try {
       const {
@@ -1990,16 +2004,24 @@ app.post(
 
       // Processa as imagens dos ícones
       const iconesFiles = req.files["icones"] || [];
-      const iconesData = iconesParsed.map((icone, index) => ({
-        id: icone.id,
-        imagem: iconesFiles[index]
-          ? iconesFiles[index].buffer
-          : apresentacao?.icones[index]?.imagem || null,
-        imagemType: iconesFiles[index]
-          ? iconesFiles[index].mimetype
-          : apresentacao?.icones[index]?.imagemType || null,
-        link: icone.link,
-      }));
+      const existingIcones = apresentacao ? apresentacao.icones : [];
+
+      // Mapear os ícones, preservando os existentes e atualizando apenas os modificados
+      const iconesData = iconesParsed.map((icone, index) => {
+        const newImageFile = iconesFiles[index]; // Imagem nova, se enviada
+        const existingIcon = existingIcones.find((ei) => ei.id === icone.id);
+
+        return {
+          id: icone.id,
+          link: icone.link,
+          imagem:
+            newImageFile?.buffer ||
+            (icone.imagem && !newImageFile ? existingIcon?.imagem : null), // Usa a imagem nova ou mantém a existente
+          imagemType:
+            newImageFile?.mimetype ||
+            (icone.imagem && !newImageFile ? existingIcon?.imagemType : null),
+        };
+      });
 
       const apresentacaoData = {
         titulo1,
@@ -2049,6 +2071,7 @@ app.post(
         icones: iconesComBase64,
       });
     } catch (error) {
+      console.error("Erro ao salvar apresentação:", error);
       res.status(500).json({ message: "Erro ao salvar apresentação", error });
     }
   }

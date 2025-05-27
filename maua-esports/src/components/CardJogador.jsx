@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect } from "react"; // Adicione useRef aqui
+import React, { useState, useRef, useEffect } from "react";
 import { FaInstagram } from "react-icons/fa";
 import { RiTwitterXFill } from "react-icons/ri";
 import { IoLogoTwitch } from "react-icons/io";
 import DeletarBtn from "./DeletarBtn";
 import EditarBtn from "./EditarBtn";
 import EditarJogador from "./ModalEditarJogador";
+import ModalConfirmarExclusao from "./modalConfirmarExclusao";
 import PropTypes from "prop-types";
 
 const CardJogador = ({
@@ -28,7 +29,7 @@ const CardJogador = ({
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [isTruncated, setIsTruncated] = useState(false);
   const descRef = useRef(null);
-  const MAX_CHARACTERS = 85; // Número de caracteres antes de truncar
+  const MAX_CHARACTERS = 85;
 
   const hasSocialMedia = instagram || twitter || twitch;
   const isAdmin = ["Administrador", "Administrador Geral"].includes(userRole);
@@ -57,9 +58,9 @@ const CardJogador = ({
         return link;
     }
   };
-  // Função segura para truncar o texto
+
   const truncateText = (text) => {
-    if (!text) return ""; // Se text for undefined/null, retorna string vazia
+    if (!text) return "";
     return text.length > MAX_CHARACTERS
       ? `${text.substring(0, MAX_CHARACTERS)}...`
       : text;
@@ -70,17 +71,21 @@ const CardJogador = ({
     setIsModalOpen(false);
   };
 
-  const handleDelete = (e) => {
+  const handleDeleteClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    setShowConfirmModal(true);
+  };
 
-    const isConfirmed = window.confirm(
-      `Tem certeza que deseja deletar o jogador ${nome}?`
-    );
-
-    if (isConfirmed && onDelete) {
+  const confirmDelete = () => {
+    if (onDelete) {
       onDelete(jogadorId);
     }
+    setShowConfirmModal(false);
+  };
+
+  const cancelDelete = () => {
+    setShowConfirmModal(false);
   };
 
   const handleMouseMove = (e) => {
@@ -152,7 +157,6 @@ const CardJogador = ({
                     href={normalizeSocialLink(instagram, "instagram")}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label={`Visitar Instagram de ${nome}`}
                   >
                     <FaInstagram className="cursor-pointer hover:scale-110 hover:text-azul-escuro transition-transform duration-300" />
                   </a>
@@ -162,7 +166,6 @@ const CardJogador = ({
                     href={normalizeSocialLink(twitter, "twitter")}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label={`Visitar Twitter de ${nome}`}
                   >
                     <RiTwitterXFill className="cursor-pointer hover:scale-110 hover:text-azul-escuro transition-transform duration-300" />
                   </a>
@@ -172,7 +175,6 @@ const CardJogador = ({
                     href={normalizeSocialLink(twitch, "twitch")}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label={`Visitar Twitch de ${nome}`}
                   >
                     <IoLogoTwitch className="cursor-pointer hover:scale-110 hover:text-azul-escuro transition-transform duration-300" />
                   </a>
@@ -183,14 +185,12 @@ const CardJogador = ({
                   <EditarBtn
                     onClick={() => setIsModalOpen(true)}
                     role="button"
-                    aria-label={`Editar jogador ${nome}`}
                   />
                   <DeletarBtn
                     itemId={jogadorId}
-                    onDelete={handleDelete}
+                    onDelete={handleDeleteClick}
                     tipo="jogador"
                     role="button"
-                    aria-label={`Deletar jogador ${nome}`}
                   />
                 </div>
               )}
@@ -216,25 +216,12 @@ const CardJogador = ({
         />
       )}
 
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-4 rounded">
-            <p>Tem certeza que deseja deletar o jogador {nome}?</p>
-            <button
-              onClick={confirmDelete}
-              className="bg-red-500 text-white p-2 mr-2"
-            >
-              Confirmar
-            </button>
-            <button
-              onClick={() => setShowConfirmModal(false)}
-              className="bg-gray-500 text-white p-2"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
+      <ModalConfirmarExclusao
+        isOpen={showConfirmModal}
+        mensagem={`Tem certeza que deseja deletar o jogador ${nome}?`}
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
 
       {showTooltip && (
         <div
