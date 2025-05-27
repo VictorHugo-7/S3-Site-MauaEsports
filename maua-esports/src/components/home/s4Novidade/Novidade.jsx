@@ -116,6 +116,7 @@ const Novidade = () => {
             src={novidadeData.imagem}
             alt={novidadeData.titulo}
             className="w-[300px] lg:w-[500px] rounded-[10px] hover:scale-101 transition-transform duration-300 ease-in-out"
+            loading="lazy"
           />
         </div>
 

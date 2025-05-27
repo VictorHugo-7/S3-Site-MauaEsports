@@ -160,15 +160,13 @@ const usuarioSchema = new mongoose.Schema({
   discordID: {
     type: String,
     required: false,
-    sparse: true, // Keep sparse to avoid indexing null values
+    sparse: true,
     validate: {
       validator: async function (value) {
-        // Skip validation if discordID is null or undefined
         if (!value) return true;
-
-        // Check if a document with the same discordID already exists
-        const existingUser = await this.constructor.findOne({ discordID: value });
-        // Return true if no other document exists or if the document is the same as the current one
+        const existingUser = await mongoose.model("Usuario").findOne({
+          discordID: value,
+        });
         return !existingUser || (this._id && existingUser._id.equals(this._id));
       },
       message: (props) => `O discordID ${props.value} já está em uso.`,
@@ -203,6 +201,7 @@ const usuarioSchema = new mongoose.Schema({
 usuarioSchema.plugin(uniqueValidator, {
   message: "O {PATH} {VALUE} já está em uso.",
 });
+
 const Usuario = mongoose.model("Usuario", usuarioSchema);
 
 ///////////////////////////////////////////////////////////////////////////////AREA DE USUÁRIOS ////////////////////////////////////////////////////////////////////
@@ -1728,14 +1727,16 @@ async function getUserId(accessToken) {
         Authorization: `Bearer ${accessToken}`,
       },
     });
-    return response.data.id; // Retorna apenas o ID do usuário
+    return response.data.id;
   } catch (error) {
-    console.error("Erro ao obter ID do usuário:", error.response?.data);
+    console.error(
+      "Erro ao obter ID do usuário:",
+      error.response?.data || error.message
+    );
     throw error;
   }
 }
 
-// Endpoint para lidar com o callback do Discord
 app.get("/auth/discord/callback", async (req, res) => {
   const { code, state } = req.query;
 
@@ -1749,10 +1750,9 @@ app.get("/auth/discord/callback", async (req, res) => {
 
   let userId, returnUrl;
   try {
-    // Decodificar e parsear o state
     const stateObj = JSON.parse(decodeURIComponent(state));
     userId = stateObj.userId;
-    returnUrl = stateObj.returnUrl || "/"; // Fallback para a página inicial
+    returnUrl = stateObj.returnUrl || "/";
   } catch (error) {
     console.error("Erro ao parsear state:", error);
     return res.status(400).send("State inválido");
@@ -1763,7 +1763,6 @@ app.get("/auth/discord/callback", async (req, res) => {
   }
 
   try {
-    // Trocar o code por access_token
     const tokenResponse = await axios.post(
       "https://discord.com/api/oauth2/token",
       new URLSearchParams({
@@ -1781,11 +1780,8 @@ app.get("/auth/discord/callback", async (req, res) => {
     );
 
     const { access_token } = tokenResponse.data;
-
-    // Obter o discordID
     const discordID = await getUserId(access_token);
 
-    // Atualizar o documento do usuário
     const usuario = await Usuario.findByIdAndUpdate(
       userId,
       { discordID },
@@ -1796,7 +1792,6 @@ app.get("/auth/discord/callback", async (req, res) => {
       return res.status(404).send("Usuário não encontrado");
     }
 
-    // Redirecionar para a página original com discordLinked=true
     const redirectUrl = `http://localhost:5173${returnUrl}?discordLinked=true`;
     res.redirect(redirectUrl);
   } catch (error) {
