@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useMsal } from "@azure/msal-react";
 import Board from "../components/campeonatos/Board";
 import CardModal from "../components/campeonatos/CardModal";
+import ModalConfirmarExclusao from "../components/modalConfirmarExclusao";
 import PageBanner from "../components/PageBanner";
 import { useNavigate } from "react-router-dom";
 import AlertaOk from "../components/AlertaOk";
@@ -23,10 +24,15 @@ const Campeonatos = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null); // State for success messages
-  const [errorMessage, setErrorMessage] = useState(null); // State for error messages
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
   const [userRole, setUserRole] = useState("");
   const [authChecked, setAuthChecked] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [cardToDelete, setCardToDelete] = useState({
+    columnId: null,
+    cardIndex: null,
+  });
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -63,7 +69,7 @@ const Campeonatos = () => {
     try {
       setIsLoading(true);
       setError(null);
-      setErrorMessage(null); // Clear previous error messages
+      setErrorMessage(null);
 
       const response = await fetch(`${API_BASE_URL}/campeonatos`);
 
@@ -93,7 +99,7 @@ const Campeonatos = () => {
       });
     } catch (err) {
       setError(err.message);
-      setErrorMessage(err.message); // Set error message for AlertaErro
+      setErrorMessage(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -137,39 +143,52 @@ const Campeonatos = () => {
         editingCard
           ? "Campeonato atualizado com sucesso!"
           : "Campeonato criado com sucesso!"
-      ); // Set success message
+      );
       fetchTournaments();
       closeModal();
     } catch (err) {
       console.error("Erro ao salvar campeonato:", err);
-      setErrorMessage(`Erro ao salvar campeonato: ${err.message}`); // Set error message
+      setErrorMessage(`Erro ao salvar campeonato: ${err.message}`);
     }
   };
 
-  const handleCardDelete = async (columnId, cardIndex) => {
+  const handleDeleteClick = (columnId, cardIndex) => {
     if (userRole !== "Administrador" && userRole !== "Administrador Geral")
       return;
 
-    const cardId = boardData[columnId][cardIndex]._id;
-    if (!cardId) return;
+    setCardToDelete({ columnId, cardIndex });
+    setShowDeleteModal(true);
+  };
 
+  const confirmDelete = async () => {
     try {
-      if (window.confirm("Tem certeza que deseja excluir este campeonato?")) {
-        const response = await fetch(`${API_BASE_URL}/campeonatos/${cardId}`, {
-          method: "DELETE",
-        });
+      const { columnId, cardIndex } = cardToDelete;
+      const cardId = boardData[columnId][cardIndex]._id;
 
-        if (!response.ok) {
-          throw new Error(`Erro ${response.status}`);
-        }
+      if (!cardId) return;
 
-        setSuccessMessage("Campeonato excluído com sucesso!"); // Set success message
-        fetchTournaments();
+      const response = await fetch(`${API_BASE_URL}/campeonatos/${cardId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status}`);
       }
+
+      setSuccessMessage("Campeonato excluído com sucesso!");
+      fetchTournaments();
     } catch (err) {
       console.error("Erro ao excluir campeonato:", err);
-      setErrorMessage(`Erro ao excluir campeonato: ${err.message}`); // Set error message
+      setErrorMessage(`Erro ao excluir campeonato: ${err.message}`);
+    } finally {
+      setShowDeleteModal(false);
+      setCardToDelete({ columnId: null, cardIndex: null });
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setCardToDelete({ columnId: null, cardIndex: null });
   };
 
   const handleCardMove = async (cardData, sourceColumn, targetColumn) => {
@@ -194,11 +213,11 @@ const Campeonatos = () => {
         throw new Error(`Erro ${response.status}`);
       }
 
-      setSuccessMessage("Campeonato movido com sucesso!"); // Set success message
+      setSuccessMessage("Campeonato movido com sucesso!");
       fetchTournaments();
     } catch (err) {
       console.error("Erro ao mover campeonato:", err);
-      setErrorMessage(`Erro ao mover campeonato: ${err.message}`); // Set error message
+      setErrorMessage(`Erro ao mover campeonato: ${err.message}`);
     }
   };
 
@@ -229,11 +248,9 @@ const Campeonatos = () => {
       <PageBanner pageName="Campeonatos" />
 
       <div className="p-5 flex flex-col items-center">
-        {/* Render success and error alerts */}
         <AlertaOk mensagem={successMessage} />
         <AlertaErro mensagem={errorMessage} />
 
-        {/* Render error state with retry button */}
         {error && (
           <div className="flex flex-col items-center justify-center flex-grow">
             <div className="text-red-500 mb-4">
@@ -248,13 +265,12 @@ const Campeonatos = () => {
           </div>
         )}
 
-        {/* Render board if no error */}
         {!error && (
           <Board
             columns={columns}
             boardData={boardData}
             onOpenModal={openModal}
-            onCardDelete={handleCardDelete}
+            onCardDelete={handleDeleteClick}
             onCardMove={handleCardMove}
             isAdminMode={
               userRole === "Administrador" || userRole === "Administrador Geral"
@@ -270,6 +286,13 @@ const Campeonatos = () => {
             editingCard={editingCard}
           />
         )}
+
+        <ModalConfirmarExclusao
+          isOpen={showDeleteModal}
+          mensagem="Tem certeza que deseja excluir este campeonato?"
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+        />
       </div>
     </div>
   );
