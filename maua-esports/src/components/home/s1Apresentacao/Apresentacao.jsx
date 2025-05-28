@@ -19,29 +19,11 @@ const Apresentacao = () => {
   const [userRole, setUserRole] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [erro, setErro] = useState(null);
-  const [apresentacaoData, setApresentacaoData] = useState({
-    titulo1: "",
-    titulo2: "",
-    descricao1: "",
-    descricao2: "",
-    botao1Nome: "",
-    botao1Link: "",
-    botao2Nome: "",
-    botao2Link: "",
-    imagem: "",
-    icones: [
-      {
-        id: 1,
-        imagem: "",
-        link: "",
-      },
-    ],
-  });
-
+  const [apresentacaoData, setApresentacaoData] = useState(null); // No default data
+  const [carregando, setCarregando] = useState(true); // Loading state
   const { instance } = useMsal();
 
   useEffect(() => {
-    // Initialize AOS
     AOS.init({
       duration: 1500,
       once: true,
@@ -52,7 +34,7 @@ const Apresentacao = () => {
       try {
         const account = instance.getActiveAccount();
         if (!account) {
-          setUserRole(null); // User not logged in
+          setUserRole(null);
           return;
         }
 
@@ -66,19 +48,22 @@ const Apresentacao = () => {
         setUserRole(userData.tipoUsuario);
       } catch (error) {
         console.error("Erro ao carregar dados do usuário:", error);
-        setUserRole(null); // Treat error as user not logged in
+        setUserRole(null);
       }
     };
 
     // Fetch presentation data
     const fetchApresentacao = async () => {
       try {
+        setCarregando(true);
         const response = await axios.get(`${API_BASE_URL}/api/apresentacao`);
         setApresentacaoData(response.data);
       } catch (error) {
         console.error("Erro ao buscar apresentação:", error);
         setErro("Erro ao carregar dados da apresentação");
         setTimeout(() => setErro(null), 3000);
+      } finally {
+        setCarregando(false);
       }
     };
 
@@ -91,7 +76,7 @@ const Apresentacao = () => {
       const timer = setTimeout(() => {
         setSuccessMessage(null);
         setErro(null);
-      }, 3000); // Clear alerts after 3 seconds
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [successMessage, erro]);
@@ -108,22 +93,19 @@ const Apresentacao = () => {
       data.append("botao2Nome", formData.botao2Nome);
       data.append("botao2Link", formData.botao2Link);
 
-      // Stringify the icones array (excluding images)
       const iconesParaEnviar = formData.icones.map(({ id, link }) => ({
         id,
         link,
       }));
       data.append("icones", JSON.stringify(iconesParaEnviar));
 
-      // Append the main image
       if (formData.imagem instanceof File) {
         data.append("imagem", formData.imagem);
       }
 
-      // Append all icon images under the "icones" field
       formData.icones.forEach((icone) => {
         if (icone.imagem instanceof File) {
-          data.append("icones", icone.imagem); // Use "icones" as the field name
+          data.append("icones", icone.imagem);
         }
       });
 
@@ -142,6 +124,22 @@ const Apresentacao = () => {
       setErro(error.response?.data?.message || "Erro ao salvar apresentação");
     }
   };
+
+  if (carregando) {
+    return (
+      <div
+        className="w-full min-h-screen bg-[#0D1117] flex items-center justify-center"
+        aria-live="polite"
+      >
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
+        <p className="text-branco ml-4">Carregando apresentação...</p>
+      </div>
+    );
+  }
+
+  if (!apresentacaoData) {
+    return null; // Render nothing if no data is available
+  }
 
   return (
     <Margin horizontal="60px">
@@ -163,12 +161,11 @@ const Apresentacao = () => {
           <p className="text-fonte-escura mb-3">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeRaw]} // Permite HTML no markdown
+              rehypePlugins={[rehypeRaw]}
             >
               {apresentacaoData.descricao1}
             </ReactMarkdown>
           </p>
-
           <p className="text-fonte-escura mb-8">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
@@ -257,7 +254,6 @@ const Apresentacao = () => {
           />
         </div>
       </div>
-
       <ApresentacaoModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
