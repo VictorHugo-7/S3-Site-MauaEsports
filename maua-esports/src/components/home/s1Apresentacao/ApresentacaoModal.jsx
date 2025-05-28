@@ -508,7 +508,7 @@ const ApresentacaoModal = ({
         </div>
 
         <div className="flex justify-end mt-6 space-x-2">
-          <SalvarBtn onClick={salvarAlteracoes} disabled={isSubmitting} />
+          <SalvarBtn onClick={salvarAlteracoes} disabled={isSubmitting} loading={isSubmitting} />
           <CancelarBtn onClick={handleClose} disabled={isSubmitting} />
         </div>
       </div>

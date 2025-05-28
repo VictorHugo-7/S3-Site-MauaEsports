@@ -1957,7 +1957,10 @@ app.get("/api/apresentacao", async (req, res) => {
 
 app.post(
   "/api/apresentacao",
-  upload.fields([{ name: "imagem", maxCount: 1 }, { name: "icones", maxCount: 5 }]),
+  upload.fields([
+    { name: "imagem", maxCount: 1 }, 
+    { name: "icones", maxCount: 5 }
+  ]),
   async (req, res) => {
     try {
       const {
@@ -2013,18 +2016,14 @@ app.post(
 
       // Mapear os ícones, preservando os existentes e atualizando apenas os modificados
       const iconesData = iconesParsed.map((icone, index) => {
-        const newImageFile = iconesFiles[index]; // Imagem nova, se enviada
+        const newImageFile = iconesFiles.find(file => file.originalname.includes(icone.id.toString()));
         const existingIcon = existingIcones.find((ei) => ei.id === icone.id);
 
         return {
           id: icone.id,
           link: icone.link,
-          imagem:
-            newImageFile?.buffer ||
-            (icone.imagem && !newImageFile ? existingIcon?.imagem : null), // Usa a imagem nova ou mantém a existente
-          imagemType:
-            newImageFile?.mimetype ||
-            (icone.imagem && !newImageFile ? existingIcon?.imagemType : null),
+          imagem: newImageFile ? newImageFile.buffer : existingIcon?.imagem,
+          imagemType: newImageFile ? newImageFile.mimetype : existingIcon?.imagemType,
         };
       });
 
@@ -2057,9 +2056,7 @@ app.post(
 
       // Converte a imagem principal para base64 para retorno
       const imagemBase64 = apresentacao.imagem
-        ? `data:${
-            apresentacao.imagemType
-          };base64,${apresentacao.imagem.toString("base64")}`
+        ? `data:${apresentacao.imagemType};base64,${apresentacao.imagem.toString("base64")}`
         : null;
 
       // Converte as imagens dos ícones para base64 para retorno
@@ -2081,6 +2078,7 @@ app.post(
     }
   }
 );
+
 
 //////////////////////////////////////////////////////////////////////////HOME_INFORMACOES////////////////////////////////////////////////////////
 

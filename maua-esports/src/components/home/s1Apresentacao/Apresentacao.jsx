@@ -105,7 +105,14 @@ const Apresentacao = () => {
 
       formData.icones.forEach((icone) => {
         if (icone.imagem instanceof File) {
-          data.append("icones", icone.imagem);
+          // Criar um novo arquivo com o ID no nome
+          const fileExtension = icone.imagem.name.split('.').pop();
+          const newFile = new File(
+            [icone.imagem],
+            `icon-${icone.id}.${fileExtension}`,
+            { type: icone.imagem.type }
+          );
+          data.append("icones", newFile);
         }
       });
 
