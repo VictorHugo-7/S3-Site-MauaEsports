@@ -55,6 +55,10 @@
                                       | MONGO_URI=mongodb://localhost:27017/nome-do-banco
 
 5. Inicialize o servidor              | npm run dev
+
+6. Inicialize a API em Python para gerar Relatórios de Horas PAEs (OPCIONAL) |  cd/maua-esports/src/horas-pae-relatorios
+                                                                                pip install -r requirements.txt
+                                                                                python app.py
 ```
 
 
