@@ -585,7 +585,7 @@ const AdminUsuarios = () => {
               }}
               whileTap={{ scale: 0.95 }}
               onClick={abrirModalCriacao}
-              className="bg-gradient-to-r from-blue-7 00 to-blue-900 text-white px-6 py-3 rounded-lg flex items-center gap-3 w-full sm:w-auto justify-center hover:cursor-pointer shadow-lg border border-cyan-700 transition-all duration-100"
+              className="bg-gradient-to-r from-blue-800 to-blue-900 text-white px-6 py-3 rounded-lg flex items-center gap-3 w-full sm:w-auto justify-center hover:cursor-pointer shadow-lg border border-cyan-700 transition-all duration-100"
               disabled={!podeAdicionarTipo("Jogador", usuarioAtual?.time)}
             >
               <FaUserPlus className="text-xl" />
