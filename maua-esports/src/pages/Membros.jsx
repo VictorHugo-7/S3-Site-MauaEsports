@@ -9,6 +9,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useMsal } from "@azure/msal-react";
 import PropTypes from "prop-types";
+import { motion, AnimatePresence } from "framer-motion";
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -200,57 +201,111 @@ const Membros = () => {
 
   if (carregando) {
     return (
-      <div
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         className="w-full min-h-screen bg-fundo flex items-center justify-center"
         aria-live="polite"
       >
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"
+        ></motion.div>
         <p className="text-branco ml-4">Carregando membros...</p>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="w-full min-h-screen bg-fundo">
-      {erro && <AlertaErro mensagem={erro} />}
-      {successMessage && <AlertaOk mensagem={successMessage} />}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="w-full min-h-screen bg-fundo"
+    >
+      <AnimatePresence mode="wait">
+        {erro && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <AlertaErro mensagem={erro} />
+          </motion.div>
+        )}
+        {successMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <AlertaOk mensagem={successMessage} />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="bg-[#010409] h-[104px]"></div>
       <PageBanner
         pageName={time?.nome ? `Membros do ${time.nome}` : "Membros do Time"}
       />
-      <div className="bg-fundo w-full flex justify-center items-center overflow-auto scrollbar-hidden">
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="bg-fundo w-full flex justify-center items-center overflow-auto scrollbar-hidden"
+      >
         <div className="w-full flex flex-wrap py-16 justify-center gap-8">
           {jogadores.length > 0 ? (
-            jogadores.map((jogador) => (
-              <CardJogador
+            jogadores.map((jogador, index) => (
+              <motion.div
                 key={jogador._id}
-                jogadorId={jogador._id}
-                nome={jogador.nome}
-                titulo={jogador.titulo}
-                descricao={jogador.descricao}
-                foto={jogador.fotoUrl}
-                instagram={jogador.insta}
-                twitter={jogador.twitter}
-                twitch={jogador.twitch}
-                onDelete={handleDeleteJogador}
-                onEdit={handleEditJogador}
-                logoTime={time?.logoUrl}
-                userRole={userRole}
-              />
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <CardJogador
+                  jogadorId={jogador._id}
+                  nome={jogador.nome}
+                  titulo={jogador.titulo}
+                  descricao={jogador.descricao}
+                  foto={jogador.fotoUrl}
+                  instagram={jogador.insta}
+                  twitter={jogador.twitter}
+                  twitch={jogador.twitch}
+                  onDelete={handleDeleteJogador}
+                  onEdit={handleEditJogador}
+                  logoTime={time?.logoUrl}
+                  userRole={userRole}
+                />
+              </motion.div>
             ))
           ) : (
-            <div className="text-center p-8 text-branco">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="text-center p-8 text-branco"
+            >
               <p className="text-xl mb-4">Nenhum jogador encontrado</p>
-            </div>
+            </motion.div>
           )}
-          <AdicionarMembro
-            onAdicionarMembro={handleAdicionarMembro}
-            timeId={timeId}
-            userRole={userRole}
-          />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <AdicionarMembro
+              onAdicionarMembro={handleAdicionarMembro}
+              timeId={timeId}
+              userRole={userRole}
+            />
+          </motion.div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 

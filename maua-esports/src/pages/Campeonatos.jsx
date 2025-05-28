@@ -7,6 +7,7 @@ import PageBanner from "../components/PageBanner";
 import { useNavigate } from "react-router-dom";
 import AlertaOk from "../components/AlertaOk";
 import AlertaErro from "../components/AlertaErro";
+import { motion, AnimatePresence } from "framer-motion";
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -224,7 +225,11 @@ const Campeonatos = () => {
   if (!authChecked) {
     return (
       <div className="min-h-screen bg-[#0D1117] text-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"
+        ></motion.div>
       </div>
     );
   }
@@ -234,67 +239,136 @@ const Campeonatos = () => {
       <div className="bg-[#0D1117] min-h-screen flex flex-col">
         <div className="bg-[#010409] h-[104px]"></div>
         <PageBanner pageName="Campeonatos" />
-        <div className="p-5 flex justify-center items-center flex-grow">
-          <div className="text-white">Carregando campeonatos...</div>
-        </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="p-5 flex justify-center items-center flex-grow"
+        >
+          <motion.div
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+            className="text-white"
+          >
+            Carregando campeonatos...
+          </motion.div>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#0D1117] min-h-screen flex flex-col">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="bg-[#0D1117] min-h-screen flex flex-col"
+    >
       <div className="bg-[#010409] h-[104px]"></div>
 
       <PageBanner pageName="Campeonatos" />
 
-      <div className="p-5 flex flex-col items-center">
-        <AlertaOk mensagem={successMessage} />
-        <AlertaErro mensagem={errorMessage} />
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="p-5 flex flex-col items-center"
+      >
+        <AnimatePresence mode="wait">
+          {successMessage && (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <AlertaOk mensagem={successMessage} />
+            </motion.div>
+          )}
+          {errorMessage && (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <AlertaErro mensagem={errorMessage} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {error && (
-          <div className="flex flex-col items-center justify-center flex-grow">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center justify-center flex-grow"
+          >
             <div className="text-red-500 mb-4">
               Erro ao carregar campeonatos: {error}
             </div>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={fetchTournaments}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
             >
               Tentar novamente
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         )}
 
         {!error && (
-          <Board
-            columns={columns}
-            boardData={boardData}
-            onOpenModal={openModal}
-            onCardDelete={handleDeleteClick}
-            onCardMove={handleCardMove}
-            isAdminMode={
-              userRole === "Administrador" || userRole === "Administrador Geral"
-            }
-          />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Board
+              columns={columns}
+              boardData={boardData}
+              onOpenModal={openModal}
+              onCardDelete={handleDeleteClick}
+              onCardMove={handleCardMove}
+              isAdminMode={
+                userRole === "Administrador" || userRole === "Administrador Geral"
+              }
+            />
+          </motion.div>
         )}
 
-        {isModalOpen && (
-          <CardModal
-            isOpen={isModalOpen}
-            onClose={closeModal}
-            onSave={handleCardCreate}
-            editingCard={editingCard}
-          />
-        )}
+        <AnimatePresence>
+          {isModalOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <CardModal
+                isOpen={isModalOpen}
+                onClose={closeModal}
+                onSave={handleCardCreate}
+                editingCard={editingCard}
+              />
+            </motion.div>
+          )}
 
-        <ModalConfirmarExclusao
-          isOpen={showDeleteModal}
-          mensagem="Tem certeza que deseja excluir este campeonato?"
-          onConfirm={confirmDelete}
-          onCancel={cancelDelete}
-        />
-      </div>
-    </div>
+          {showDeleteModal && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+            >
+              <ModalConfirmarExclusao
+                isOpen={showDeleteModal}
+                mensagem="Tem certeza que deseja excluir este campeonato?"
+                onConfirm={confirmDelete}
+                onCancel={cancelDelete}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </motion.div>
   );
 };
 

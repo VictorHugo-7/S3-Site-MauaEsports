@@ -8,7 +8,6 @@ import {
   MdClose,
   MdAdd,
 } from "react-icons/md";
-import { motion, AnimatePresence } from "framer-motion";
 import PageBanner from "../components/PageBanner";
 import { useNavigate } from "react-router-dom";
 import { useMsal } from "@azure/msal-react";
@@ -39,45 +38,32 @@ const Agendamento = ({
   ];
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.01 }}
-      className="flex flex-col sm:flex-row p-4 sm:p-6 my-0 min-h-[80px] bg-gray-800 border border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
-    >
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
-        {/* Horário */}
-        <div className="flex flex-col items-center sm:items-start">
-          <div className="sm:hidden text-xs text-gray-400 mb-1">Horário</div>
-          <div className="flex flex-col items-center sm:items-start">
-            <span className="text-white font-semibold text-base">
-              {inicio} - {fim}
-            </span>
-            <span className="text-blue-400 text-sm">
-              Duração: {calcularDuracao(inicio, fim)}
-            </span>
-          </div>
+    <div className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 my-0 min-h-[80px] bg-gray-800 border border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+      <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 w-full sm:w-auto">
+        <div className="flex flex-col items-center w-full sm:w-40">
+          <span className="text-white font-semibold text-base">
+            {inicio} - {fim}
+          </span>
+          <span className="text-blue-400 text-sm">
+            Duração: {calcularDuracao(inicio, fim)}
+          </span>
         </div>
 
-        {/* Dia da Semana */}
-        <div className="flex flex-col items-center sm:items-start">
-          <div className="sm:hidden text-xs text-gray-400 mb-1">Dia da Semana</div>
+        <div className="w-32 text-center">
           <span className="text-white font-medium text-base">
             {diasDaSemana[diaSemana]}
           </span>
         </div>
 
-        {/* Time */}
-        <div className="flex flex-col items-center sm:items-start">
-          <div className="sm:hidden text-xs text-gray-400 mb-1">Time</div>
+        <div className="text-sm w-full sm:w-48 text-center sm:text-left">
           <p className="font-semibold text-white font-blinker text-base">
             {time}
           </p>
         </div>
       </div>
 
-      {/* Ações */}
       {userRole !== "Jogador" && (
-        <div className="flex justify-center sm:justify-end items-center mt-4 sm:mt-0 sm:ml-4 gap-2">
-          <div className="sm:hidden text-xs text-gray-400 mr-2">Ações:</div>
+        <div className="flex flex-row justify-center items-center mt-3 sm:mt-0 gap-2">
           <EditarBtn onClick={onEditar} isEditing={false} />
           <DeletarBtn
             onDelete={onExcluir}
@@ -86,7 +72,7 @@ const Agendamento = ({
           />
         </div>
       )}
-    </motion.div>
+    </div>
   );
 };
 
@@ -830,12 +816,7 @@ const TreinosAdmin = () => {
       </div>
 
       {/* Resumo centralizado */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-gray-800 p-4 rounded-lg mb-6 w-[90%] sm:w-3/4 lg:w-2/3 text-center mx-auto shadow-lg"
-      >
+      <div className="bg-gray-800 p-4 rounded-lg mb-6 w-[90%] sm:w-3/4 lg:w-2/3 text-center mx-auto shadow-lg">
         <div className="flex flex-col items-center gap-2">
           <h3 className="text-white font-semibold text-base sm:text-lg text-center">
             {filtroDataAtivo
@@ -852,15 +833,10 @@ const TreinosAdmin = () => {
             {contadores.total} {contadores.total === 1 ? "treino" : "treinos"}
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Barra de Controles centralizada */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 w-[90%] sm:w-3/4 lg:w-2/3"
-      >
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 w-[90%] sm:w-3/4 lg:w-2/3">
         <div className="w-full sm:flex-1">
           <label className="text-white font-semibold text-sm sm:text-base mr-2">
             Time:
@@ -914,48 +890,34 @@ const TreinosAdmin = () => {
           </div>
 
           {(modalidadeSelecionada || filtroDataAtivo) && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={limparFiltros}
               className="text-red-400 hover:text-red-500 flex items-center text-sm sm:text-base transition-colors duration-200"
             >
               <MdClear className="mr-1" /> Limpar filtros
-            </motion.button>
+            </button>
           )}
         </div>
-      </motion.div>
+      </div>
 
       {/* Botões de Criar */}
       {userRole && userRole !== "Jogador" && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="flex justify-end mb-4 w-[90%] sm:w-3/4 lg:w-2/3"
-        >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+        <div className="flex justify-end mb-4 w-[90%] sm:w-3/4 lg:w-2/3">
+          <button
             type="button"
             onClick={iniciarCriacao}
             className="bg-green-500 text-white px-4 py-2 rounded flex items-center text-sm sm:text-base hover:bg-green-600 transition-colors shadow-md cursor-pointer"
             aria-label="Criar novo treino"
           >
             <MdAdd className="mr-1" /> Criar Treino
-          </motion.button>
-        </motion.div>
+          </button>
+        </div>
       )}
 
       {/* Container principal centralizado */}
       <div className="flex flex-col lg:flex-row w-[90%] sm:w-3/4 lg:w-2/3 min-h-[400px] gap-6 mb-10">
         {/* Lista de Treinos */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="w-full lg:flex-1 bg-gray-800 border border-gray-700 rounded-xl overflow-y-auto shadow-lg min-h-[400px]"
-        >
+        <div className="w-full lg:flex-1 bg-gray-800 border border-gray-700 rounded-xl overflow-y-auto shadow-lg min-h-[400px]">
           <div className="border-b border-gray-700 p-4 sticky top-0 bg-gray-800 z-10">
             <div className="font-blinker text-sm sm:text-base md:text-lg text-white hidden sm:flex justify-between">
               <span className="w-1/4">Horário</span>
@@ -971,222 +933,191 @@ const TreinosAdmin = () => {
           </div>
 
           <div className="pb-6 space-y-2 px-2 sm:px-4">
-            <AnimatePresence>
-              {criandoTreino && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="flex flex-col p-4 gap-4 bg-gray-700 border border-gray-600 rounded-lg"
-                >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
-                    <div className="flex flex-col">
-                      <label className="text-gray-300 text-xs sm:text-sm mb-1">
-                        Início
-                      </label>
-                      <input
-                        type="time"
-                        name="inicio"
-                        value={formCriacao.inicio}
-                        onChange={(e) => handleFormChange(e, true)}
-                        className="p-2 rounded bg-gray-600 text-white w-full border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-
-                    <div className="flex flex-col">
-                      <label className="text-gray-300 text-xs sm:text-sm mb-1">
-                        Fim
-                      </label>
-                      <input
-                        type="time"
-                        name="fim"
-                        value={formCriacao.fim}
-                        onChange={(e) => handleFormChange(e, true)}
-                        className="p-2 rounded bg-gray-600 text-white w-full border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-
-                    <div className="flex flex-col">
-                      <label className="text-gray-300 text-xs sm:text-sm mb-1">
-                        Dia
-                      </label>
-                      <select
-                        name="diaSemana"
-                        value={formCriacao.diaSemana}
-                        onChange={(e) => handleFormChange(e, true)}
-                        className="p-2 rounded bg-gray-600 text-white w-full border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        {diasDaSemana.map((dia) => (
-                          <option key={dia.value} value={dia.value}>
-                            {dia.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="flex flex-col">
-                      <label className="text-gray-300 text-xs sm:text-sm mb-1">
-                        Time
-                      </label>
-                      <select
-                        name="modalidadeId"
-                        value={formCriacao.modalidadeId}
-                        onChange={(e) => handleFormChange(e, true)}
-                        className="p-2 rounded bg-gray-600 text-white w-full border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={
-                          !(
-                            userRole === "Administrador" ||
-                            userRole === "Administrador Geral"
-                          )
-                        }
-                      >
-                        {Object.entries(modalidades).map(([id, mod]) => (
-                          <option key={id} value={id}>
-                            {mod.Name} ({mod.Tag})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+            {criandoTreino && (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center p-4 gap-4 bg-gray-700 border border-gray-600 rounded-lg">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
+                  <div className="flex flex-col w-full sm:w-auto">
+                    <label className="text-gray-300 text-xs sm:text-sm mb-1">
+                      Início
+                    </label>
+                    <input
+                      type="time"
+                      name="inicio"
+                      value={formCriacao.inicio}
+                      onChange={(e) => handleFormChange(e, true)}
+                      className="p-2 rounded bg-gray-600 text-white w-full sm:w-32 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
                   </div>
 
-                  <div className="flex gap-2 justify-end">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={criarTreino}
-                      className="bg-green-500 text-white px-3 py-1 rounded flex items-center text-sm hover:bg-green-600 transition-colors hover:cursor-pointer"
-                    >
-                      <MdSave className="mr-1" /> Salvar
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={cancelarCriacao}
-                      className="bg-red-500 text-white px-3 py-1 rounded flex items-center text-sm hover:bg-red-600 transition-colors hover:cursor-pointer"
-                    >
-                      <MdClose className="mr-1" /> Cancelar
-                    </motion.button>
+                  <div className="flex flex-col w-full sm:w-auto">
+                    <label className="text-gray-300 text-xs sm:text-sm mb-1">
+                      Fim
+                    </label>
+                    <input
+                      type="time"
+                      name="fim"
+                      value={formCriacao.fim}
+                      onChange={(e) => handleFormChange(e, true)}
+                      className="p-2 rounded bg-gray-600 text-white w-full sm:w-32 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
                   </div>
-                </motion.div>
-              )}
 
-              {agendamentosFiltrados.length > 0 ? (
-                agendamentosFiltrados.map((agendamento, index) => (
-                  <motion.div
-                    key={agendamento.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: -100 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                  <div className="flex flex-col w-full sm:w-auto">
+                    <label className="text-gray-300 text-xs sm:text-sm mb-1">
+                      Dia
+                    </label>
+                    <select
+                      name="diaSemana"
+                      value={formCriacao.diaSemana}
+                      onChange={(e) => handleFormChange(e, true)}
+                      className="p-2 rounded bg-gray-600 text-white w-full sm:w-40 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {diasDaSemana.map((dia) => (
+                        <option key={dia.value} value={dia.value}>
+                          {dia.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col w-full sm:w-auto">
+                    <label className="text-gray-300 text-xs sm:text-sm mb-1">
+                      Time
+                    </label>
+                    <select
+                      name="modalidadeId"
+                      value={formCriacao.modalidadeId}
+                      onChange={(e) => handleFormChange(e, true)}
+                      className="p-2 rounded bg-gray-600 text-white w-full sm:w-48 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={
+                        !(
+                          userRole === "Administrador" ||
+                          userRole === "Administrador Geral"
+                        )
+                      }
+                    >
+                      {Object.entries(modalidades).map(([id, mod]) => (
+                        <option key={id} value={id}>
+                          {mod.Name} ({mod.Tag})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 sm:mt-0 mt-4 sm:self-end">
+                  <button
+                    onClick={criarTreino}
+                    className="bg-green-500 text-white px-3 py-1 rounded flex items-center text-sm hover:bg-green-600 transition-colors hover:cursor-pointer"
                   >
-                    {editandoTreino?.id === agendamento.id ? (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="flex flex-col p-4 gap-4 bg-gray-700 border border-gray-600 rounded-lg"
-                      >
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
-                          <div className="flex flex-col">
-                            <label className="text-gray-300 text-xs sm:text-sm mb-1">
-                              Início
-                            </label>
-                            <input
-                              type="time"
-                              name="inicio"
-                              value={formEdicao.inicio}
-                              onChange={handleFormChange}
-                              className="p-2 rounded bg-gray-600 text-white w-full border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </div>
+                    <MdSave className="mr-1" /> Salvar
+                  </button>
+                  <button
+                    onClick={cancelarCriacao}
+                    className="bg-red-500 text-white px-3 py-1 rounded flex items-center text-sm hover:bg-red-600 transition-colors hover:cursor-pointer"
+                  >
+                    <MdClose className="mr-1" /> Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
 
-                          <div className="flex flex-col">
-                            <label className="text-gray-300 text-xs sm:text-sm mb-1">
-                              Fim
-                            </label>
-                            <input
-                              type="time"
-                              name="fim"
-                              value={formEdicao.fim}
-                              onChange={handleFormChange}
-                              className="p-2 rounded bg-gray-600 text-white w-full border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                          </div>
-
-                          <div className="flex flex-col">
-                            <label className="text-gray-300 text-xs sm:text-sm mb-1">
-                              Dia
-                            </label>
-                            <select
-                              name="diaSemana"
-                              value={formEdicao.diaSemana}
-                              onChange={handleFormChange}
-                              className="p-2 rounded bg-gray-600 text-white w-full border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                              {diasDaSemana.map((dia) => (
-                                <option key={dia.value} value={dia.value}>
-                                  {dia.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+            {agendamentosFiltrados.length > 0 ? (
+              agendamentosFiltrados.map((agendamento) => (
+                <div key={agendamento.id}>
+                  {editandoTreino?.id === agendamento.id ? (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center p-4 gap-4 bg-gray-700 border border-gray-600 rounded-lg">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
+                        <div className="flex flex-col w-full sm:w-auto">
+                          <label className="text-gray-300 text-xs sm:text-sm mb-1">
+                            Início
+                          </label>
+                          <input
+                            type="time"
+                            name="inicio"
+                            value={formEdicao.inicio}
+                            onChange={handleFormChange}
+                            className="p-2 rounded bg-gray-600 text-white w-full sm:w-32 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
                         </div>
 
-                        <div className="flex gap-2 justify-end">
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={salvarEdicao}
-                            className="bg-green-500 text-white px-3 py-1 rounded flex items-center text-sm hover:bg-green-600 transition-colors hover:cursor-pointer"
-                          >
-                            <MdSave className="mr-1" /> Salvar
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={cancelarEdicao}
-                            className="bg-red-500 text-white px-3 py-1 rounded flex items-center text-sm hover:bg-red-600 transition-colors hover:cursor-pointer"
-                          >
-                            <MdClose className="mr-1" /> Cancelar
-                          </motion.button>
+                        <div className="flex flex-col w-full sm:w-auto">
+                          <label className="text-gray-300 text-xs sm:text-sm mb-1">
+                            Fim
+                          </label>
+                          <input
+                            type="time"
+                            name="fim"
+                            value={formEdicao.fim}
+                            onChange={handleFormChange}
+                            className="p-2 rounded bg-gray-600 text-white w-full sm:w-32 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
                         </div>
-                      </motion.div>
-                    ) : (
-                      <Agendamento
-                        inicio={agendamento.inicio}
-                        fim={agendamento.fim}
-                        diaSemana={agendamento.diaSemana}
-                        status={agendamento.status}
-                        time={agendamento.NomeModalidade}
-                        onEditar={() => iniciarEdicao(agendamento)}
-                        onExcluir={() => excluirTreino(agendamento)}
-                        userRole={userRole}
-                      />
-                    )}
-                  </motion.div>
-                ))
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-gray-300 text-center py-8 text-base"
-                >
-                  Nenhum treino agendado encontrado com os filtros atuais
-                </motion.div>
-              )}
-            </AnimatePresence>
+
+                        <div className="flex flex-col w-full sm:w-auto">
+                          <label className="text-gray-300 text-xs sm:text-sm mb-1">
+                            Dia
+                          </label>
+                          <select
+                            name="diaSemana"
+                            value={formEdicao.diaSemana}
+                            onChange={handleFormChange}
+                            className="p-2 rounded bg-gray-600 text-white w-full sm:w-40 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            {diasDaSemana.map((dia) => (
+                              <option key={dia.value} value={dia.value}>
+                                {dia.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <span className="text-white text-base ml-0 sm:ml-4">
+                          {agendamento.NomeModalidade}
+                        </span>
+                      </div>
+
+                      <div className="flex gap-2 sm:mt-0 mt-4 sm:self-end">
+                        <button
+                          onClick={salvarEdicao}
+                          className="bg-green-500 text-white px-3 py-1 rounded flex items-center text-sm hover:bg-green-600 transition-colors hover:cursor-pointer"
+                        >
+                          <MdSave className="mr-1" /> Salvar
+                        </button>
+                        <button
+                          onClick={cancelarEdicao}
+                          className="bg-red-500 text-white px-3 py-1 rounded flex items-center text-sm hover:bg-red-600 transition-colors hover:cursor-pointer"
+                        >
+                          <MdClose className="mr-1" /> Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Agendamento
+                      inicio={agendamento.inicio}
+                      fim={agendamento.fim}
+                      diaSemana={agendamento.diaSemana}
+                      status={agendamento.status}
+                      time={agendamento.NomeModalidade}
+                      onEditar={() => iniciarEdicao(agendamento)}
+                      onExcluir={() => excluirTreino(agendamento)}
+                      userRole={userRole}
+                    />
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="text-gray-300 text-center py-8 text-base">
+                Nenhum treino agendado encontrado com os filtros atuais
+              </div>
+            )}
           </div>
-        </motion.div>
+        </div>
 
         {/* Calendário */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.8 }}
-          className="w-full lg:w-[350px] lg:h-[400px] bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-lg overflow-y-auto"
-        >
+        <div className="w-full lg:w-[350px] lg:h-[400px] bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-lg overflow-y-auto">
           <Calendario />
-        </motion.div>
+        </div>
       </div>
     </div>
   );
