@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar, ExternalLink, Users, Heart } from "lucide-react";
 import Margin from "../../padrao/Margin";
 
@@ -17,7 +17,7 @@ const ChannelTags = ({ tags }) => (
 );
 
 // Componente para a seção de informações do canal
-const ChannelInfo = ({ channel }) => (
+const ChannelInfo = ({ channel, streamStats, isLoading }) => (
   <div className="w-full md:w-1/3 p-6 bg-gray-800 flex flex-col justify-between">
     <div>
       <div className="flex items-center mb-4">
@@ -40,12 +40,28 @@ const ChannelInfo = ({ channel }) => (
       <div className="space-y-3">
         <div className="flex items-center text-gray-400 custom-icon-container">
           <Users size={18} className="mr-2 custom-icon" />
-          <span>Seja um de nós, seja um tigre!</span>
+          <span>
+            {isLoading ? (
+              "Carregando..."
+            ) : (
+              streamStats?.isLive ? (
+                `${streamStats.viewers} espectadores agora`
+              ) : (
+                "Offline"
+              )
+            )}
+          </span>
         </div>
 
         <div className="flex items-center text-gray-400 custom-icon-container">
           <Heart size={18} className="mr-2 custom-icon" />
-          <span>A preferida da Mauá</span>
+          <span>
+            {isLoading ? (
+              "Carregando..."
+            ) : (
+              `${streamStats?.followers || 0} seguidores`
+            )}
+          </span>
         </div>
 
         <div className="flex items-center text-gray-400 custom-icon-container">
@@ -87,7 +103,48 @@ const TwitchEmbed = ({ channel }) => (
 
 // Componente Twitch
 const Twitch = () => {
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [streamStats, setStreamStats] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchStreamStats = async () => {
+      try {
+        setError(null);
+        console.log('Tentando conectar ao backend...');
+        const response = await fetch('http://localhost:3009/api/twitch/stats/apolityyyy', {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+        
+        console.log('Status da resposta:', response.status);
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Falha ao carregar dados da Twitch');
+        }
+        
+        const data = await response.json();
+        console.log('Dados recebidos:', data);
+        setStreamStats(data);
+      } catch (error) {
+        console.error('Erro detalhado ao buscar dados da Twitch:', {
+          message: error.message,
+          stack: error.stack,
+        });
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStreamStats();
+    const interval = setInterval(fetchStreamStats, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <Margin horizontal="60px">
@@ -98,24 +155,32 @@ const Twitch = () => {
       >
         Twitch
       </h1>
-      <div
-        data-aos-delay="200"
-        data-aos="fade-up"
-        className="flex flex-col md:flex-row bg-fundo rounded-lg overflow-hidden"
-      >
-        <ChannelInfo
-          channel={{
-            name: "mauaesports",
-            description:
-              "Aqui tem jogo, entretenimento e muita interação com a comunidade. #GoTigers!",
-            tags: ["Português", "Entretenimento", "Esports", "Brasil"],
-          }}
-        />
-
-        <div className="w-full md:w-2/3 bg-black h-[500px] md:h-auto">
-          <TwitchEmbed channel="mauaesports" />
+      {error ? (
+        <div className="text-center text-vermelho-claro">
+          {error}
         </div>
-      </div>
+      ) : (
+        <div
+          data-aos-delay="200"
+          data-aos="fade-up"
+          className="flex flex-col md:flex-row bg-fundo rounded-lg overflow-hidden"
+        >
+          <ChannelInfo
+            channel={{
+              name: "mauaesports",
+              description:
+                "Aqui tem jogo, entretenimento e muita interação com a comunidade. #GoTigers!",
+              tags: ["Português", "Entretenimento", "Esports", "Brasil"],
+            }}
+            streamStats={streamStats}
+            isLoading={isLoading}
+          />
+
+          <div className="w-full md:w-2/3 bg-black h-[500px] md:h-auto">
+            <TwitchEmbed channel="mauaesports" />
+          </div>
+        </div>
+      )}
     </Margin>
   );
 };

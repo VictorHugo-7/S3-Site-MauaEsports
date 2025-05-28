@@ -9,6 +9,7 @@ import AlertaErro from "../components/AlertaErro";
 import AlertaOk from "../components/AlertaOk";
 import axios from "axios";
 import { HiUserCircle } from "react-icons/hi2";
+import { motion, AnimatePresence } from "framer-motion";
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -85,6 +86,16 @@ const AdminUsuarios = () => {
       fetchTimes();
     }
   }, [instance]);
+
+  useEffect(() => {
+    if (success || error) {
+      const timer = setTimeout(() => {
+        setSuccess(null);
+        setError(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success, error]);
 
   const fetchUsuarios = async () => {
     try {
@@ -196,7 +207,7 @@ const AdminUsuarios = () => {
     const usuario = usuarios.find((u) => u._id === id);
 
     if (!usuario || !podeGerenciarUsuario(usuario)) {
-      alert("Você não tem permissão para esta ação!");
+      setError("Você não tem permissão para esta ação!");
       return;
     }
 
@@ -218,12 +229,16 @@ const AdminUsuarios = () => {
         throw new Error(errorData.message || "Erro ao excluir usuário");
       }
 
+      // Update the usuarios state first
       setUsuarios(usuarios.filter((u) => u._id !== id));
+      
+      // Then set the success message
       setSuccess(`Usuário ${usuario.email} excluído com sucesso!`);
-      setError(null);
+      setError(null); // Clear any existing error
     } catch (err) {
       console.error("Erro ao excluir usuário:", err);
       setError(err.message);
+      setSuccess(null); // Clear any existing success message
     }
   };
 
@@ -254,20 +269,30 @@ const AdminUsuarios = () => {
         (u) => u.email === currentUser?.username
       );
 
+      // Limpa espaços em branco do email
+      formData.email = formData.email.trim();
+
+      // Validação do email
+      if (!formData.email) {
+        throw new Error("O email não pode estar vazio");
+      }
+
+      // Verifica se o email já existe (apenas para criação de novo usuário)
+      if (!modoEdicao && usuarios.some(u => u.email.toLowerCase() === formData.email.toLowerCase())) {
+        throw new Error("Este email já está cadastrado");
+      }
+
       // Validação específica para capitães
       if (usuarioAtual?.tipoUsuario === "Capitão de time") {
         if (!modoEdicao && formData.tipoUsuario !== "Jogador") {
-          alert("Como Capitão, você só pode adicionar jogadores!");
-
-          return;
+          throw new Error("Como Capitão, você só pode adicionar jogadores!");
         }
 
         if (formData.time !== usuarioAtual.time) {
-          alert("Você só pode adicionar jogadores do seu próprio time!");
-
-          return;
+          throw new Error("Você só pode adicionar jogadores do seu próprio time!");
         }
       }
+
       // Verificação se é auto-edição
       const isSelfEdit =
         modoEdicao && usuarioSelecionado?.email === currentUser?.username;
@@ -275,8 +300,7 @@ const AdminUsuarios = () => {
       if (isSelfEdit) {
         // Administrador Geral não pode se editar
         if (usuarioSelecionado.tipoUsuario === "Administrador Geral") {
-          alert("Administrador Geral não pode editar seu próprio perfil!");
-          return;
+          throw new Error("Administrador Geral não pode editar seu próprio perfil!");
         }
 
         // Capitão não pode mudar seu próprio time
@@ -284,8 +308,7 @@ const AdminUsuarios = () => {
           usuarioSelecionado.tipoUsuario === "Capitão de time" &&
           formData.time !== usuarioSelecionado.time
         ) {
-          alert("Você não pode alterar o time ao qual está vinculado!");
-          return;
+          throw new Error("Você não pode alterar o time ao qual está vinculado!");
         }
 
         // Capitão só pode abaixar seu próprio cargo (não pode se promover)
@@ -294,23 +317,24 @@ const AdminUsuarios = () => {
           formData.tipoUsuario !== "Capitão de time" &&
           formData.tipoUsuario !== "Jogador"
         ) {
-          alert("Como Capitão, você só pode se rebaixar para Jogador!");
-          return;
+          throw new Error("Como Capitão, você só pode se rebaixar para Jogador!");
         }
       } else {
         // Validações normais para edição de outros usuários
         if (!modoEdicao && !podeAdicionarTipo(formData.tipoUsuario)) {
-          alert("Você não tem permissão para adicionar este tipo de usuário!");
-          return;
+          throw new Error("Você não tem permissão para adicionar este tipo de usuário!");
         }
 
         if (!timeValidoParaTipo(formData.tipoUsuario, formData.time)) {
-          alert("Este tipo de usuário precisa estar vinculado a um time!");
-          return;
+          throw new Error("Este tipo de usuário precisa estar vinculado a um time!");
         }
       }
 
-      // Resto do código de submit permanece o mesmo
+      // Limpa outros campos de texto
+      if (formData.discordID) {
+        formData.discordID = formData.discordID.trim();
+      }
+
       const url = modoEdicao
         ? `${API_BASE_URL}/usuarios/${usuarioSelecionado._id}`
         : `${API_BASE_URL}/usuarios`;
@@ -348,6 +372,7 @@ const AdminUsuarios = () => {
     } catch (err) {
       console.error("Erro ao salvar usuário:", err);
       setError(err.message);
+      setSuccess(null);
     }
   };
 
@@ -366,23 +391,42 @@ const AdminUsuarios = () => {
 
   if (loading || loadingTimes) {
     return (
-      <div className="w-full min-h-screen bg-fundo flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="w-full min-h-screen bg-fundo flex items-center justify-center"
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"
+        ></motion.div>
         <p className="text-branco ml-4">Carregando dados...</p>
-      </div>
+      </motion.div>
     );
   }
 
   if (error) {
     return (
-      <div className="w-full min-h-screen bg-fundo flex flex-col items-center justify-center p-4">
-        <div className="bg-preto p-6 rounded-lg max-w-md text-center border border-vermelho-claro">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="w-full min-h-screen bg-fundo flex flex-col items-center justify-center p-4"
+      >
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="bg-preto p-6 rounded-lg max-w-md text-center border border-vermelho-claro"
+        >
           <h2 className="text-xl font-bold text-vermelho-claro mb-2">
             Erro ao carregar
           </h2>
           <p className="text-branco mb-4">{error}</p>
           <div className="flex flex-col space-y-2">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => {
                 fetchUsuarios();
                 fetchTimes();
@@ -390,16 +434,18 @@ const AdminUsuarios = () => {
               className="bg-azul-claro text-branco px-4 py-2 rounded hover:bg-azul-escuro hover:cursor-pointer"
             >
               Tentar novamente
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => window.location.reload()}
               className="bg-cinza-escuro text-branco px-4 py-2 rounded hover:bg-cinza-claro"
             >
               Recarregar página
-            </button>
+            </motion.button>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     );
   }
 
@@ -416,45 +462,86 @@ const AdminUsuarios = () => {
   }
 
   return (
-    <div className="w-full min-h-screen bg-fundo flex flex-col items-center">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="w-full min-h-screen bg-fundo flex flex-col items-center"
+    >
       {/* Modal da imagem ampliada */}
-      {imagemAmpliada.aberto && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4 cursor-pointer"
-          onClick={fecharImagemAmpliada}
-        >
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              fecharImagemAmpliada();
-            }}
-            className="absolute top-4 right-4 text-white text-2xl hover:text-azul-claro transition-colors"
+      <AnimatePresence>
+        {imagemAmpliada.aberto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4 cursor-pointer"
+            onClick={fecharImagemAmpliada}
           >
-            <FaTimes />
-          </button>
-          <div
-            className="max-w-full max-h-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img
-              src={imagemAmpliada.src}
-              alt={imagemAmpliada.alt}
-              className="max-w-full max-h-[90vh] object-contain"
-            />
-          </div>
-        </div>
-      )}
+            <motion.button
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                fecharImagemAmpliada();
+              }}
+              className="absolute top-4 right-4 text-white text-2xl hover:text-azul-claro transition-colors"
+            >
+              <FaTimes />
+            </motion.button>
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              className="max-w-full max-h-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={imagemAmpliada.src}
+                alt={imagemAmpliada.alt}
+                className="max-w-full max-h-[90vh] object-contain"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="w-full bg-navbar mb-10">
         <div className="h-[104px]"></div>
-        <PageBanner
-          pageName="Gerenciamento de Usuários"
-          className="bg-navbar"
-        />
-        <AlertaErro mensagem={error} />
-        <AlertaOk mensagem={success} />
+        <PageBanner pageName="Gerenciamento de Usuários" className="bg-navbar" />
+        <AnimatePresence mode="wait">
+          {error && (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <AlertaErro mensagem={error} />
+            </motion.div>
+          )}
+          {success && (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <AlertaOk mensagem={success} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      <div className="w-[95%] sm:w-4/5 lg:w-3/4 mx-auto mb-10">
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="w-[95%] sm:w-4/5 lg:w-3/4 mx-auto mb-10"
+      >
         {mostrarModal && (
           <ModalUsuario
             usuario={usuarioSelecionado}
@@ -469,31 +556,50 @@ const AdminUsuarios = () => {
         )}
 
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <div className="relative w-full sm:w-1/2">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
+            className="relative w-full sm:w-1/2"
+          >
             <FaSearch className="absolute left-3 top-3 text-white" />
             <input
               type="text"
               placeholder="Buscar usuários por email, Discord ID, tipo ou time..."
-              className="w-full pl-10 pr-4 py-2 border-2 border-borda rounded-lg focus:outline-none focus:border-azul-claro bg-gray-800 text-white"
+              className="w-full pl-10 pr-4 py-2 border-2 border-borda rounded-lg focus:outline-none focus:border-azul-claro bg-gray-800 text-white transition-all duration-200"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </div>
+          </motion.div>
 
           {["Administrador Geral", "Administrador", "Capitão de time"].includes(
             usuarioAtual.tipoUsuario
           ) && (
-            <button
+            <motion.button
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3 }}
+              whileHover={{ 
+                scale: 1.05,
+                boxShadow: "0 0 15px rgba(59, 130, 246, 0.3)"
+              }}
+              whileTap={{ scale: 0.95 }}
               onClick={abrirModalCriacao}
-              className="bg-cyan-800 hover:bg-azul-escuro text-white px-4 py-2 rounded flex items-center gap-2 transition-colors w-full sm:w-auto justify-center hover:cursor-pointer"
-              disabled={!podeAdicionarTipo("Jogador", usuarioAtual?.time)} // Verifica se pode adicionar jogador do seu time
+              className="bg-gradient-to-r from-blue-800 to-blue-900 text-white px-6 py-3 rounded-lg flex items-center gap-3 w-full sm:w-auto justify-center hover:cursor-pointer shadow-lg border border-cyan-700 transition-all duration-100"
+              disabled={!podeAdicionarTipo("Jogador", usuarioAtual?.time)}
             >
-              <FaUserPlus /> Adicionar Usuário
-            </button>
+              <FaUserPlus className="text-xl" />
+              <span className="font-semibold">Adicionar Usuário</span>
+            </motion.button>
           )}
         </div>
 
-        <div className="overflow-x-auto bg-gray-800 rounded-lg border-2 border-borda shadow-lg">
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="overflow-x-auto bg-gray-800 rounded-lg border-2 border-borda shadow-lg"
+        >
           <table className="min-w-full divide-y divide-borda">
             <thead className="bg-cinza-escuro">
               <tr>
@@ -521,100 +627,111 @@ const AdminUsuarios = () => {
               </tr>
             </thead>
             <tbody className="bg-gray-900 divide-y divide-borda">
-              {usuariosFiltrados.length > 0 ? (
-                usuariosFiltrados.map((usuario) => {
-                  const podeGerenciar = podeGerenciarUsuario(usuario);
-                  const eUsuarioAtual = usuario.email === currentUser?.username;
+              <AnimatePresence>
+                {usuariosFiltrados.length > 0 ? (
+                  usuariosFiltrados.map((usuario, index) => {
+                    const podeGerenciar = podeGerenciarUsuario(usuario);
+                    const eUsuarioAtual = usuario.email === currentUser?.username;
 
-                  return (
-                    <tr
-                      key={usuario._id}
-                      className="hover:bg-fundo/50 transition-colors"
-                    >
-                      <td className="px-4 py-4 whitespace-nowrap text-white h-10 w-10">
-                        {!imageErrors[usuario._id] ? (
-                          <button
-                            onClick={() =>
-                              abrirImagemAmpliada(
-                                `${API_BASE_URL}/usuarios/${
+                    return (
+                      <motion.tr
+                        key={usuario._id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        className="hover:bg-fundo/50 transition-colors"
+                      >
+                        <td className="px-4 py-4 whitespace-nowrap text-white h-10 w-10">
+                          {!imageErrors[usuario._id] ? (
+                            <button
+                              onClick={() =>
+                                abrirImagemAmpliada(
+                                  `${API_BASE_URL}/usuarios/${
+                                    usuario._id
+                                  }/foto?t=${Date.now()}`,
+                                  `Foto de ${usuario.email}`
+                                )
+                              }
+                              className=""
+                            >
+                              <img
+                                src={`${API_BASE_URL}/usuarios/${
                                   usuario._id
-                                }/foto?t=${Date.now()}`,
-                                `Foto de ${usuario.email}`
-                              )
-                            }
-                            className=""
-                          >
-                            <img
-                              src={`${API_BASE_URL}/usuarios/${
-                                usuario._id
-                              }/foto?t=${Date.now()}`}
-                              alt={`Foto de ${usuario.email}`}
-                              className="w-11 h-11 transform hover:scale-110 transition-transform duration-300 hover:bg-hover hover:border-2 hover:border-borda object-cover rounded-full cursor-pointer"
-                              onError={() => handleImageError(usuario._id)}
-                            />
-                          </button>
-                        ) : (
-                          <HiUserCircle className="w-11 h-11 text-white" />
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-white">
-                        {usuario.email}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-white">
-                        {usuario.discordID || "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-white">
-                        {usuario.tipoUsuario}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-white">
-                        {usuario.time ||
-                          (["Administrador Geral", "Administrador"].includes(
-                            usuario.tipoUsuario
-                          )
-                            ? "-"
-                            : "Não definido")}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-white">
-                        {new Date(usuario.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap flex gap-2">
-                        {!podeGerenciarUsuario(usuario) ||
-                        isCurrentAdminGeral(usuario) ? (
-                          <span className="text-branco">
-                            {isCurrentAdminGeral(usuario)
-                              ? "Ações não permitidas"
-                              : "Sem permissão"}
-                          </span>
-                        ) : (
-                          <>
-                            <EditarBtn
-                              onClick={() => abrirModalEdicao(usuario)}
-                            />
-                            <DeletarBtn
-                              onDelete={() => handleDelete(usuario._id)}
-                            />
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td
-                    colSpan="6"
-                    className="px-6 py-4 text-center text-cinza-escuro"
+                                }/foto?t=${Date.now()}`}
+                                alt={`Foto de ${usuario.email}`}
+                                className="w-11 h-11 transform hover:scale-110 transition-transform duration-300 hover:bg-hover hover:border-2 hover:border-borda object-cover rounded-full cursor-pointer"
+                                onError={() => handleImageError(usuario._id)}
+                              />
+                            </button>
+                          ) : (
+                            <HiUserCircle className="w-11 h-11 text-white" />
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-white">
+                          {usuario.email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-white">
+                          {usuario.discordID || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-white">
+                          {usuario.tipoUsuario}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-white">
+                          {usuario.time ||
+                            (["Administrador Geral", "Administrador"].includes(
+                              usuario.tipoUsuario
+                            )
+                              ? "-"
+                              : "Não definido")}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-white">
+                          {new Date(usuario.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap flex gap-2">
+                          {!podeGerenciarUsuario(usuario) ||
+                          isCurrentAdminGeral(usuario) ? (
+                            <span className="text-branco">
+                              {isCurrentAdminGeral(usuario)
+                                ? "Ações não permitidas"
+                                : "Sem permissão"}
+                            </span>
+                          ) : (
+                            <>
+                              <EditarBtn
+                                onClick={() => abrirModalEdicao(usuario)}
+                              />
+                              <DeletarBtn
+                                onDelete={() => handleDelete(usuario._id)}
+                              />
+                            </>
+                          )}
+                        </td>
+                      </motion.tr>
+                    );
+                  })
+                ) : (
+                  <motion.tr
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
                   >
-                    Nenhum usuário encontrado
-                  </td>
-                </tr>
-              )}
+                    <td
+                      colSpan="6"
+                      className="px-6 py-4 text-center text-cinza-escuro"
+                    >
+                      Nenhum usuário encontrado
+                    </td>
+                  </motion.tr>
+                )}
+              </AnimatePresence>
             </tbody>
           </table>
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 };
 
 export default AdminUsuarios;
+
+

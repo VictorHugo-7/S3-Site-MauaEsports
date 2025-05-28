@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useMsal } from "@azure/msal-react";
 import PropTypes from "prop-types";
+import { motion, AnimatePresence } from "framer-motion";
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -245,86 +246,161 @@ const Admins = () => {
 
   if (carregando) {
     return (
-      <div
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         className="w-full min-h-screen bg-fundo flex items-center justify-center"
         aria-live="polite"
       >
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"
+        ></motion.div>
         <p className="text-branco ml-4">Carregando administradores...</p>
-      </div>
+      </motion.div>
     );
   }
 
   if (erroCarregamento) {
     return (
-      <div className="w-full min-h-screen bg-fundo flex flex-col items-center justify-center p-4">
-        <div className="bg-preto p-6 rounded-lg max-w-md text-center border border-vermelho-claro">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="w-full min-h-screen bg-fundo flex flex-col items-center justify-center p-4"
+      >
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="bg-preto p-6 rounded-lg max-w-md text-center border border-vermelho-claro"
+        >
           <h2 className="text-xl font-bold text-vermelho-claro mb-2">
             Erro ao carregar
           </h2>
           <p className="text-branco mb-4">{erroCarregamento}</p>
           <div className="flex flex-col space-y-2">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={carregarAdmins}
               className="bg-azul-claro text-branco px-4 py-2 rounded hover:bg-azul-escuro"
               aria-label="Tentar carregar administradores novamente"
             >
               Tentar novamente
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => window.location.reload()}
               className="bg-cinza-escuro text-branco px-4 py-2 rounded hover:bg-cinza-claro"
               aria-label="Recarregar a página"
             >
               Recarregar página
-            </button>
+            </motion.button>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="w-full min-h-screen bg-fundo">
-      {erro && <AlertaErro mensagem={erro} />}
-      {successMessage && <AlertaOk mensagem={successMessage} />}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="w-full min-h-screen bg-fundo"
+    >
+      <AnimatePresence mode="wait">
+        {erro && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <AlertaErro mensagem={erro} />
+          </motion.div>
+        )}
+        {successMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <AlertaOk mensagem={successMessage} />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="bg-[#010409] h-[104px]"></div>
       <PageBanner pageName="Administradores" />
-      <div className="bg-fundo w-full flex justify-center items-center overflow-auto scrollbar-hidden">
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="bg-fundo w-full flex justify-center items-center overflow-auto scrollbar-hidden"
+      >
         <div className="w-full flex flex-wrap py-16 justify-center gap-8">
           {admins.length > 0 ? (
-            admins.map((admin) => (
-              <CardAdmin
+            admins.map((admin, index) => (
+              <motion.div
                 key={admin._id}
-                adminId={admin._id}
-                nome={admin.nome}
-                titulo={admin.titulo || ""}
-                descricao={admin.descricao || ""}
-                foto={admin.fotoUrl}
-                instagram={admin.insta}
-                twitter={admin.twitter}
-                twitch={admin.twitch}
-                onDelete={handleDeleteAdmin}
-                onEditClick={handleEditClick}
-                userRole={userRole}
-              />
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <CardAdmin
+                  adminId={admin._id}
+                  nome={admin.nome}
+                  titulo={admin.titulo || ""}
+                  descricao={admin.descricao || ""}
+                  foto={admin.fotoUrl}
+                  instagram={admin.insta}
+                  twitter={admin.twitter}
+                  twitch={admin.twitch}
+                  onDelete={handleDeleteAdmin}
+                  onEditClick={handleEditClick}
+                  userRole={userRole}
+                />
+              </motion.div>
             ))
           ) : (
-            <div className="text-center p-8 text-branco">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="text-center p-8 text-branco"
+            >
               <p className="text-xl mb-4">Nenhum administrador encontrado</p>
-            </div>
+            </motion.div>
           )}
-          <AdicionarAdmin onAdicionarAdmin={handleCreateAdmin} userRole={userRole} />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <AdicionarAdmin onAdicionarAdmin={handleCreateAdmin} userRole={userRole} />
+          </motion.div>
         </div>
-      </div>
-      {adminEditando && (
-        <ModalEditarAdmin
-          admin={adminEditando}
-          onSave={handleSaveAdmin}
-          onClose={() => setAdminEditando(null)}
-        />
-      )}
-    </div>
+      </motion.div>
+      <AnimatePresence>
+        {adminEditando && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <ModalEditarAdmin
+              admin={adminEditando}
+              onSave={handleSaveAdmin}
+              onClose={() => setAdminEditando(null)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
 
