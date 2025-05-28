@@ -69,23 +69,35 @@ const ModalUsuario = ({
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.email) {
+    
+    // Limpa espaços em branco do email antes da validação
+    const emailTrimmed = formData.email.trim();
+    
+    if (!emailTrimmed) {
       newErrors.email = "Email é obrigatório";
     } else {
-      const emailParts = formData.email.split("@");
+      const emailParts = emailTrimmed.split("@");
       const emailWithoutDomain = emailParts[0];
 
       if (
-        !formData.email.endsWith("@maua.br") &&
+        !emailTrimmed.endsWith("@maua.br") &&
         emailWithoutDomain.length !== 10
       ) {
         newErrors.email =
           "Email deve ser @maua.br e a parte antes do @ deve ter 10 caracteres";
-      } else if (!formData.email.endsWith("@maua.br")) {
+      } else if (!emailTrimmed.endsWith("@maua.br")) {
         newErrors.email = "Email deve ser @maua.br";
       } else if (emailWithoutDomain.length !== 10) {
         newErrors.email =
           "A parte do email antes do @ deve ter exatamente 10 caracteres";
+      }
+    }
+
+    // Limpa espaços em branco do Discord ID
+    if (formData.discordID) {
+      const discordIDTrimmed = formData.discordID.trim();
+      if (discordIDTrimmed && !/^\d+$/.test(discordIDTrimmed)) {
+        newErrors.discordID = "Discord ID deve conter apenas números";
       }
     }
 
@@ -103,7 +115,13 @@ const ModalUsuario = ({
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
-      onSave(formData);
+      // Limpa os espaços em branco antes de enviar
+      const cleanFormData = {
+        ...formData,
+        email: formData.email.trim(),
+        discordID: formData.discordID ? formData.discordID.trim() : ""
+      };
+      onSave(cleanFormData);
     }
   };
 
