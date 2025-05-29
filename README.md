@@ -61,7 +61,18 @@
                                                                                 python app.py
 ```
 
+## Como Rodar os testes
+```
+1. Clone o repositóro                 | git clone https://github.com/VictorHugo-7/S3-Site-MauaEsports
 
+2. Navegue até o diretório do projeto | cd maua-esports
+
+3. Instale as dependências            | npm install
+
+4. rode todos os testes              | npm test
+
+5. rode um teste específico | npm test nome_arquivo (exemplo: npm test usuarios.test.cjs)
+```
 <!--CONTRIBUIÇÃO-->
 ## Contribuição
 ````
