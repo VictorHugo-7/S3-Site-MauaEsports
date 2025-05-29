@@ -37,7 +37,7 @@ app.use((req, res, next) => {
 async function conectarAoMongoDB() {
   const url =
     process.env.NODE_ENV === "test"
-      ? process.env.MONGO_TEST_URL
+      ? "mongodb://localhost:27017/testdb"
       : process.env.MONGO_URL;
 
   await mongoose.connect(url, {
@@ -143,7 +143,7 @@ const rankingSchema = new mongoose.Schema({
 
 const Ranking = mongoose.model("Ranking", rankingSchema);
 
-const usuarioSchema = mongoose.Schema({
+const usuarioSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
@@ -180,7 +180,12 @@ const usuarioSchema = mongoose.Schema({
   tipoUsuario: {
     type: String,
     required: true,
-    enum: ["Administrador Geral", "Administrador", "Capitão de time", "Jogador"],
+    enum: [
+      "Administrador Geral",
+      "Administrador",
+      "Capitão de time",
+      "Jogador",
+    ],
     default: "Jogador",
   },
   time: {
@@ -192,7 +197,6 @@ const usuarioSchema = mongoose.Schema({
     default: Date.now,
   },
 });
-
 
 usuarioSchema.plugin(uniqueValidator, {
   message: "O {PATH} {VALUE} já está em uso.",
@@ -1605,6 +1609,7 @@ function authenticate(req, res, next) {
   next();
 }
 
+const PORT = process.env.PORT || 3001;
 
 const trains = [];
 const modality = [];
@@ -1765,7 +1770,7 @@ app.get("/auth/discord/callback", async (req, res) => {
         client_secret: process.env.CLIENT_SECRET_DISCORD,
         grant_type: "authorization_code",
         code,
-        redirect_uri: "http://localhost:3000/auth/discord/callback",
+        redirect_uri: "http://localhost:3005/auth/discord/callback",
       }),
       {
         headers: {
@@ -2370,11 +2375,18 @@ module.exports = {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Só inicia os servidores se NÃO estiver em ambiente de teste
 if (process.env.NODE_ENV !== "test") {
-  app.listen(PORT, async () => {
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+    console.log(`CORS configurado para: http://localhost:5173`);
+  });
+
+  app.listen(3005, () => {
+    console.log("Discord API rodando na porta 3005");
+  });
+
+  app.listen(3000, () => {
     try {
-      await conectarAoMongoDB();
-      console.log(`Servidor rodando na porta ${PORT}`);
-      console.log(`CORS configurado para: http://localhost:5173`);
+      conectarAoMongoDB();
       console.log("up and running");
     } catch (e) {
       console.log("Erro", e);
