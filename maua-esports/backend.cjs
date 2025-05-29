@@ -37,7 +37,7 @@ app.use((req, res, next) => {
 async function conectarAoMongoDB() {
   const url =
     process.env.NODE_ENV === "test"
-      ? process.env.MONGO_TEST_URL
+      ? "mongodb://localhost:27017/testdb"
       : process.env.MONGO_URL;
 
   await mongoose.connect(url, {
