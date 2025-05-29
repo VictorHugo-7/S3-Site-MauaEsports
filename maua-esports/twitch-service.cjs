@@ -162,7 +162,7 @@ async function updateCache() {
 }
 
 // Atualizar cache a cada 30 segundos
-const CACHE_UPDATE_INTERVAL = 30 * 1000;
+const CACHE_UPDATE_INTERVAL = 15 * 1000;
 setInterval(updateCache, CACHE_UPDATE_INTERVAL);
 
 // Primeira atualização
