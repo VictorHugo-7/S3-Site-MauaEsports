@@ -100,8 +100,36 @@ const TwitchEmbed = ({ channel, isLive }) => {
           title={`${channel} live stream`}
         />
       ) : (
-        <div className="flex items-center justify-center text-gray-400 h-full">
-          Não estamos em live no momento!
+        <div className="w-full h-full bg-[#083d79] flex items-center justify-center relative font-sans">
+          {/* Overlay grid lines (fake borders and decorations) */}
+          <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+            <div className="absolute top-4 left-4 text-white text-2xl font-bold font-blinker tracking-widest flex items-center gap-2">
+              <img
+                src="../src/assets/images/Logo.svg"
+                alt="Mauá Logo"
+                className="h-6"
+              />
+              MAUÁ ESPORTS
+            </div>
+            <div className="absolute top-4 right-4 text-white flex gap-1">
+              {Array(12)
+                .fill(null)
+                .map((_, i) => (
+                  <div key={i} className="w-1 h-3 bg-white/30" />
+                ))}
+            </div>
+          </div>
+
+          {/* Center content */}
+          <div className="text-center z-10">
+            <h2 className="text-white text-lg md:text-xl font-medium tracking-widest mb-2">
+              A STREAM ESTÁ
+            </h2>
+            <h1 className="text-white text-6xl md:text-8xl font-bold tracking-wider">
+              OFFLINE
+            </h1>
+            <p className="font-blinker text-white mt-6">@esportsmaua</p>
+          </div>
         </div>
       )}
     </div>
