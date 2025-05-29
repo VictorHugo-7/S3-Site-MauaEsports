@@ -69,9 +69,9 @@
 
 3. Instale as dependências            | npm install
 
-4. rode todos os testes              | npm test
+4. rode todos os testes               | npm test
 
-5. rode um teste específico | npm test nome_arquivo (exemplo: npm test usuarios.test.cjs)
+5. rode um teste específico           | npm test nome_arquivo (exemplo: npm test usuarios.test.cjs)
 ```
 <!--CONTRIBUIÇÃO-->
 ## Contribuição
