@@ -949,12 +949,22 @@ const TreinosAdmin = () => {
 
       {/* Container principal centralizado */}
       <div className="flex flex-col lg:flex-row w-[90%] sm:w-3/4 lg:w-2/3 min-h-[400px] gap-6 mb-10">
+        {/* Calendário */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+          className="w-full lg:w-[350px] lg:h-[400px] bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-lg overflow-y-auto order-first lg:order-last"
+        >
+          <Calendario />
+        </motion.div>
+
         {/* Lista de Treinos */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.6 }}
-          className="w-full lg:flex-1 bg-gray-800 border border-gray-700 rounded-xl overflow-y-auto shadow-lg min-h-[400px]"
+          className="w-full lg:flex-1 bg-gray-800 border border-gray-700 rounded-xl overflow-y-auto shadow-lg min-h-[400px] order-last lg:order-first"
         >
           <div className="border-b border-gray-700 p-4 sticky top-0 bg-gray-800 z-10">
             <div className="font-blinker text-sm sm:text-base md:text-lg text-white hidden sm:flex justify-between">
@@ -1176,16 +1186,6 @@ const TreinosAdmin = () => {
               )}
             </AnimatePresence>
           </div>
-        </motion.div>
-
-        {/* Calendário */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.8 }}
-          className="w-full lg:w-[350px] lg:h-[400px] bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-lg overflow-y-auto"
-        >
-          <Calendario />
         </motion.div>
       </div>
     </div>
