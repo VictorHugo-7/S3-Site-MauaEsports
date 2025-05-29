@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import { useState, useEffect } from "react";
 import { Calendar, ExternalLink, Users, Heart } from "lucide-react";
 import Margin from "../../padrao/Margin";
@@ -41,26 +42,20 @@ const ChannelInfo = ({ channel, streamStats, isLoading }) => (
         <div className="flex items-center text-gray-400 custom-icon-container">
           <Users size={18} className="mr-2 custom-icon" />
           <span>
-            {isLoading ? (
-              "Carregando..."
-            ) : (
-              streamStats?.isLive ? (
-                `${streamStats.viewers} espectadores agora`
-              ) : (
-                "Offline"
-              )
-            )}
+            {isLoading
+              ? "Carregando..."
+              : streamStats?.isLive
+              ? `${streamStats.viewers} espectadores agora`
+              : "Offline"}
           </span>
         </div>
 
         <div className="flex items-center text-gray-400 custom-icon-container">
           <Heart size={18} className="mr-2 custom-icon" />
           <span>
-            {isLoading ? (
-              "Carregando..."
-            ) : (
-              `${streamStats?.followers || 0} seguidores`
-            )}
+            {isLoading
+              ? "Carregando..."
+              : `${streamStats?.followers || 0} seguidores`}
           </span>
         </div>
 
@@ -88,62 +83,87 @@ const ChannelInfo = ({ channel, streamStats, isLoading }) => (
 );
 
 // Componente para o embed do Twitch (iframe)
-const TwitchEmbed = ({ channel }) => (
-  <div className="w-full h-full bg-black flex items-center justify-center">
-    <iframe
-      src={`https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true`}
-      frameBorder="0"
-      allowFullScreen={true}
-      scrolling="no"
-      className="w-full h-full"
-      title={`${channel} live stream`}
-    />
-  </div>
-);
+const TwitchEmbed = ({ channel, isLive }) => {
+  // Usar uma key única baseada no status da live para forçar recriação do iframe
+  const key = `twitch-player-${isLive ? "live" : "offline"}-${Date.now()}`;
+
+  return (
+    <div className="w-full h-full bg-black flex items-center justify-center">
+      {isLive ? (
+        <iframe
+          key={key}
+          src={`https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true`}
+          frameBorder="0"
+          allowFullScreen={true}
+          scrolling="no"
+          className="w-full h-full"
+          title={`${channel} live stream`}
+        />
+      ) : (
+        <div className="flex items-center justify-center text-gray-400 h-full">
+          Não estamos em live no momento!
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Componente Twitch
 const Twitch = () => {
   const [streamStats, setStreamStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  // eslint-disable-next-line no-unused-vars
+  const [wsConnected, setWsConnected] = useState(false);
 
   useEffect(() => {
-    const fetchStreamStats = async () => {
-      try {
+    let ws = null;
+
+    const connectWebSocket = () => {
+      ws = new WebSocket("ws://localhost:3009");
+
+      ws.onopen = () => {
+        console.log("WebSocket conectado");
+        setWsConnected(true);
         setError(null);
-        console.log('Tentando conectar ao backend...');
-        const response = await fetch('http://localhost:3009/api/twitch/stats/apolityyyy', {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-          },
-        });
-        
-        console.log('Status da resposta:', response.status);
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Falha ao carregar dados da Twitch');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log("Dados recebidos via WebSocket:", data);
+          setStreamStats(data);
+          setIsLoading(false);
+        } catch (err) {
+          console.error("Erro ao processar mensagem do WebSocket:", err);
         }
-        
-        const data = await response.json();
-        console.log('Dados recebidos:', data);
-        setStreamStats(data);
-      } catch (error) {
-        console.error('Erro detalhado ao buscar dados da Twitch:', {
-          message: error.message,
-          stack: error.stack,
-        });
-        setError(error.message);
-      } finally {
-        setIsLoading(false);
-      }
+      };
+
+      ws.onerror = (error) => {
+        console.error("Erro no WebSocket:", error);
+        setError("Erro na conexão com o servidor");
+        setWsConnected(false);
+      };
+
+      ws.onclose = () => {
+        console.log(
+          "WebSocket desconectado. Tentando reconectar em 5 segundos..."
+        );
+        setWsConnected(false);
+        setTimeout(connectWebSocket, 5000);
+      };
     };
 
-    fetchStreamStats();
-    const interval = setInterval(fetchStreamStats, 5 * 60 * 1000);
+    // Inicia a conexão WebSocket
+    connectWebSocket();
 
-    return () => clearInterval(interval);
+    // Cleanup quando o componente for desmontado
+    return () => {
+      if (ws) {
+        console.log("Fechando conexão WebSocket...");
+        ws.close();
+      }
+    };
   }, []);
 
   return (
@@ -153,12 +173,11 @@ const Twitch = () => {
         data-aos="fade-up"
         className="text-3xl text-center font-bold mb-15 text-azul-claro"
       >
-        Twitch
+        Twitch{" "}
       </h1>
+
       {error ? (
-        <div className="text-center text-vermelho-claro">
-          {error}
-        </div>
+        <div className="text-center text-vermelho-claro">{error}</div>
       ) : (
         <div
           data-aos-delay="200"
@@ -177,7 +196,10 @@ const Twitch = () => {
           />
 
           <div className="w-full md:w-2/3 bg-black h-[500px] md:h-auto">
-            <TwitchEmbed channel="mauaesports" />
+            <TwitchEmbed
+              channel="apolityyyy"
+              isLive={streamStats?.isLive || false}
+            />
           </div>
         </div>
       )}
