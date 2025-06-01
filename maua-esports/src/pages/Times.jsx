@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { useMsal } from "@azure/msal-react";
 import PropTypes from "prop-types";
 import { motion, AnimatePresence } from "framer-motion";
+import ModalConfirmarExclusao from "../components/modalConfirmarExclusao";
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -20,6 +21,10 @@ const Times = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [timeEditando, setTimeEditando] = useState(null);
   const [userRole, setUserRole] = useState(null);
+  const [modalExclusao, setModalExclusao] = useState({
+    isOpen: false,
+    time: null,
+  });
   const navigate = useNavigate();
   const { instance } = useMsal();
 
@@ -104,9 +109,17 @@ const Times = () => {
       setErroCarregamento("Você não tem permissão para excluir times");
       return;
     }
+    const timeParaExcluir = times.find((time) => time._id === timeId);
+    setModalExclusao({ isOpen: true, time: timeParaExcluir });
+  };
+
+  const confirmarExclusao = async () => {
+    const time = modalExclusao.time;
+    if (!time) return;
+
     try {
-      await axios.delete(`${API_BASE_URL}/times/${timeId}`);
-      setTimes(times.filter((time) => time._id !== timeId));
+      await axios.delete(`${API_BASE_URL}/times/${time._id}`);
+      setTimes(times.filter((t) => t._id !== time._id));
       setSuccessMessage("Time excluído com sucesso!");
     } catch (error) {
       console.error("Erro ao deletar time:", error);
@@ -114,7 +127,13 @@ const Times = () => {
         error.response?.data?.message ||
           "Não foi possível excluir o time. Verifique se não há jogadores associados."
       );
+    } finally {
+      setModalExclusao({ isOpen: false, time: null });
     }
+  };
+
+  const cancelarExclusao = () => {
+    setModalExclusao({ isOpen: false, time: null });
   };
 
   const dataURLtoBlob = (dataURL) => {
@@ -246,11 +265,18 @@ const Times = () => {
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="w-full min-h-screen bg-fundo"
     >
+      <ModalConfirmarExclusao
+        isOpen={modalExclusao.isOpen}
+        mensagem={`Tem certeza que deseja deletar o time ${modalExclusao.time?.nome}?`}
+        onConfirm={confirmarExclusao}
+        onCancel={cancelarExclusao}
+      />
+
       <AnimatePresence mode="wait">
         {successMessage && (
           <motion.div
@@ -275,7 +301,7 @@ const Times = () => {
       </AnimatePresence>
       <div className="bg-[#010409] h-[104px]"></div>
       <PageBanner pageName="Escolha seu time!" />
-      <motion.div 
+      <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}

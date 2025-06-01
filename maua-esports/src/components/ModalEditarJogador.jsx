@@ -13,27 +13,25 @@ import CancelarBtn from "./CancelarBtn";
 import ImageCropper from "./ImageCropper";
 import { UseImageCrop } from "./UseImageCrop";
 
-const EditarJogador = ({
-  jogador: {
-    _id: jogadorId,
-    nome: nomeInicial,
-    titulo: tituloInicial,
-    descricao: descricaoInicial,
-    fotoUrl: fotoInicial,
-    insta: instagramInicial,
-    twitter: twitterInicial,
-    twitch: twitchInicial,
-  },
-  onSave,
-  onClose,
-}) => {
+const EditarJogador = ({ jogador = {}, onSave, onClose }) => {
+  const {
+    _id: jogadorId = "",
+    nome: nomeInicial = "",
+    titulo: tituloInicial = "",
+    descricao: descricaoInicial = "",
+    fotoUrl: fotoInicial = "",
+    insta: instagramInicial = "",
+    twitter: twitterInicial = "",
+    twitch: twitchInicial = "",
+  } = jogador;
+
   const [formData, setFormData] = useState({
     nome: nomeInicial,
     titulo: tituloInicial,
     descricao: descricaoInicial,
-    instagram: instagramInicial || "",
-    twitter: twitterInicial || "",
-    twitch: twitchInicial || "",
+    instagram: instagramInicial,
+    twitter: twitterInicial,
+    twitch: twitchInicial,
   });
 
   const [errors, setErrors] = useState({});
@@ -74,35 +72,35 @@ const EditarJogador = ({
 
   const validate = () => {
     const newErrors = {};
-    
+
     if (!formData.nome) {
       newErrors.nome = "Nome é obrigatório";
     }
-    
+
     if (!formData.titulo) {
       newErrors.titulo = "Título é obrigatório";
     }
-    
+
     if (!formData.descricao) {
       newErrors.descricao = "Descrição é obrigatória";
     }
-    
+
     if (!fotoCropped && !fotoInicial) {
       newErrors.foto = "Foto do Jogador é obrigatória";
     }
-    
+
     if (formData.instagram && !formData.instagram.startsWith("https://")) {
       newErrors.instagram = "O link do Instagram deve começar com https://";
     }
-    
+
     if (formData.twitter && !formData.twitter.startsWith("https://")) {
       newErrors.twitter = "O link do Twitter deve começar com https://";
     }
-    
+
     if (formData.twitch && !formData.twitch.startsWith("https://")) {
       newErrors.twitch = "O link do Twitch deve começar com https://";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -117,7 +115,7 @@ const EditarJogador = ({
           foto: fotoCropped || fotoInicial,
         };
 
-        await onSave(jogadorAtualizado);
+        await onSave(jogadorId, jogadorAtualizado); // Passa jogadorId explicitamente
         handleClose();
       } catch (error) {
         setErrors({ submit: error.message });
@@ -177,7 +175,9 @@ const EditarJogador = ({
                     <RiImageAddLine className="w-8 h-8 text-azul-claro mb-2" />
                   )}
                   <p className="text-sm text-fonte-escura">
-                    {fotoCropped || fotoInicial ? "Alterar imagem" : "Clique para enviar"}
+                    {fotoCropped || fotoInicial
+                      ? "Alterar imagem"
+                      : "Clique para enviar"}
                   </p>
                   <p className="text-xs text-fonte-escura/50 mt-1">
                     PNG, JPG ou JPEG (Max. 5MB)
@@ -194,7 +194,9 @@ const EditarJogador = ({
                 />
               </label>
               {errors.foto && (
-                <p className="text-vermelho-claro text-sm mt-1">{errors.foto}</p>
+                <p className="text-vermelho-claro text-sm mt-1">
+                  {errors.foto}
+                </p>
               )}
               {(fotoCropped || fotoInicial) && (
                 <div className="mt-4 flex justify-center">
@@ -225,7 +227,9 @@ const EditarJogador = ({
                 }`}
               />
               {errors.nome && (
-                <p className="text-vermelho-claro text-sm mt-1">{errors.nome}</p>
+                <p className="text-vermelho-claro text-sm mt-1">
+                  {errors.nome}
+                </p>
               )}
             </div>
 
@@ -245,7 +249,9 @@ const EditarJogador = ({
                 }`}
               />
               {errors.titulo && (
-                <p className="text-vermelho-claro text-sm mt-1">{errors.titulo}</p>
+                <p className="text-vermelho-claro text-sm mt-1">
+                  {errors.titulo}
+                </p>
               )}
             </div>
 
@@ -265,7 +271,9 @@ const EditarJogador = ({
                 rows="3"
               />
               {errors.descricao && (
-                <p className="text-vermelho-claro text-sm mt-1">{errors.descricao}</p>
+                <p className="text-vermelho-claro text-sm mt-1">
+                  {errors.descricao}
+                </p>
               )}
             </div>
 
@@ -292,7 +300,9 @@ const EditarJogador = ({
                 />
               </div>
               {errors.instagram && (
-                <p className="text-vermelho-claro text-sm mt-1">{errors.instagram}</p>
+                <p className="text-vermelho-claro text-sm mt-1">
+                  {errors.instagram}
+                </p>
               )}
 
               <div className="flex items-center mb-2">
@@ -313,7 +323,9 @@ const EditarJogador = ({
                 />
               </div>
               {errors.twitter && (
-                <p className="text-vermelho-claro text-sm mt-1">{errors.twitter}</p>
+                <p className="text-vermelho-claro text-sm mt-1">
+                  {errors.twitter}
+                </p>
               )}
 
               <div className="flex items-center">
@@ -334,7 +346,9 @@ const EditarJogador = ({
                 />
               </div>
               {errors.twitch && (
-                <p className="text-vermelho-claro text-sm mt-1">{errors.twitch}</p>
+                <p className="text-vermelho-claro text-sm mt-1">
+                  {errors.twitch}
+                </p>
               )}
             </div>
           </div>
@@ -351,10 +365,10 @@ const EditarJogador = ({
 
 EditarJogador.propTypes = {
   jogador: PropTypes.shape({
-    _id: PropTypes.string.isRequired,
-    nome: PropTypes.string.isRequired,
-    titulo: PropTypes.string.isRequired,
-    descricao: PropTypes.string.isRequired,
+    _id: PropTypes.string,
+    nome: PropTypes.string,
+    titulo: PropTypes.string,
+    descricao: PropTypes.string,
     fotoUrl: PropTypes.string,
     insta: PropTypes.string,
     twitter: PropTypes.string,
@@ -363,4 +377,5 @@ EditarJogador.propTypes = {
   onSave: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,
 };
+
 export default EditarJogador;

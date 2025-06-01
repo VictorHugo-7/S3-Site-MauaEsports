@@ -56,35 +56,35 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
 
   const validate = () => {
     const newErrors = {};
-    
+
     if (!formData.nome) {
       newErrors.nome = "Nome é obrigatório";
     }
-    
+
     if (!formData.titulo) {
       newErrors.titulo = "Título é obrigatório";
     }
-    
+
     if (!formData.descricao) {
       newErrors.descricao = "Descrição é obrigatória";
     }
-    
+
     if (!fotoCropped && !admin.fotoUrl) {
       newErrors.foto = "Foto é obrigatória";
     }
-    
+
     if (formData.instagram && !formData.instagram.startsWith("https://")) {
       newErrors.instagram = "O link do Instagram deve começar com https://";
     }
-    
+
     if (formData.twitter && !formData.twitter.startsWith("https://")) {
       newErrors.twitter = "O link do Twitter deve começar com https://";
     }
-    
+
     if (formData.twitch && !formData.twitch.startsWith("https://")) {
       newErrors.twitch = "O link do Twitch deve começar com https://";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -136,7 +136,9 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
         }`}
       >
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-branco">Editar Administrador</h2>
+          <h2 className="text-xl font-bold text-branco">
+            Editar Administrador
+          </h2>
           <button
             onClick={handleClose}
             className="text-fonte-escura hover:text-vermelho-claro hover:cursor-pointer"
@@ -164,7 +166,9 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
                   <RiImageAddLine className="w-8 h-8 text-azul-claro mb-2" />
                 )}
                 <p className="text-sm text-fonte-escura">
-                  {fotoCropped || admin.fotoUrl ? "Alterar imagem" : "Clique para enviar"}
+                  {fotoCropped || admin.fotoUrl
+                    ? "Alterar imagem"
+                    : "Clique para enviar"}
                 </p>
                 <p className="text-xs text-fonte-escura/50 mt-1">
                   PNG, JPG ou JPEG (Max. 5MB)
@@ -241,7 +245,9 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
               }`}
             />
             {errors.titulo && (
-              <p className="text-vermelho-claro text-sm mt-1">{errors.titulo}</p>
+              <p className="text-vermelho-claro text-sm mt-1">
+                {errors.titulo}
+              </p>
             )}
           </div>
 
@@ -261,7 +267,9 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
               rows="3"
             />
             {errors.descricao && (
-              <p className="text-vermelho-claro text-sm mt-1">{errors.descricao}</p>
+              <p className="text-vermelho-claro text-sm mt-1">
+                {errors.descricao}
+              </p>
             )}
           </div>
 
@@ -287,7 +295,9 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
               />
             </div>
             {errors.instagram && (
-              <p className="text-vermelho-claro text-sm mt-1">{errors.instagram}</p>
+              <p className="text-vermelho-claro text-sm mt-1">
+                {errors.instagram}
+              </p>
             )}
 
             <div className="flex items-center mb-2">
@@ -308,7 +318,9 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
               />
             </div>
             {errors.twitter && (
-              <p className="text-vermelho-claro text-sm mt-1">{errors.twitter}</p>
+              <p className="text-vermelho-claro text-sm mt-1">
+                {errors.twitter}
+              </p>
             )}
 
             <div className="flex items-center">
@@ -329,7 +341,9 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
               />
             </div>
             {errors.twitch && (
-              <p className="text-vermelho-claro text-sm mt-1">{errors.twitch}</p>
+              <p className="text-vermelho-claro text-sm mt-1">
+                {errors.twitch}
+              </p>
             )}
           </div>
 

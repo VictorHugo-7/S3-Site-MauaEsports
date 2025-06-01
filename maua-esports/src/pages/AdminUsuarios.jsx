@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useMsal } from "@azure/msal-react";
-import { FaUserPlus, FaSearch, FaUserCog, FaTimes } from "react-icons/fa";
+import { FaUserPlus, FaSearch, FaTimes } from "react-icons/fa";
 import EditarBtn from "../components/EditarBtn";
 import DeletarBtn from "../components/DeletarBtn";
 import ModalUsuario from "../components/ModalUsuario";
@@ -231,7 +231,7 @@ const AdminUsuarios = () => {
 
       // Update the usuarios state first
       setUsuarios(usuarios.filter((u) => u._id !== id));
-      
+
       // Then set the success message
       setSuccess(`Usuário ${usuario.email} excluído com sucesso!`);
       setError(null); // Clear any existing error
@@ -278,7 +278,12 @@ const AdminUsuarios = () => {
       }
 
       // Verifica se o email já existe (apenas para criação de novo usuário)
-      if (!modoEdicao && usuarios.some(u => u.email.toLowerCase() === formData.email.toLowerCase())) {
+      if (
+        !modoEdicao &&
+        usuarios.some(
+          (u) => u.email.toLowerCase() === formData.email.toLowerCase()
+        )
+      ) {
         throw new Error("Este email já está cadastrado");
       }
 
@@ -289,7 +294,9 @@ const AdminUsuarios = () => {
         }
 
         if (formData.time !== usuarioAtual.time) {
-          throw new Error("Você só pode adicionar jogadores do seu próprio time!");
+          throw new Error(
+            "Você só pode adicionar jogadores do seu próprio time!"
+          );
         }
       }
 
@@ -300,7 +307,9 @@ const AdminUsuarios = () => {
       if (isSelfEdit) {
         // Administrador Geral não pode se editar
         if (usuarioSelecionado.tipoUsuario === "Administrador Geral") {
-          throw new Error("Administrador Geral não pode editar seu próprio perfil!");
+          throw new Error(
+            "Administrador Geral não pode editar seu próprio perfil!"
+          );
         }
 
         // Capitão não pode mudar seu próprio time
@@ -308,7 +317,9 @@ const AdminUsuarios = () => {
           usuarioSelecionado.tipoUsuario === "Capitão de time" &&
           formData.time !== usuarioSelecionado.time
         ) {
-          throw new Error("Você não pode alterar o time ao qual está vinculado!");
+          throw new Error(
+            "Você não pode alterar o time ao qual está vinculado!"
+          );
         }
 
         // Capitão só pode abaixar seu próprio cargo (não pode se promover)
@@ -317,16 +328,22 @@ const AdminUsuarios = () => {
           formData.tipoUsuario !== "Capitão de time" &&
           formData.tipoUsuario !== "Jogador"
         ) {
-          throw new Error("Como Capitão, você só pode se rebaixar para Jogador!");
+          throw new Error(
+            "Como Capitão, você só pode se rebaixar para Jogador!"
+          );
         }
       } else {
         // Validações normais para edição de outros usuários
         if (!modoEdicao && !podeAdicionarTipo(formData.tipoUsuario)) {
-          throw new Error("Você não tem permissão para adicionar este tipo de usuário!");
+          throw new Error(
+            "Você não tem permissão para adicionar este tipo de usuário!"
+          );
         }
 
         if (!timeValidoParaTipo(formData.tipoUsuario, formData.time)) {
-          throw new Error("Este tipo de usuário precisa estar vinculado a um time!");
+          throw new Error(
+            "Este tipo de usuário precisa estar vinculado a um time!"
+          );
         }
       }
 
@@ -509,7 +526,10 @@ const AdminUsuarios = () => {
 
       <div className="w-full bg-navbar mb-10">
         <div className="h-[104px]"></div>
-        <PageBanner pageName="Gerenciamento de Usuários" className="bg-navbar" />
+        <PageBanner
+          pageName="Gerenciamento de Usuários"
+          className="bg-navbar"
+        />
         <AnimatePresence mode="wait">
           {error && (
             <motion.div
@@ -579,9 +599,9 @@ const AdminUsuarios = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3 }}
-              whileHover={{ 
+              whileHover={{
                 scale: 1.05,
-                boxShadow: "0 0 15px rgba(59, 130, 246, 0.3)"
+                boxShadow: "0 0 15px rgba(59, 130, 246, 0.3)",
               }}
               whileTap={{ scale: 0.95 }}
               onClick={abrirModalCriacao}
@@ -631,7 +651,8 @@ const AdminUsuarios = () => {
                 {usuariosFiltrados.length > 0 ? (
                   usuariosFiltrados.map((usuario, index) => {
                     const podeGerenciar = podeGerenciarUsuario(usuario);
-                    const eUsuarioAtual = usuario.email === currentUser?.username;
+                    const eUsuarioAtual =
+                      usuario.email === currentUser?.username;
 
                     return (
                       <motion.tr
@@ -733,5 +754,3 @@ const AdminUsuarios = () => {
 };
 
 export default AdminUsuarios;
-
-

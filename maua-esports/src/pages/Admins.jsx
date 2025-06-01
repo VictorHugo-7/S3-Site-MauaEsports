@@ -5,11 +5,11 @@ import AdicionarAdmin from "../components/AdicionarAdmin";
 import PageBanner from "../components/PageBanner";
 import AlertaErro from "../components/AlertaErro";
 import AlertaOk from "../components/AlertaOk";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useMsal } from "@azure/msal-react";
 import PropTypes from "prop-types";
 import { motion, AnimatePresence } from "framer-motion";
+import ModalConfirmarExclusao from "../components/modalConfirmarExclusao";
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -22,7 +22,10 @@ const Admins = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const { instance } = useMsal();
   const [userRole, setUserRole] = useState(null);
-  const navigate = useNavigate();
+  const [modalExclusao, setModalExclusao] = useState({
+    isOpen: false,
+    admin: null,
+  });
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -83,10 +86,10 @@ const Admins = () => {
         error.code === "ECONNABORTED"
           ? "Tempo de conexão excedido. Verifique sua internet."
           : error.response
-            ? error.response.data.message || "Erro ao carregar administradores"
-            : error.message.includes("Network Error")
-              ? "Servidor não responde. Verifique sua conexão ou tente novamente."
-              : error.message
+          ? error.response.data.message || "Erro ao carregar administradores"
+          : error.message.includes("Network Error")
+          ? "Servidor não responde. Verifique sua conexão ou tente novamente."
+          : error.message
       );
       setAdmins([]);
     } finally {
@@ -99,106 +102,46 @@ const Admins = () => {
   }, []);
 
   const handleDeleteAdmin = async (adminId) => {
+    const adminParaExcluir = admins.find((a) => a._id === adminId);
+    setModalExclusao({ isOpen: true, admin: adminParaExcluir });
+  };
+
+  const confirmarExclusao = async () => {
+    const admin = modalExclusao.admin;
+    if (!admin) return;
+
     try {
-      await axios.delete(`${API_BASE_URL}/admins/${adminId}`);
-      setAdmins((prev) => prev.filter((a) => a._id !== adminId));
+      await axios.delete(`${API_BASE_URL}/admins/${admin._id}`);
+      setAdmins((prev) => prev.filter((a) => a._id !== admin._id));
       setSuccessMessage("Administrador deletado com sucesso!");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Erro ao deletar admin:", error);
-      setErro(
-        error.response?.data?.message || "Erro ao deletar administrador"
-      );
+      setErro(error.response?.data?.message || "Erro ao deletar administrador");
       setTimeout(() => setErro(null), 3000);
+    } finally {
+      setModalExclusao({ isOpen: false, admin: null });
     }
   };
 
-  const dataURLtoBlob = (dataURL) => {
-    const arr = dataURL.split(",");
-    const mime = arr[0].match(/:(.*?);/)[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new Blob([u8arr], { type: mime });
+  const cancelarExclusao = () => {
+    setModalExclusao({ isOpen: false, admin: null });
   };
-
-  const handleSaveAdmin = async (adminAtualizado) => {
-  try {
-    const formData = new FormData();
-    formData.append("nome", adminAtualizado.nome);
-    formData.append("titulo", adminAtualizado.titulo || "");
-    formData.append("descricao", adminAtualizado.descricao || "");
-    formData.append("insta", adminAtualizado.insta || "");
-    formData.append("twitter", adminAtualizado.twitter || "");
-    formData.append("twitch", adminAtualizado.twitch || "");
-
-    // Convert base64 to Blob if necessary
-    if (adminAtualizado.foto && adminAtualizado.foto.startsWith("data:image")) {
-      const fotoBlob = dataURLtoBlob(adminAtualizado.foto);
-      formData.append("foto", fotoBlob, `foto-admin-${Date.now()}.jpg`);
-    } else if (adminAtualizado.foto === null) {
-      formData.append("removeFoto", "true");
-    }
-
-    const response = await axios.put(
-      `${API_BASE_URL}/admins/${adminAtualizado._id}`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
-
-    setAdmins((prev) =>
-      prev.map((admin) =>
-        admin._id === adminAtualizado._id
-          ? {
-              ...admin,
-              nome: response.data.nome,
-              titulo: response.data.titulo,
-              descricao: response.data.descricao,
-              insta: response.data.insta,
-              twitter: response.data.twitter,
-              twitch: response.data.twitch,
-              fotoUrl: response.data.foto
-                ? `${API_BASE_URL}/admins/${response.data._id}/foto?${Date.now()}`
-                : null,
-            }
-          : admin
-      )
-    );
-    setAdminEditando(null);
-    setSuccessMessage("Administrador atualizado com sucesso!");
-    setTimeout(() => setSuccessMessage(null), 3000);
-    carregarAdmins();
-  } catch (error) {
-    console.error("Erro na edição:", error);
-    setErro(
-      error.response?.data?.message || "Erro ao atualizar administrador"
-    );
-    setTimeout(() => setErro(null), 3000);
-  }
-};
 
   const handleCreateAdmin = async (novoAdmin) => {
     try {
       const formData = new FormData();
-      formData.append("nome", novoAdmin.nome.trim());
-      formData.append("titulo", novoAdmin.titulo.trim());
-      formData.append("descricao", novoAdmin.descricao.trim());
+      formData.append("nome", novoAdmin.nome);
+      formData.append("titulo", novoAdmin.titulo);
+      formData.append("descricao", novoAdmin.descricao);
+      formData.append("insta", novoAdmin.insta || "");
+      formData.append("twitter", novoAdmin.twitter || "");
+      formData.append("twitch", novoAdmin.twitch || "");
 
-      if (novoAdmin.instagram) formData.append("insta", novoAdmin.instagram.trim());
-      if (novoAdmin.twitter) formData.append("twitter", novoAdmin.twitter.trim());
-      if (novoAdmin.twitch) formData.append("twitch", novoAdmin.twitch.trim());
-
-      // Convert base64 to Blob if necessary
-      if (novoAdmin.foto && novoAdmin.foto.startsWith("data:image")) {
-        const fotoBlob = dataURLtoBlob(novoAdmin.foto);
-        formData.append("foto", fotoBlob, `foto-admin-${Date.now()}.jpg`);
+      if (novoAdmin.foto && novoAdmin.foto.startsWith("data:")) {
+        const response = await fetch(novoAdmin.foto);
+        const blob = await response.blob();
+        formData.append("foto", blob, "foto-admin.jpg");
       }
 
       const response = await axios.post(`${API_BASE_URL}/admins`, formData, {
@@ -212,7 +155,9 @@ const Admins = () => {
         {
           ...response.data.admin,
           fotoUrl: response.data.admin.foto
-            ? `${API_BASE_URL}/admins/${response.data.admin._id}/foto?${Date.now()}`
+            ? `${API_BASE_URL}/admins/${
+                response.data.admin._id
+              }/foto?${Date.now()}`
             : null,
         },
       ]);
@@ -221,9 +166,7 @@ const Admins = () => {
       carregarAdmins();
     } catch (error) {
       console.error("Erro ao criar admin:", error);
-      setErro(
-        error.response?.data?.message || "Erro ao criar administrador"
-      );
+      setErro(error.response?.data?.message || "Erro ao criar administrador");
       setTimeout(() => setErro(null), 3000);
     }
   };
@@ -381,10 +324,29 @@ const Admins = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <AdicionarAdmin onAdicionarAdmin={handleCreateAdmin} userRole={userRole} />
+            <AdicionarAdmin
+              onAdicionarAdmin={handleCreateAdmin}
+              userRole={userRole}
+            />
           </motion.div>
         </div>
       </motion.div>
+      <AnimatePresence>
+        {modalExclusao.isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <ModalConfirmarExclusao
+              isOpen={modalExclusao.isOpen}
+              mensagem={`Tem certeza que deseja deletar o administrador ${modalExclusao.admin?.nome}?`}
+              onConfirm={confirmarExclusao}
+              onCancel={cancelarExclusao}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {adminEditando && (
           <motion.div
@@ -394,8 +356,45 @@ const Admins = () => {
           >
             <ModalEditarAdmin
               admin={adminEditando}
-              onSave={handleSaveAdmin}
               onClose={() => setAdminEditando(null)}
+              onSave={async (updatedData) => {
+                try {
+                  const formData = new FormData();
+                  formData.append("nome", updatedData.nome);
+                  formData.append("titulo", updatedData.titulo);
+                  formData.append("descricao", updatedData.descricao);
+                  formData.append("insta", updatedData.insta || "");
+                  formData.append("twitter", updatedData.twitter || "");
+                  formData.append("twitch", updatedData.twitch || "");
+
+                  // Handle photo upload
+                  if (updatedData.foto instanceof File) {
+                    formData.append("foto", updatedData.foto);
+                  }
+
+                  await axios.put(
+                    `${API_BASE_URL}/admins/${updatedData._id}`,
+                    formData,
+                    {
+                      headers: {
+                        "Content-Type": "multipart/form-data",
+                      },
+                    }
+                  );
+
+                  setSuccessMessage("Administrador atualizado com sucesso!");
+                  setTimeout(() => setSuccessMessage(null), 3000);
+                  carregarAdmins();
+                  setAdminEditando(null);
+                } catch (error) {
+                  console.error("Erro ao atualizar admin:", error);
+                  setErro(
+                    error.response?.data?.message ||
+                      "Erro ao atualizar administrador"
+                  );
+                  setTimeout(() => setErro(null), 3000);
+                }
+              }}
             />
           </motion.div>
         )}

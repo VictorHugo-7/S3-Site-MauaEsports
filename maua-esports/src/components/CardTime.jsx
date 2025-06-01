@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import EditarBtn from "./EditarBtn";
 import DeletarBtn from "./DeletarBtn";
-import ModalConfirmarExclusao from "../components/modalConfirmarExclusao";
 import PropTypes from "prop-types";
 
 const CardTime = ({
@@ -18,7 +17,6 @@ const CardTime = ({
   const [imgError, setImgError] = useState(false);
   const [jogoError, setJogoError] = useState(false);
   const [error, setError] = useState(null);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const isAdmin = ["Administrador", "Administrador Geral"].includes(userRole);
   const defaultFoto = "/path/to/default-team.jpg";
   const defaultJogo = "/path/to/default-game.png";
@@ -26,18 +24,7 @@ const CardTime = ({
   const handleDeleteClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setShowConfirmModal(true);
-  };
-
-  const confirmDelete = () => {
-    if (onDelete) {
-      onDelete(timeId);
-      setShowConfirmModal(false);
-    }
-  };
-
-  const cancelDelete = () => {
-    setShowConfirmModal(false);
+    onDelete(timeId);
   };
 
   const handleEditClick = (e) => {
@@ -106,12 +93,6 @@ const CardTime = ({
           </div>
         </div>
       </div>
-      <ModalConfirmarExclusao
-        isOpen={showConfirmModal}
-        mensagem={`Tem certeza que deseja deletar o time ${nome}?`}
-        onConfirm={confirmDelete}
-        onCancel={cancelDelete}
-      />
     </div>
   );
 };
