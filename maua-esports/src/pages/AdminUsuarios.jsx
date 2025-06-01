@@ -10,7 +10,7 @@ import AlertaOk from "../components/AlertaOk";
 import axios from "axios";
 import { HiUserCircle } from "react-icons/hi2";
 import { motion, AnimatePresence } from "framer-motion";
-import ModalConfirmarExclusao from "../components/ModalConfirmarExclusao";
+import ModalConfirmarExclusao from "../components/modalConfirmarExclusao";
 
 const API_BASE_URL = "http://localhost:3000";
 
