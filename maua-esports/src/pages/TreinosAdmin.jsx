@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+/* eslint-disable react/prop-types */
+import { useState, useEffect } from "react";
 import axios from "axios";
 import {
   MdChevronRight,
@@ -16,6 +17,7 @@ import AlertaErro from "../components/AlertaErro";
 import AlertaOk from "../components/AlertaOk";
 import DeletarBtn from "../components/DeletarBtn";
 import EditarBtn from "../components/EditarBtn";
+import ModalConfirmarExclusao from "../components/modalConfirmarExclusao";
 
 // Componente Agendamento
 const Agendamento = ({
@@ -23,7 +25,6 @@ const Agendamento = ({
   fim,
   diaSemana,
   time,
-  status,
   onEditar,
   onExcluir,
   userRole,
@@ -59,7 +60,9 @@ const Agendamento = ({
 
         {/* Dia da Semana */}
         <div className="flex flex-col items-center sm:items-start">
-          <div className="sm:hidden text-xs text-gray-400 mb-1">Dia da Semana</div>
+          <div className="sm:hidden text-xs text-gray-400 mb-1">
+            Dia da Semana
+          </div>
           <span className="text-white font-medium text-base">
             {diasDaSemana[diaSemana]}
           </span>
@@ -122,7 +125,6 @@ const TreinosAdmin = () => {
   const [userData, setUserData] = useState(null);
   const [userRole, setUserRole] = useState("");
   const [discordId, setDiscordId] = useState("");
-  const [isCaptain, setIsCaptain] = useState(false);
   const [dataSelecionada, setDataSelecionada] = useState(new Date());
   const [modalidades, setModalidades] = useState({});
   const [modalidadeSelecionada, setModalidadeSelecionada] = useState("");
@@ -146,6 +148,10 @@ const TreinosAdmin = () => {
   const [alertaErro, setAlertaErro] = useState("");
   const [alertaOk, setAlertaOk] = useState("");
   const [userModality, setUserModality] = useState(null);
+  const [modalExclusao, setModalExclusao] = useState({
+    isOpen: false,
+    treino: null,
+  });
 
   const diasDaSemana = [
     { value: 0, label: "Domingo" },
@@ -627,13 +633,12 @@ const TreinosAdmin = () => {
       return;
     }
 
-    const confirmacao = window.confirm(
-      `Deseja realmente excluir o treino do time ${treino.NomeModalidade} das ${treino.inicio} às ${treino.fim}?`
-    );
+    setModalExclusao({ isOpen: true, treino });
+  };
 
-    if (!confirmacao) {
-      return;
-    }
+  const confirmarExclusao = async () => {
+    const treino = modalExclusao.treino;
+    if (!treino) return;
 
     try {
       const modalidade = modalidades[treino.ModalityId];
@@ -682,7 +687,13 @@ const TreinosAdmin = () => {
         error.response?.data?.message || "Erro ao excluir treino"
       );
       setAlertaErro(error.response?.data?.message || "Erro ao excluir treino");
+    } finally {
+      setModalExclusao({ isOpen: false, treino: null });
     }
+  };
+
+  const cancelarExclusao = () => {
+    setModalExclusao({ isOpen: false, treino: null });
   };
 
   const Calendario = () => {
@@ -816,6 +827,26 @@ const TreinosAdmin = () => {
 
   return (
     <div className="w-full min-h-screen bg-[#0D1117] flex flex-col items-center">
+      {/* Modal de Confirmação de Exclusão */}
+      <ModalConfirmarExclusao
+        isOpen={modalExclusao.isOpen}
+        mensagem={
+          <>
+            <p className="mb-4">
+              Tem certeza que deseja excluir o treino do time{" "}
+              {modalExclusao.treino?.NomeModalidade} das{" "}
+              {modalExclusao.treino?.inicio} às {modalExclusao.treino?.fim}?
+            </p>
+            <p className="text-yellow-400 text-sm mb-4">
+              Observação: Para treinos recém criados, favor esperar 30 minutos
+              após o término do treino para realizar a exclusão.
+            </p>
+          </>
+        }
+        onConfirm={confirmarExclusao}
+        onCancel={cancelarExclusao}
+      />
+
       {/* Alertas de sucesso/erro */}
       <AlertaErro
         key={`erro-${alertaErro}-${Date.now()}`}
@@ -1166,7 +1197,6 @@ const TreinosAdmin = () => {
                         inicio={agendamento.inicio}
                         fim={agendamento.fim}
                         diaSemana={agendamento.diaSemana}
-                        status={agendamento.status}
                         time={agendamento.NomeModalidade}
                         onEditar={() => iniciarEdicao(agendamento)}
                         onExcluir={() => excluirTreino(agendamento)}

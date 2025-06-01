@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import CardJogador from "../components/CardJogador";
 import AdicionarMembro from "../components/AdicionarMembro";
 import PageBanner from "../components/PageBanner";
 import AlertaErro from "../components/AlertaErro";
 import AlertaOk from "../components/AlertaOk";
+import ModalConfirmarExclusao from "../components/modalConfirmarExclusao";
+import ModalEditarJogador from "../components/ModalEditarJogador";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 import { useMsal } from "@azure/msal-react";
 import PropTypes from "prop-types";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,7 +22,11 @@ const Membros = () => {
   const [erro, setErro] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [userRole, setUserRole] = useState(null);
-  const navigate = useNavigate();
+  const [modalExclusao, setModalExclusao] = useState({
+    isOpen: false,
+    jogador: null,
+  });
+  const [jogadorEditando, setJogadorEditando] = useState(null);
   const { instance } = useMsal();
 
   const carregarDados = async () => {
@@ -91,17 +96,47 @@ const Membros = () => {
     carregarDados();
   }, [timeId]);
 
-  const handleDeleteJogador = async (jogadorId) => {
+  const handleDeleteJogador = (jogadorId) => {
+    const jogadorParaExcluir = jogadores.find((j) => j._id === jogadorId);
+    setModalExclusao({ isOpen: true, jogador: jogadorParaExcluir });
+  };
+
+  const confirmarExclusao = async () => {
+    const jogador = modalExclusao.jogador;
+    if (!jogador) return;
+
     try {
-      await axios.delete(`${API_BASE_URL}/jogadores/${jogadorId}`);
-      setJogadores((prev) => prev.filter((j) => j._id !== jogadorId));
+      await axios.delete(`${API_BASE_URL}/jogadores/${jogador._id}`);
+      setJogadores((prev) => prev.filter((j) => j._id !== jogador._id));
       setSuccessMessage("Jogador deletado com sucesso!");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Erro ao deletar jogador:", error);
       setErro(error.response?.data?.message || "Erro ao deletar jogador");
       setTimeout(() => setErro(null), 3000);
+    } finally {
+      setModalExclusao({ isOpen: false, jogador: null });
     }
+  };
+
+  const cancelarExclusao = () => {
+    setModalExclusao({ isOpen: false, jogador: null });
+  };
+
+  const handleEditClick = (jogadorId) => {
+    const jogadorToEdit = jogadores.find((j) => j._id === jogadorId);
+    if (!jogadorToEdit) return;
+
+    setJogadorEditando({
+      _id: jogadorToEdit._id,
+      nome: jogadorToEdit.nome,
+      titulo: jogadorToEdit.titulo,
+      descricao: jogadorToEdit.descricao,
+      fotoUrl: jogadorToEdit.fotoUrl,
+      insta: jogadorToEdit.insta || "",
+      twitter: jogadorToEdit.twitter || "",
+      twitch: jogadorToEdit.twitch || "",
+    });
   };
 
   const handleEditJogador = async (jogadorId, updatedData) => {
@@ -276,7 +311,7 @@ const Membros = () => {
                   twitter={jogador.twitter}
                   twitch={jogador.twitch}
                   onDelete={handleDeleteJogador}
-                  onEdit={handleEditJogador}
+                  onEdit={handleEditClick}
                   logoTime={time?.logoUrl}
                   userRole={userRole}
                 />
@@ -305,6 +340,39 @@ const Membros = () => {
           </motion.div>
         </div>
       </motion.div>
+
+      <AnimatePresence>
+        {modalExclusao.isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <ModalConfirmarExclusao
+              isOpen={modalExclusao.isOpen}
+              mensagem={`Tem certeza que deseja deletar o jogador ${modalExclusao.jogador?.nome}?`}
+              onConfirm={confirmarExclusao}
+              onCancel={cancelarExclusao}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {jogadorEditando && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <ModalEditarJogador
+              jogador={jogadorEditando}
+              onSave={handleEditJogador}
+              onClose={() => setJogadorEditando(null)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

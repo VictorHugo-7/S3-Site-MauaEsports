@@ -330,7 +330,8 @@ const Campeonatos = () => {
               onCardDelete={handleDeleteClick}
               onCardMove={handleCardMove}
               isAdminMode={
-                userRole === "Administrador" || userRole === "Administrador Geral"
+                userRole === "Administrador" ||
+                userRole === "Administrador Geral"
               }
             />
           </motion.div>

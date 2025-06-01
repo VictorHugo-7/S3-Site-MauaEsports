@@ -83,10 +83,10 @@ const Admins = () => {
         error.code === "ECONNABORTED"
           ? "Tempo de conexão excedido. Verifique sua internet."
           : error.response
-            ? error.response.data.message || "Erro ao carregar administradores"
-            : error.message.includes("Network Error")
-              ? "Servidor não responde. Verifique sua conexão ou tente novamente."
-              : error.message
+          ? error.response.data.message || "Erro ao carregar administradores"
+          : error.message.includes("Network Error")
+          ? "Servidor não responde. Verifique sua conexão ou tente novamente."
+          : error.message
       );
       setAdmins([]);
     } finally {
@@ -106,9 +106,7 @@ const Admins = () => {
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Erro ao deletar admin:", error);
-      setErro(
-        error.response?.data?.message || "Erro ao deletar administrador"
-      );
+      setErro(error.response?.data?.message || "Erro ao deletar administrador");
       setTimeout(() => setErro(null), 3000);
     }
   };
@@ -126,63 +124,68 @@ const Admins = () => {
   };
 
   const handleSaveAdmin = async (adminAtualizado) => {
-  try {
-    const formData = new FormData();
-    formData.append("nome", adminAtualizado.nome);
-    formData.append("titulo", adminAtualizado.titulo || "");
-    formData.append("descricao", adminAtualizado.descricao || "");
-    formData.append("insta", adminAtualizado.insta || "");
-    formData.append("twitter", adminAtualizado.twitter || "");
-    formData.append("twitch", adminAtualizado.twitch || "");
+    try {
+      const formData = new FormData();
+      formData.append("nome", adminAtualizado.nome);
+      formData.append("titulo", adminAtualizado.titulo || "");
+      formData.append("descricao", adminAtualizado.descricao || "");
+      formData.append("insta", adminAtualizado.insta || "");
+      formData.append("twitter", adminAtualizado.twitter || "");
+      formData.append("twitch", adminAtualizado.twitch || "");
 
-    // Convert base64 to Blob if necessary
-    if (adminAtualizado.foto && adminAtualizado.foto.startsWith("data:image")) {
-      const fotoBlob = dataURLtoBlob(adminAtualizado.foto);
-      formData.append("foto", fotoBlob, `foto-admin-${Date.now()}.jpg`);
-    } else if (adminAtualizado.foto === null) {
-      formData.append("removeFoto", "true");
-    }
-
-    const response = await axios.put(
-      `${API_BASE_URL}/admins/${adminAtualizado._id}`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      // Convert base64 to Blob if necessary
+      if (
+        adminAtualizado.foto &&
+        adminAtualizado.foto.startsWith("data:image")
+      ) {
+        const fotoBlob = dataURLtoBlob(adminAtualizado.foto);
+        formData.append("foto", fotoBlob, `foto-admin-${Date.now()}.jpg`);
+      } else if (adminAtualizado.foto === null) {
+        formData.append("removeFoto", "true");
       }
-    );
 
-    setAdmins((prev) =>
-      prev.map((admin) =>
-        admin._id === adminAtualizado._id
-          ? {
-              ...admin,
-              nome: response.data.nome,
-              titulo: response.data.titulo,
-              descricao: response.data.descricao,
-              insta: response.data.insta,
-              twitter: response.data.twitter,
-              twitch: response.data.twitch,
-              fotoUrl: response.data.foto
-                ? `${API_BASE_URL}/admins/${response.data._id}/foto?${Date.now()}`
-                : null,
-            }
-          : admin
-      )
-    );
-    setAdminEditando(null);
-    setSuccessMessage("Administrador atualizado com sucesso!");
-    setTimeout(() => setSuccessMessage(null), 3000);
-    carregarAdmins();
-  } catch (error) {
-    console.error("Erro na edição:", error);
-    setErro(
-      error.response?.data?.message || "Erro ao atualizar administrador"
-    );
-    setTimeout(() => setErro(null), 3000);
-  }
-};
+      const response = await axios.put(
+        `${API_BASE_URL}/admins/${adminAtualizado._id}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      setAdmins((prev) =>
+        prev.map((admin) =>
+          admin._id === adminAtualizado._id
+            ? {
+                ...admin,
+                nome: response.data.nome,
+                titulo: response.data.titulo,
+                descricao: response.data.descricao,
+                insta: response.data.insta,
+                twitter: response.data.twitter,
+                twitch: response.data.twitch,
+                fotoUrl: response.data.foto
+                  ? `${API_BASE_URL}/admins/${
+                      response.data._id
+                    }/foto?${Date.now()}`
+                  : null,
+              }
+            : admin
+        )
+      );
+      setAdminEditando(null);
+      setSuccessMessage("Administrador atualizado com sucesso!");
+      setTimeout(() => setSuccessMessage(null), 3000);
+      carregarAdmins();
+    } catch (error) {
+      console.error("Erro na edição:", error);
+      setErro(
+        error.response?.data?.message || "Erro ao atualizar administrador"
+      );
+      setTimeout(() => setErro(null), 3000);
+    }
+  };
 
   const handleCreateAdmin = async (novoAdmin) => {
     try {
@@ -191,8 +194,10 @@ const Admins = () => {
       formData.append("titulo", novoAdmin.titulo.trim());
       formData.append("descricao", novoAdmin.descricao.trim());
 
-      if (novoAdmin.instagram) formData.append("insta", novoAdmin.instagram.trim());
-      if (novoAdmin.twitter) formData.append("twitter", novoAdmin.twitter.trim());
+      if (novoAdmin.instagram)
+        formData.append("insta", novoAdmin.instagram.trim());
+      if (novoAdmin.twitter)
+        formData.append("twitter", novoAdmin.twitter.trim());
       if (novoAdmin.twitch) formData.append("twitch", novoAdmin.twitch.trim());
 
       // Convert base64 to Blob if necessary
@@ -212,7 +217,9 @@ const Admins = () => {
         {
           ...response.data.admin,
           fotoUrl: response.data.admin.foto
-            ? `${API_BASE_URL}/admins/${response.data.admin._id}/foto?${Date.now()}`
+            ? `${API_BASE_URL}/admins/${
+                response.data.admin._id
+              }/foto?${Date.now()}`
             : null,
         },
       ]);
@@ -221,9 +228,7 @@ const Admins = () => {
       carregarAdmins();
     } catch (error) {
       console.error("Erro ao criar admin:", error);
-      setErro(
-        error.response?.data?.message || "Erro ao criar administrador"
-      );
+      setErro(error.response?.data?.message || "Erro ao criar administrador");
       setTimeout(() => setErro(null), 3000);
     }
   };
@@ -381,7 +386,10 @@ const Admins = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <AdicionarAdmin onAdicionarAdmin={handleCreateAdmin} userRole={userRole} />
+            <AdicionarAdmin
+              onAdicionarAdmin={handleCreateAdmin}
+              userRole={userRole}
+            />
           </motion.div>
         </div>
       </motion.div>

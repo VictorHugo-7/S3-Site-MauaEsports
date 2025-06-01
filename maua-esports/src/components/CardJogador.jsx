@@ -1,11 +1,9 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { FaInstagram } from "react-icons/fa";
 import { RiTwitterXFill } from "react-icons/ri";
 import { IoLogoTwitch } from "react-icons/io";
 import DeletarBtn from "./DeletarBtn";
 import EditarBtn from "./EditarBtn";
-import EditarJogador from "./ModalEditarJogador";
-import ModalConfirmarExclusao from "./modalConfirmarExclusao";
 import PropTypes from "prop-types";
 
 const CardJogador = ({
@@ -22,12 +20,8 @@ const CardJogador = ({
   logoTime,
   userRole,
 }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [error, setError] = useState(null);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  const [isTruncated, setIsTruncated] = useState(false);
   const descRef = useRef(null);
   const MAX_CHARACTERS = 85;
 
@@ -35,14 +29,6 @@ const CardJogador = ({
   const isAdmin = ["Administrador", "Administrador Geral"].includes(userRole);
   const defaultFoto = "/path/to/default-player.jpg";
   const defaultLogo = "/path/to/default-logo.png";
-
-  useEffect(() => {
-    if (descricao && descricao.length > MAX_CHARACTERS) {
-      setIsTruncated(true);
-    } else {
-      setIsTruncated(false);
-    }
-  }, [descricao]);
 
   const normalizeSocialLink = (link, platform) => {
     if (!link) return null;
@@ -66,28 +52,6 @@ const CardJogador = ({
       : text;
   };
 
-  const handleEdit = (updatedData) => {
-    onEdit(jogadorId, updatedData);
-    setIsModalOpen(false);
-  };
-
-  const handleDeleteClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowConfirmModal(true);
-  };
-
-  const confirmDelete = () => {
-    if (onDelete) {
-      onDelete(jogadorId);
-    }
-    setShowConfirmModal(false);
-  };
-
-  const cancelDelete = () => {
-    setShowConfirmModal(false);
-  };
-
   const handleMouseMove = (e) => {
     setTooltipPosition({
       x: e.clientX,
@@ -98,11 +62,6 @@ const CardJogador = ({
   return (
     <>
       <div className="border-2 border-borda relative w-[300px] h-[450px] bg-gray-900 shadow-lg flex flex-col items-center hover:scale-110 transition-transform duration-300 cursor-pointer animate-fadeInUp rounded-md">
-        {error && (
-          <div className="absolute top-2 left-2 bg-red-500 text-white p-2 rounded">
-            {error}
-          </div>
-        )}
         <h1 className="text-xl font-bold font-blinker bg-azul-claro rounded-tr-md rounded-bl-md px-2 py-1 inline-block absolute top-0.1 right-0 z-10 opacity-70">
           {titulo}
         </h1>
@@ -181,15 +140,10 @@ const CardJogador = ({
                 )}
               </div>
               {isAdmin && (
-                <div className="flex space-x-2 mr-4">
-                  <EditarBtn
-                    onClick={() => setIsModalOpen(true)}
-                    role="button"
-                  />
+                <div className="flex space-x-2 mr-4 justify-center">
+                  <EditarBtn onClick={() => onEdit(jogadorId)} role="button" />
                   <DeletarBtn
-                    itemId={jogadorId}
-                    onDelete={handleDeleteClick}
-                    tipo="jogador"
+                    onDelete={() => onDelete(jogadorId)}
                     role="button"
                   />
                 </div>
@@ -198,30 +152,6 @@ const CardJogador = ({
           )}
         </div>
       </div>
-
-      {isModalOpen && (
-        <EditarJogador
-          jogador={{
-            _id: jogadorId,
-            nome,
-            titulo,
-            descricao,
-            fotoUrl: foto,
-            insta: instagram,
-            twitter,
-            twitch,
-          }}
-          onSave={handleEdit}
-          onClose={() => setIsModalOpen(false)}
-        />
-      )}
-
-      <ModalConfirmarExclusao
-        isOpen={showConfirmModal}
-        mensagem={`Tem certeza que deseja deletar o jogador ${nome}?`}
-        onConfirm={confirmDelete}
-        onCancel={cancelDelete}
-      />
 
       {showTooltip && (
         <div
