@@ -55,9 +55,24 @@
                                       | MONGO_URI=mongodb://localhost:27017/nome-do-banco
 
 5. Inicialize o servidor              | npm run dev
+
+6. Inicialize a API em Python para gerar Relatórios de Horas PAEs (OPCIONAL) |  cd/maua-esports/src/horas-pae-relatorios
+                                                                                pip install -r requirements.txt
+                                                                                python app.py
 ```
 
+## Como Rodar os testes
+```
+1. Clone o repositóro                 | git clone https://github.com/VictorHugo-7/S3-Site-MauaEsports
 
+2. Navegue até o diretório do projeto | cd maua-esports
+
+3. Instale as dependências            | npm install
+
+4. rode todos os testes               | npm test
+
+5. rode um teste específico           | npm test nome_arquivo (exemplo: npm test usuarios.test.cjs)
+```
 <!--CONTRIBUIÇÃO-->
 ## Contribuição
 ````

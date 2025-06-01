@@ -6,8 +6,8 @@ import CancelarBtn from "../../CancelarBtn";
 
 const ApresentacaoModal = ({
   isOpen = false,
-  onClose = () => {},
-  onSave = () => {},
+  onClose = () => { },
+  onSave = () => { },
   dadosIniciais = {},
   userRole = null,
 }) => {
@@ -296,6 +296,16 @@ const ApresentacaoModal = ({
                 rows="3"
                 required
               ></textarea>
+              {/* 
+              **Negrito**
+              *Itálico*
+              <u>Sublinhado</u>
+              ~~Tachado~~
+              <br>
+              <a href="http://localhost:5173/" rel="noopener noreferrer" target="_blank">Link</a>
+              <span style="color: rgb(255, 255, 0);">Cor Texto</span>
+              <span style="background-color: rgb(230, 0, 0);">Cor Fundo</span>
+              */}
             </div>
             <div>
               <label className="block text-sm text-fonte-escura font-semibold mb-2">
@@ -312,6 +322,8 @@ const ApresentacaoModal = ({
                 Suporta markdown para formatação (ex.: **negrito**, *itálico*).
               </p>
             </div>
+
+
           </div>
 
           <div className="space-y-4">
@@ -496,7 +508,7 @@ const ApresentacaoModal = ({
         </div>
 
         <div className="flex justify-end mt-6 space-x-2">
-          <SalvarBtn onClick={salvarAlteracoes} disabled={isSubmitting} />
+          <SalvarBtn onClick={salvarAlteracoes} disabled={isSubmitting} loading={isSubmitting} />
           <CancelarBtn onClick={handleClose} disabled={isSubmitting} />
         </div>
       </div>
@@ -537,8 +549,8 @@ ApresentacaoModal.propTypes = {
 
 ApresentacaoModal.defaultProps = {
   isOpen: false,
-  onClose: () => {},
-  onSave: () => {},
+  onClose: () => { },
+  onSave: () => { },
   dadosIniciais: {
     titulo1: "Título 1",
     titulo2: "Título 2",

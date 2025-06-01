@@ -9,6 +9,8 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useMsal } from "@azure/msal-react";
 import PropTypes from "prop-types";
+import { motion, AnimatePresence } from "framer-motion";
+import ModalConfirmarExclusao from "../components/modalConfirmarExclusao";
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -19,6 +21,10 @@ const Times = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [timeEditando, setTimeEditando] = useState(null);
   const [userRole, setUserRole] = useState(null);
+  const [modalExclusao, setModalExclusao] = useState({
+    isOpen: false,
+    time: null,
+  });
   const navigate = useNavigate();
   const { instance } = useMsal();
 
@@ -85,8 +91,8 @@ const Times = () => {
         error.response
           ? error.response.data.message || "Erro ao carregar times"
           : error.message.includes("Network Error")
-            ? "Servidor não responde. Verifique sua conexão ou tente novamente."
-            : error.message
+          ? "Servidor não responde. Verifique sua conexão ou tente novamente."
+          : error.message
       );
       setTimes([]);
     } finally {
@@ -99,17 +105,35 @@ const Times = () => {
   }, []);
 
   const handleDeleteTime = async (timeId) => {
+    if (userRole !== "Administrador" && userRole !== "Administrador Geral") {
+      setErroCarregamento("Você não tem permissão para excluir times");
+      return;
+    }
+    const timeParaExcluir = times.find((time) => time._id === timeId);
+    setModalExclusao({ isOpen: true, time: timeParaExcluir });
+  };
+
+  const confirmarExclusao = async () => {
+    const time = modalExclusao.time;
+    if (!time) return;
+
     try {
-      await axios.delete(`${API_BASE_URL}/times/${timeId}`);
-      setTimes(times.filter((time) => time._id !== timeId));
+      await axios.delete(`${API_BASE_URL}/times/${time._id}`);
+      setTimes(times.filter((t) => t._id !== time._id));
       setSuccessMessage("Time excluído com sucesso!");
     } catch (error) {
       console.error("Erro ao deletar time:", error);
       setErroCarregamento(
         error.response?.data?.message ||
-        "Não foi possível excluir o time. Verifique se não há jogadores associados."
+          "Não foi possível excluir o time. Verifique se não há jogadores associados."
       );
+    } finally {
+      setModalExclusao({ isOpen: false, time: null });
     }
+  };
+
+  const cancelarExclusao = () => {
+    setModalExclusao({ isOpen: false, time: null });
   };
 
   const dataURLtoBlob = (dataURL) => {
@@ -148,10 +172,14 @@ const Times = () => {
         times.map((time) =>
           time._id === timeAtualizado._id
             ? {
-              ...response.data,
-              fotoUrl: `${API_BASE_URL}/times/${response.data._id}/foto?${Date.now()}`,
-              jogoUrl: `${API_BASE_URL}/times/${response.data._id}/jogo?${Date.now()}`,
-            }
+                ...response.data,
+                fotoUrl: `${API_BASE_URL}/times/${
+                  response.data._id
+                }/foto?${Date.now()}`,
+                jogoUrl: `${API_BASE_URL}/times/${
+                  response.data._id
+                }/jogo?${Date.now()}`,
+              }
             : time
         )
       );
@@ -189,8 +217,12 @@ const Times = () => {
         ...times,
         {
           ...response.data,
-          fotoUrl: `${API_BASE_URL}/times/${response.data._id}/foto?${Date.now()}`,
-          jogoUrl: `${API_BASE_URL}/times/${response.data._id}/jogo?${Date.now()}`,
+          fotoUrl: `${API_BASE_URL}/times/${
+            response.data._id
+          }/foto?${Date.now()}`,
+          jogoUrl: `${API_BASE_URL}/times/${
+            response.data._id
+          }/jogo?${Date.now()}`,
         },
       ]);
 
@@ -216,53 +248,125 @@ const Times = () => {
 
   if (carregando) {
     return (
-      <div
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         className="w-full min-h-screen bg-fundo flex items-center justify-center"
         aria-live="polite"
       >
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"
+        ></motion.div>
         <p className="text-branco ml-4">Carregando times...</p>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="w-full min-h-screen bg-fundo">
-      {successMessage && <AlertaOk mensagem={successMessage} />}
-      {erroCarregamento && <AlertaErro mensagem={erroCarregamento} />}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="w-full min-h-screen bg-fundo"
+    >
+      <ModalConfirmarExclusao
+        isOpen={modalExclusao.isOpen}
+        mensagem={`Tem certeza que deseja deletar o time ${modalExclusao.time?.nome}?`}
+        onConfirm={confirmarExclusao}
+        onCancel={cancelarExclusao}
+      />
+
+      <AnimatePresence mode="wait">
+        {successMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <AlertaOk mensagem={successMessage} />
+          </motion.div>
+        )}
+        {erroCarregamento && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <AlertaErro mensagem={erroCarregamento} />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="bg-[#010409] h-[104px]"></div>
       <PageBanner pageName="Escolha seu time!" />
-      <div className="bg-fundo w-full flex justify-center items-center overflow-auto scrollbar-hidden">
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="bg-fundo w-full flex justify-center items-center overflow-auto scrollbar-hidden"
+      >
         <div className="w-full flex flex-wrap py-16 justify-center gap-8">
           {times.length > 0 ? (
-            times.map((time) => (
-              <CardTime
+            times.map((time, index) => (
+              <motion.div
                 key={time._id}
-                timeId={time._id}
-                nome={time.nome}
-                foto={`${API_BASE_URL}/times/${time._id}/foto?${Date.now()}`}
-                jogo={`${API_BASE_URL}/times/${time._id}/jogo?${Date.now()}`}
-                onDelete={handleDeleteTime}
-                onEditClick={handleEditClick}
-                userRole={userRole}
-              />
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <CardTime
+                  timeId={time._id}
+                  nome={time.nome}
+                  foto={`${API_BASE_URL}/times/${time._id}/foto?${Date.now()}`}
+                  jogo={`${API_BASE_URL}/times/${time._id}/jogo?${Date.now()}`}
+                  onDelete={handleDeleteTime}
+                  onEditClick={handleEditClick}
+                  userRole={userRole}
+                />
+              </motion.div>
             ))
           ) : (
-            <div className="text-center p-8 text-branco">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="text-center p-8 text-branco"
+            >
               <p className="text-xl mb-4">Nenhum time encontrado</p>
-            </div>
+            </motion.div>
           )}
-          <AdicionarTime onAdicionarTime={handleCreateTime} userRole={userRole} />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <AdicionarTime
+              onAdicionarTime={handleCreateTime}
+              userRole={userRole}
+            />
+          </motion.div>
         </div>
-      </div>
-      {timeEditando && (
-        <EditarTime
-          time={timeEditando}
-          onSave={handleSaveTime}
-          onClose={() => setTimeEditando(null)}
-        />
-      )}
-    </div>
+      </motion.div>
+      <AnimatePresence>
+        {timeEditando && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <EditarTime
+              time={timeEditando}
+              onSave={handleSaveTime}
+              onClose={() => setTimeEditando(null)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
 

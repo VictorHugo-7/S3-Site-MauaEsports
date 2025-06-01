@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { useMsal } from "@azure/msal-react";
 import Board from "../components/campeonatos/Board";
 import CardModal from "../components/campeonatos/CardModal";
+import ModalConfirmarExclusao from "../components/modalConfirmarExclusao";
 import PageBanner from "../components/PageBanner";
 import { useNavigate } from "react-router-dom";
 import AlertaOk from "../components/AlertaOk";
 import AlertaErro from "../components/AlertaErro";
+import { motion, AnimatePresence } from "framer-motion";
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -23,10 +25,15 @@ const Campeonatos = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null); // State for success messages
-  const [errorMessage, setErrorMessage] = useState(null); // State for error messages
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
   const [userRole, setUserRole] = useState("");
   const [authChecked, setAuthChecked] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [cardToDelete, setCardToDelete] = useState({
+    columnId: null,
+    cardIndex: null,
+  });
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -63,7 +70,7 @@ const Campeonatos = () => {
     try {
       setIsLoading(true);
       setError(null);
-      setErrorMessage(null); // Clear previous error messages
+      setErrorMessage(null);
 
       const response = await fetch(`${API_BASE_URL}/campeonatos`);
 
@@ -93,7 +100,7 @@ const Campeonatos = () => {
       });
     } catch (err) {
       setError(err.message);
-      setErrorMessage(err.message); // Set error message for AlertaErro
+      setErrorMessage(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -137,39 +144,52 @@ const Campeonatos = () => {
         editingCard
           ? "Campeonato atualizado com sucesso!"
           : "Campeonato criado com sucesso!"
-      ); // Set success message
+      );
       fetchTournaments();
       closeModal();
     } catch (err) {
       console.error("Erro ao salvar campeonato:", err);
-      setErrorMessage(`Erro ao salvar campeonato: ${err.message}`); // Set error message
+      setErrorMessage(`Erro ao salvar campeonato: ${err.message}`);
     }
   };
 
-  const handleCardDelete = async (columnId, cardIndex) => {
+  const handleDeleteClick = (columnId, cardIndex) => {
     if (userRole !== "Administrador" && userRole !== "Administrador Geral")
       return;
 
-    const cardId = boardData[columnId][cardIndex]._id;
-    if (!cardId) return;
+    setCardToDelete({ columnId, cardIndex });
+    setShowDeleteModal(true);
+  };
 
+  const confirmDelete = async () => {
     try {
-      if (window.confirm("Tem certeza que deseja excluir este campeonato?")) {
-        const response = await fetch(`${API_BASE_URL}/campeonatos/${cardId}`, {
-          method: "DELETE",
-        });
+      const { columnId, cardIndex } = cardToDelete;
+      const cardId = boardData[columnId][cardIndex]._id;
 
-        if (!response.ok) {
-          throw new Error(`Erro ${response.status}`);
-        }
+      if (!cardId) return;
 
-        setSuccessMessage("Campeonato excluído com sucesso!"); // Set success message
-        fetchTournaments();
+      const response = await fetch(`${API_BASE_URL}/campeonatos/${cardId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status}`);
       }
+
+      setSuccessMessage("Campeonato excluído com sucesso!");
+      fetchTournaments();
     } catch (err) {
       console.error("Erro ao excluir campeonato:", err);
-      setErrorMessage(`Erro ao excluir campeonato: ${err.message}`); // Set error message
+      setErrorMessage(`Erro ao excluir campeonato: ${err.message}`);
+    } finally {
+      setShowDeleteModal(false);
+      setCardToDelete({ columnId: null, cardIndex: null });
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setCardToDelete({ columnId: null, cardIndex: null });
   };
 
   const handleCardMove = async (cardData, sourceColumn, targetColumn) => {
@@ -194,18 +214,22 @@ const Campeonatos = () => {
         throw new Error(`Erro ${response.status}`);
       }
 
-      setSuccessMessage("Campeonato movido com sucesso!"); // Set success message
+      setSuccessMessage("Campeonato movido com sucesso!");
       fetchTournaments();
     } catch (err) {
       console.error("Erro ao mover campeonato:", err);
-      setErrorMessage(`Erro ao mover campeonato: ${err.message}`); // Set error message
+      setErrorMessage(`Erro ao mover campeonato: ${err.message}`);
     }
   };
 
   if (!authChecked) {
     return (
       <div className="min-h-screen bg-[#0D1117] text-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"
+        ></motion.div>
       </div>
     );
   }
@@ -215,53 +239,104 @@ const Campeonatos = () => {
       <div className="bg-[#0D1117] min-h-screen flex flex-col">
         <div className="bg-[#010409] h-[104px]"></div>
         <PageBanner pageName="Campeonatos" />
-        <div className="p-5 flex justify-center items-center flex-grow">
-          <div className="text-white">Carregando campeonatos...</div>
-        </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="p-5 flex justify-center items-center flex-grow"
+        >
+          <motion.div
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+            className="text-white"
+          >
+            Carregando campeonatos...
+          </motion.div>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#0D1117] min-h-screen flex flex-col">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="bg-[#0D1117] min-h-screen flex flex-col"
+    >
       <div className="bg-[#010409] h-[104px]"></div>
-
       <PageBanner pageName="Campeonatos" />
 
-      <div className="p-5 flex flex-col items-center">
-        {/* Render success and error alerts */}
-        <AlertaOk mensagem={successMessage} />
-        <AlertaErro mensagem={errorMessage} />
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="p-5 flex flex-col items-center"
+      >
+        <AnimatePresence mode="wait">
+          {successMessage && (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <AlertaOk mensagem={successMessage} />
+            </motion.div>
+          )}
+          {errorMessage && (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <AlertaErro mensagem={errorMessage} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Render error state with retry button */}
-        {error && (
-          <div className="flex flex-col items-center justify-center flex-grow">
+        {error ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center justify-center flex-grow"
+          >
             <div className="text-red-500 mb-4">
               Erro ao carregar campeonatos: {error}
             </div>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={fetchTournaments}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
             >
               Tentar novamente
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Board
+              columns={columns}
+              boardData={boardData}
+              onOpenModal={openModal}
+              onCardDelete={handleDeleteClick}
+              onCardMove={handleCardMove}
+              isAdminMode={
+                userRole === "Administrador" ||
+                userRole === "Administrador Geral"
+              }
+            />
+          </motion.div>
         )}
+      </motion.div>
 
-        {/* Render board if no error */}
-        {!error && (
-          <Board
-            columns={columns}
-            boardData={boardData}
-            onOpenModal={openModal}
-            onCardDelete={handleCardDelete}
-            onCardMove={handleCardMove}
-            isAdminMode={
-              userRole === "Administrador" || userRole === "Administrador Geral"
-            }
-          />
-        )}
-
+      {/* Modais */}
+      <AnimatePresence>
         {isModalOpen && (
           <CardModal
             isOpen={isModalOpen}
@@ -270,8 +345,16 @@ const Campeonatos = () => {
             editingCard={editingCard}
           />
         )}
-      </div>
-    </div>
+        {showDeleteModal && (
+          <ModalConfirmarExclusao
+            isOpen={showDeleteModal}
+            mensagem="Tem certeza que deseja excluir este campeonato?"
+            onConfirm={confirmDelete}
+            onCancel={cancelDelete}
+          />
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
 

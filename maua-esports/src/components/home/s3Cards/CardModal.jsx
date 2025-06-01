@@ -43,14 +43,17 @@ const CardModal = ({
     }
     return () => {
       if (iconPreview && iconPreview.startsWith("blob:")) {
+        console.log("Revoking blob URL:", iconPreview);
         URL.revokeObjectURL(iconPreview);
       }
     };
   }, [isOpen, textoAtual, tituloAtual, iconAtual, iconPreview]);
 
   const handleClose = () => {
+    console.log("handleClose called, setting isVisible to false");
     setIsVisible(false);
     setTimeout(() => {
+      console.log("Calling onClose after 300ms delay");
       onClose();
     }, 300);
   };
@@ -58,29 +61,40 @@ const CardModal = ({
   const handleIconChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      console.log("Icon file selected:", {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      });
       const tiposPermitidos = ["image/jpeg", "image/jpg", "image/png"];
       if (!tiposPermitidos.includes(file.type)) {
+        console.log("Invalid file type:", file.type);
         setErroLocal(
           "Formato de imagem inválido. Use apenas JPG, JPEG ou PNG."
         );
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
+        console.log("File too large:", file.size);
         setErroLocal("A imagem deve ter no máximo 5MB");
         return;
       }
       if (iconPreview && iconPreview.startsWith("blob:")) {
+        console.log("Revoking previous blob URL:", iconPreview);
         URL.revokeObjectURL(iconPreview);
       }
       setErroLocal("");
       setIconFile(file);
       const previewURL = URL.createObjectURL(file);
+      console.log("New icon preview URL:", previewURL);
       setIconPreview(previewURL);
     }
   };
 
   const handleRemoveIcon = () => {
+    console.log("Removing icon, current iconPreview:", iconPreview);
     if (iconPreview && iconPreview.startsWith("blob:")) {
+      console.log("Revoking blob URL:", iconPreview);
       URL.revokeObjectURL(iconPreview);
     }
     setIconPreview("");
@@ -88,40 +102,82 @@ const CardModal = ({
   };
 
   const handleSubmit = async () => {
+    console.log("handleSubmit called with state:", {
+      titulo,
+      texto,
+      iconFile: iconFile ? iconFile.name : null,
+      userRole,
+      cardId,
+    });
+
     if (!["Administrador", "Administrador Geral"].includes(userRole)) {
+      console.log("Permission denied: userRole is", userRole);
       setErroLocal("Você não tem permissão para salvar alterações.");
       return;
     }
 
     if (!titulo || !texto) {
+      console.log("Validation failed: missing title or description", {
+        titulo,
+        texto,
+      });
       setErroLocal("Preencha todos os campos obrigatórios!");
       return;
     }
 
-    if (loading) return;
+    if (loading) {
+      console.log("Submit aborted: already loading");
+      return;
+    }
 
     setLoading(true);
     setErroLocal("");
     setShowAlertaErro("");
+    console.log("Starting save operation, loading set to true");
 
     try {
       const account = instance.getActiveAccount();
+      console.log("MSAL account:", account ? account.username : "No account");
       if (!account) {
         const errorMessage = "Usuário não autenticado.";
+        console.log("Authentication error:", errorMessage);
         setShowAlertaErro(errorMessage);
         if (onCardError) {
+          console.log("Calling onCardError with:", errorMessage);
           onCardError(errorMessage);
         }
         setLoading(false);
         return;
       }
 
-      console.time("acquireTokenSilent");
-      const tokenResponse = await instance.acquireTokenSilent({
-        scopes: ["User.Read"],
-        account,
-      });
-      console.timeEnd("acquireTokenSilent");
+      let tokenResponse;
+      try {
+        console.time("acquireTokenSilent");
+        tokenResponse = await instance.acquireTokenSilent({
+          scopes: ["User.Read"],
+          account,
+        });
+        console.timeEnd("acquireTokenSilent");
+        console.log(
+          "Token acquired silently:",
+          tokenResponse.accessToken ? "Success" : "No token"
+        );
+      } catch (silentError) {
+        console.log("Silent token acquisition failed:", silentError.message);
+        if (silentError.errorCode === "interaction_required") {
+          console.log("Falling back to acquireTokenPopup");
+          tokenResponse = await instance.acquireTokenPopup({
+            scopes: ["User.Read"],
+            account,
+          });
+          console.log(
+            "Token acquired via popup:",
+            tokenResponse.accessToken ? "Success" : "No token"
+          );
+        } else {
+          throw silentError; // Rethrow other errors
+        }
+      }
 
       const formData = new FormData();
       formData.append("titulo", titulo);
@@ -129,6 +185,11 @@ const CardModal = ({
       if (iconFile) {
         formData.append("icone", iconFile);
       }
+      console.log("FormData prepared:", {
+        titulo,
+        descricao: texto,
+        icone: iconFile ? iconFile.name : "No icon",
+      });
 
       console.time("axiosPut");
       const response = await axios.put(
@@ -143,32 +204,62 @@ const CardModal = ({
         }
       );
       console.timeEnd("axiosPut");
+      console.log("API response:", {
+        status: response.status,
+        data: response.data,
+      });
 
       if (response.status === 200) {
-        onSave({
+        const saveData = {
           texto,
           titulo,
-          icon: iconFile ? URL.createObjectURL(iconFile) : iconPreview,
+          icon:
+            response.data.iconUrl ||
+            (iconFile ? URL.createObjectURL(iconFile) : iconPreview),
           showAlert: true,
-        });
+        };
+        console.log("Calling onSave with:", saveData);
+        onSave(saveData);
         if (onCardSave) {
+          console.log("Calling onCardSave");
           onCardSave();
         }
+        console.log("Initiating modal closure");
         handleClose();
       }
     } catch (error) {
       const errorMessage =
-        error.response?.data?.error || "Erro ao salvar alterações.";
+        error.response?.data?.error ||
+        error.message ||
+        "Erro ao salvar alterações.";
+      console.error("Save error:", {
+        message: errorMessage,
+        status: error.response?.status,
+        data: error.response?.data,
+        error: error.message,
+      });
       setShowAlertaErro(errorMessage);
       if (onCardError) {
+        console.log("Calling onCardError with:", errorMessage);
         onCardError(errorMessage);
       }
     } finally {
+      console.log("Save operation complete, setting loading to false");
       setLoading(false);
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    console.log("CardModal not rendered: isOpen is false");
+    return null;
+  }
+
+  console.log("Rendering CardModal with state:", {
+    isVisible,
+    loading,
+    erroLocal,
+    showAlertaErro,
+  });
 
   return createPortal(
     <div

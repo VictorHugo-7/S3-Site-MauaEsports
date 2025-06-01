@@ -24,13 +24,7 @@ const CardTime = ({
   const handleDeleteClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const isConfirmed = window.confirm(
-      `Tem certeza que deseja deletar o time ${nome}?`
-    );
-
-    if (isConfirmed && onDelete) {
-      onDelete(timeId);
-    }
+    onDelete(timeId);
   };
 
   const handleEditClick = (e) => {
@@ -87,17 +81,12 @@ const CardTime = ({
 
             {isAdmin && (
               <div className="flex justify-center space-x-4">
-                <EditarBtn
-                  onClick={handleEditClick}
-                  role="button"
-                  aria-label={`Editar time ${nome}`}
-                />
+                <EditarBtn onClick={handleEditClick} role="button" />
                 <DeletarBtn
                   itemId={timeId}
                   onDelete={handleDeleteClick}
                   tipo="time"
                   role="button"
-                  aria-label={`Deletar time ${nome}`}
                 />
               </div>
             )}
@@ -109,7 +98,7 @@ const CardTime = ({
 };
 
 CardTime.propTypes = {
-  timeId: PropTypes.string.isRequired, // Alterado de number para string
+  timeId: PropTypes.string.isRequired,
   nome: PropTypes.string.isRequired,
   foto: PropTypes.string.isRequired,
   jogo: PropTypes.string.isRequired,

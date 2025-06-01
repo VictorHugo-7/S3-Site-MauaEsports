@@ -15,17 +15,8 @@ const Novidade = () => {
   const [userRole, setUserRole] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [erro, setErro] = useState(null);
-  const [novidadeData, setNovidadeData] = useState({
-    imagem:
-      "https://static.tildacdn.net/tild6639-6566-4661-b631-343234376339/matty.jpeg",
-    titulo: "Título Teste",
-    subtitulo: "LOREM ISPSUM DOLOR SIT AMET CONSECTETUR",
-    descricao:
-      "Lorem ipsum, dolor sit amet consectetur adipisicing elit. Sequi soluta voluptate nostrum provident nulla modi cumque placeat adipisci nobis delectus, amet neque inventore necessitatibus vero voluptatem consequatur quo! Perferendis, dolorum. Lorem ipsum dolor sit amet consectetur adipisicing elit. Similique officiis praesentium labore vitae excepturi sit, libero nostrum culpa molestiae aut veniam aliquid ea qui placeat officia voluptas? Numquam, iure perferendis. Lorem, ipsum dolor sit amet consectetur adipisicing elit. Nemo iusto necessitatibus culpa natus amet labore quod praesentium eius excepturi illo. Doloribus minima quod quia eius voluptatum assumenda numquam. Animi, numquam.Doloribus minima quod quia eius voluptatum assumenda numquam. Animi, numquam.Doloribus minima quod quia eius voluptatum assumenda numquam. Animi, numquam.",
-    nomeBotao: "VER NOTÍCIA",
-    urlBotao: "#",
-  });
-
+  const [novidadeData, setNovidadeData] = useState(null); // No default data
+  const [carregando, setCarregando] = useState(true); // Loading state
   const { instance } = useMsal();
 
   useEffect(() => {
@@ -39,7 +30,7 @@ const Novidade = () => {
       try {
         const account = instance.getActiveAccount();
         if (!account) {
-          setUserRole(null); // User not logged in
+          setUserRole(null);
           return;
         }
 
@@ -53,19 +44,22 @@ const Novidade = () => {
         setUserRole(userData.tipoUsuario);
       } catch (error) {
         console.error("Erro ao carregar dados do usuário:", error);
-        setUserRole(null); // Treat error as user not logged in
+        setUserRole(null);
       }
     };
 
     // Fetch novidade data
     const fetchNovidade = async () => {
       try {
+        setCarregando(true);
         const response = await axios.get(`${API_BASE_URL}/api/homeNovidade`);
         setNovidadeData(response.data);
       } catch (error) {
         console.error("Erro ao buscar novidade:", error);
         setErro("Erro ao carregar dados da novidade");
         setTimeout(() => setErro(null), 3000);
+      } finally {
+        setCarregando(false);
       }
     };
 
@@ -78,7 +72,7 @@ const Novidade = () => {
       const timer = setTimeout(() => {
         setSuccessMessage(null);
         setErro(null);
-      }, 3000); // Clear alerts after 3 seconds
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [successMessage, erro]);
@@ -101,13 +95,27 @@ const Novidade = () => {
     }
   };
 
+  if (carregando) {
+    return (
+      <div
+        className="w-full min-h-screen bg-[#0D1117] flex items-center justify-center"
+        aria-live="polite"
+      >
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"></div>
+        <p className="text-branco ml-4">Carregando novidade...</p>
+      </div>
+    );
+  }
+
+  if (!novidadeData) {
+    return null; // Render nothing if no data is available
+  }
+
   return (
     <Margin horizontal="60px">
       {erro && <AlertaErro mensagem={erro} />}
       {successMessage && <AlertaOk mensagem={successMessage} />}
-      {/* Divisão Conteúdo e Imagem */}
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between text-white">
-        {/* Imagem - Esquerda em telas maiores */}
         <div
           data-aos="fade-up"
           className="w-full lg:w-1/2 flex justify-center lg:justify-start items-center order-2 lg:order-1"
@@ -116,33 +124,25 @@ const Novidade = () => {
             src={novidadeData.imagem}
             alt={novidadeData.titulo}
             className="w-[300px] lg:w-[500px] rounded-[10px] hover:scale-101 transition-transform duration-300 ease-in-out"
+            loading="lazy"
           />
         </div>
-
-        {/* Conteúdo - Direita em telas maiores */}
         <div
           data-aos="fade-up"
           className="w-full lg:w-1/2 space-y-6 text-left lg:pl-8 py-8 lg:py-0 order-1 lg:order-2"
         >
-          {/* Título */}
           <h4 className="text-3xl font-bold text-gray-300 mb-4">
             {novidadeData.titulo}
           </h4>
-
-          {/* Subtítulo */}
           <div className="mb-4">
             <p className="text-gray-400 uppercase text-sm font-medium tracking-wider">
               {novidadeData.subtitulo}
             </p>
             <div className="border-b-4 border-gray-700 w-12 inline-block rounded-[12px]"></div>
           </div>
-
-          {/* Descrição */}
           <div className="text-gray-300 space-y-3">
             <p>{novidadeData.descricao}</p>
           </div>
-
-          {/* Botões */}
           <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mt-5">
             <a
               href={novidadeData.urlBotao}
@@ -163,7 +163,6 @@ const Novidade = () => {
                 />
               </svg>
             </a>
-
             {["Administrador", "Administrador Geral"].includes(userRole) && (
               <button
                 className="custom-button edit-button"
@@ -175,7 +174,6 @@ const Novidade = () => {
           </div>
         </div>
       </div>
-
       <NovidadeModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
