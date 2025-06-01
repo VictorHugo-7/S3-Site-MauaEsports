@@ -45,12 +45,14 @@ const Membros = () => {
 
       setTime(responseTime.data);
 
-      setJogadores(
-        responseJogadores.data.map((j) => ({
-          ...j,
-          fotoUrl: `${API_BASE_URL}/jogadores/${j._id}/imagem?${Date.now()}`,
-        }))
-      );
+      const jogadoresComFallback = responseJogadores.data.map((j) => ({
+        ...j,
+        fotoUrl: `${API_BASE_URL}/jogadores/${j._id}/imagem?${Date.now()}`,
+        descricao: j.descricao || "Sem descrição disponível",
+      }));
+
+      console.log("Jogadores carregados:", jogadoresComFallback);
+      setJogadores(jogadoresComFallback);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       setErro(
@@ -125,14 +127,20 @@ const Membros = () => {
 
   const handleEditClick = (jogadorId) => {
     const jogadorToEdit = jogadores.find((j) => j._id === jogadorId);
-    if (!jogadorToEdit) return;
+    if (!jogadorToEdit) {
+      console.error(`Jogador com ID ${jogadorId} não encontrado`);
+      setErro("Jogador não encontrado");
+      setTimeout(() => setErro(null), 3000);
+      return;
+    }
 
+    console.log("Jogador selecionado para edição:", jogadorToEdit);
     setJogadorEditando({
-      _id: jogadorToEdit._id,
-      nome: jogadorToEdit.nome,
-      titulo: jogadorToEdit.titulo,
-      descricao: jogadorToEdit.descricao,
-      fotoUrl: jogadorToEdit.fotoUrl,
+      _id: jogadorToEdit._id || "",
+      nome: jogadorToEdit.nome || "",
+      titulo: jogadorToEdit.titulo || "",
+      descricao: jogadorToEdit.descricao || "",
+      fotoUrl: jogadorToEdit.fotoUrl || "",
       insta: jogadorToEdit.insta || "",
       twitter: jogadorToEdit.twitter || "",
       twitch: jogadorToEdit.twitch || "",
@@ -177,7 +185,7 @@ const Membros = () => {
         prev.map((jogador) =>
           jogador._id === jogadorId
             ? {
-                ...response.data.data, // Ajustado para acessar response.data.data
+                ...response.data.data,
                 fotoUrl: `${API_BASE_URL}/jogadores/${
                   response.data.data._id
                 }/imagem?${Date.now()}`,
@@ -201,7 +209,7 @@ const Membros = () => {
       formData.append("nome", novoJogador.nome);
       formData.append("titulo", novoJogador.titulo);
       formData.append("descricao", novoJogador.descricao);
-      formData.append("time", timeId); // Usar timeId diretamente como _id
+      formData.append("time", timeId);
 
       if (novoJogador.insta) formData.append("insta", novoJogador.insta);
       if (novoJogador.twitter) formData.append("twitter", novoJogador.twitter);
@@ -288,7 +296,7 @@ const Membros = () => {
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="bg-fundo w-full flex justify-center items-center overflow-auto scrollbar-hidden"
+        className="bg-fundo w-full flex justify-center items-center"
       >
         <div className="w-full flex flex-wrap py-16 justify-center gap-8">
           {jogadores.length > 0 ? (
@@ -298,8 +306,7 @@ const Membros = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                className="relative z-0"
               >
                 <CardJogador
                   jogadorId={jogador._id}

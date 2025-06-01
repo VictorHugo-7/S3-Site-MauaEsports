@@ -263,7 +263,6 @@ const Campeonatos = () => {
       className="bg-[#0D1117] min-h-screen flex flex-col"
     >
       <div className="bg-[#010409] h-[104px]"></div>
-
       <PageBanner pageName="Campeonatos" />
 
       <motion.div
@@ -297,7 +296,7 @@ const Campeonatos = () => {
           )}
         </AnimatePresence>
 
-        {error && (
+        {error ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -315,9 +314,7 @@ const Campeonatos = () => {
               Tentar novamente
             </motion.button>
           </motion.div>
-        )}
-
-        {!error && (
+        ) : (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -336,39 +333,27 @@ const Campeonatos = () => {
             />
           </motion.div>
         )}
-
-        <AnimatePresence>
-          {isModalOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <CardModal
-                isOpen={isModalOpen}
-                onClose={closeModal}
-                onSave={handleCardCreate}
-                editingCard={editingCard}
-              />
-            </motion.div>
-          )}
-
-          {showDeleteModal && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-            >
-              <ModalConfirmarExclusao
-                isOpen={showDeleteModal}
-                mensagem="Tem certeza que deseja excluir este campeonato?"
-                onConfirm={confirmDelete}
-                onCancel={cancelDelete}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
       </motion.div>
+
+      {/* Modais */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <CardModal
+            isOpen={isModalOpen}
+            onClose={closeModal}
+            onSave={handleCardCreate}
+            editingCard={editingCard}
+          />
+        )}
+        {showDeleteModal && (
+          <ModalConfirmarExclusao
+            isOpen={showDeleteModal}
+            mensagem="Tem certeza que deseja excluir este campeonato?"
+            onConfirm={confirmDelete}
+            onCancel={cancelDelete}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
