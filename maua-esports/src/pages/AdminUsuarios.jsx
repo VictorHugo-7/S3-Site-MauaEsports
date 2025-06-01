@@ -10,6 +10,7 @@ import AlertaOk from "../components/AlertaOk";
 import axios from "axios";
 import { HiUserCircle } from "react-icons/hi2";
 import { motion, AnimatePresence } from "framer-motion";
+import ModalConfirmarExclusao from "../components/modalConfirmarExclusao";
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -34,6 +35,11 @@ const AdminUsuarios = () => {
     aberto: false,
     src: null,
     alt: "",
+  });
+
+  const [modalExclusao, setModalExclusao] = useState({
+    isOpen: false,
+    usuario: null,
   });
 
   const fetchTimes = async () => {
@@ -211,16 +217,15 @@ const AdminUsuarios = () => {
       return;
     }
 
-    if (
-      !window.confirm(
-        `Tem certeza que deseja excluir o usuário ${usuario?.email}?`
-      )
-    ) {
-      return;
-    }
+    setModalExclusao({ isOpen: true, usuario });
+  };
+
+  const confirmarExclusao = async () => {
+    const usuario = modalExclusao.usuario;
+    if (!usuario) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/usuarios/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/usuarios/${usuario._id}`, {
         method: "DELETE",
       });
 
@@ -229,17 +234,20 @@ const AdminUsuarios = () => {
         throw new Error(errorData.message || "Erro ao excluir usuário");
       }
 
-      // Update the usuarios state first
-      setUsuarios(usuarios.filter((u) => u._id !== id));
-
-      // Then set the success message
+      setUsuarios(usuarios.filter((u) => u._id !== usuario._id));
       setSuccess(`Usuário ${usuario.email} excluído com sucesso!`);
-      setError(null); // Clear any existing error
+      setError(null);
     } catch (err) {
       console.error("Erro ao excluir usuário:", err);
       setError(err.message);
-      setSuccess(null); // Clear any existing success message
+      setSuccess(null);
+    } finally {
+      setModalExclusao({ isOpen: false, usuario: null });
     }
+  };
+
+  const cancelarExclusao = () => {
+    setModalExclusao({ isOpen: false, usuario: null });
   };
 
   const abrirModalEdicao = (usuario) => {
@@ -484,6 +492,14 @@ const AdminUsuarios = () => {
       animate={{ opacity: 1 }}
       className="w-full min-h-screen bg-fundo flex flex-col items-center"
     >
+      {/* Modal de Confirmação de Exclusão */}
+      <ModalConfirmarExclusao
+        isOpen={modalExclusao.isOpen}
+        mensagem={`Tem certeza que deseja excluir o usuário ${modalExclusao.usuario?.email}?`}
+        onConfirm={confirmarExclusao}
+        onCancel={cancelarExclusao}
+      />
+
       {/* Modal da imagem ampliada */}
       <AnimatePresence>
         {imagemAmpliada.aberto && (
