@@ -465,19 +465,6 @@ const ApresentacaoModal = ({
                             alt={`Ícone ${icone.id}`}
                             className="w-full h-full rounded object-cover border border-cinza-escuro"
                           />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              atualizarImagemIcone(
-                                icone.id,
-                                "/api/placeholder/40/40"
-                              )
-                            }
-                            className="absolute -top-2 -right-2 bg-vermelho-claro text-branco rounded-full w-5 h-5 flex items-center justify-center hover:bg-vermelho-escuro transition-colors"
-                            title="Remover ícone"
-                          >
-                            <RiCloseFill className="w-3 h-3" />
-                          </button>
                         </div>
                       </div>
                     )}
