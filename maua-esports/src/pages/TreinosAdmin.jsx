@@ -1009,7 +1009,7 @@ const TreinosAdmin = () => {
           className="w-full lg:flex-1 bg-gray-800 border border-gray-700 rounded-xl shadow-lg min-h-[400px] order-last lg:order-first overflow-x-auto"
         >
           <div className="border-b border-gray-700 p-4 sticky top-0 bg-gray-800 z-10">
-            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_120px] gap-4 font-blinker text-sm sm:text-base text-white min-w-[600px] ">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_120px] gap-4 font-blinker text-sm sm:text-base text-white min-w-[600px]">
               <span className="text-center sm:text-left ml-8">Horário</span>
               <span className="text-center sm:text-left">Dia da Semana</span>
               <span className="text-center sm:text-left">Time</span>
@@ -1022,7 +1022,7 @@ const TreinosAdmin = () => {
             </div>
           </div>
 
-          <div className="pb-6 space-y-2 px-2 sm:px-4 min-w-[600px]">
+          <div className="pb-6 space-y-2 px-2 sm:px-4 min-w-[600px] mt-4">
             <AnimatePresence>
               {criandoTreino && (
                 <motion.div
