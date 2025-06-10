@@ -1621,102 +1621,6 @@ app.get("/modality/all", authenticate, (req, res) => {
   res.json(modality);
 });
 
-/////////////////////////////////////////////////////////////////////////  RELATORIOS  //////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Função auxiliar para obter o semestre atual
-function getCurrentSemester() {
-  const now = new Date();
-  const year = now.getFullYear();
-  return now.getMonth() < 6 ? `${year}.1` : `${year}.2`;
-}
-
-// Rota para gerar PDF
-router.post("/api/generate-pdf-report", async (req, res) => {
-  try {
-    const { team } = req.body;
-
-    // Crie o documento PDF
-    const doc = new PDFDocument();
-
-    // Configura o cabeçalho da resposta
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=relatorio_pae_${team}.pdf`
-    );
-
-    // Pipe do PDF para a resposta
-    doc.pipe(res);
-
-    // Adicione conteúdo ao PDF
-    doc.fontSize(25).text(`Relatório PAE - ${team}`, { align: "center" });
-    doc.moveDown();
-    doc
-      .fontSize(12)
-      .text(`Semestre: ${getCurrentSemester()}`, { align: "center" });
-    doc.moveDown(2);
-
-    // Adicione tabela de jogadores (exemplo)
-    doc.fontSize(14).text("Jogadores e Horas:", { underline: true });
-    doc.moveDown();
-
-    // Aqui você deve adicionar os dados reais dos jogadores
-    doc.fontSize(12).text("Jogador 1 - 45 horas (Experiente - Azul)");
-    doc.text("Jogador 2 - 30 horas (Avançado - Ouro)");
-    // ...
-
-    // Finalize o PDF
-    doc.end();
-  } catch (error) {
-    console.error("Erro ao gerar PDF:", error);
-    res.status(500).json({ error: "Erro ao gerar relatório PDF" });
-  }
-});
-
-// Rota para gerar Excel
-router.post("/api/generate-excel-report", async (req, res) => {
-  try {
-    const { team } = req.body;
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Relatório PAE");
-
-    // Adicione cabeçalhos
-    worksheet.columns = [
-      { header: "Jogador", key: "name", width: 30 },
-      { header: "Horas", key: "hours", width: 15 },
-      { header: "Rank", key: "rank", width: 25 },
-    ];
-
-    // Adicione dados (substitua pelos dados reais da sua aplicação)
-    worksheet.addRow({
-      name: "Jogador 1",
-      hours: 45,
-      rank: "Experiente (Azul)",
-    });
-    worksheet.addRow({
-      name: "Jogador 2",
-      hours: 28,
-      rank: "Avançado (Ouro)",
-    });
-
-    // Configura o cabeçalho da resposta
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=relatorio_pae_${team}.xlsx`
-    );
-
-    // Envie o arquivo
-    await workbook.xlsx.write(res);
-    res.end();
-  } catch (error) {
-    console.error("Erro ao gerar Excel:", error);
-    res.status(500).json({ error: "Erro ao gerar relatório Excel" });
-  }
-});
 /////////////////////////////////////////////////////////////////////////DISCORD API //////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Função para obter o discordID
@@ -1958,8 +1862,8 @@ app.get("/api/apresentacao", async (req, res) => {
 app.post(
   "/api/apresentacao",
   upload.fields([
-    { name: "imagem", maxCount: 1 }, 
-    { name: "icones", maxCount: 5 }
+    { name: "imagem", maxCount: 1 },
+    { name: "icones", maxCount: 5 },
   ]),
   async (req, res) => {
     try {
@@ -2016,14 +1920,18 @@ app.post(
 
       // Mapear os ícones, preservando os existentes e atualizando apenas os modificados
       const iconesData = iconesParsed.map((icone, index) => {
-        const newImageFile = iconesFiles.find(file => file.originalname.includes(icone.id.toString()));
+        const newImageFile = iconesFiles.find((file) =>
+          file.originalname.includes(icone.id.toString())
+        );
         const existingIcon = existingIcones.find((ei) => ei.id === icone.id);
 
         return {
           id: icone.id,
           link: icone.link,
           imagem: newImageFile ? newImageFile.buffer : existingIcon?.imagem,
-          imagemType: newImageFile ? newImageFile.mimetype : existingIcon?.imagemType,
+          imagemType: newImageFile
+            ? newImageFile.mimetype
+            : existingIcon?.imagemType,
         };
       });
 
@@ -2056,7 +1964,9 @@ app.post(
 
       // Converte a imagem principal para base64 para retorno
       const imagemBase64 = apresentacao.imagem
-        ? `data:${apresentacao.imagemType};base64,${apresentacao.imagem.toString("base64")}`
+        ? `data:${
+            apresentacao.imagemType
+          };base64,${apresentacao.imagem.toString("base64")}`
         : null;
 
       // Converte as imagens dos ícones para base64 para retorno
@@ -2078,7 +1988,6 @@ app.post(
     }
   }
 );
-
 
 //////////////////////////////////////////////////////////////////////////HOME_INFORMACOES////////////////////////////////////////////////////////
 
@@ -2370,7 +2279,6 @@ module.exports = {
   Apresentacao,
   Politicas,
 };
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Só inicia os servidores se NÃO estiver em ambiente de teste

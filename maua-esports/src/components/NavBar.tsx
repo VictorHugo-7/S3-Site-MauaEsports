@@ -990,10 +990,16 @@ const NavBar = () => {
                             pattern="\d{18}|^$"
                           />
                         </div>
-                        <p className="text-xs text-fonte-escura mt-1">
-                          Deve ser somente números (Deixe vazio para remover o
-                          Discord ID).
-                        </p>
+
+                        {userType &&
+                        (userType === "Administrador" ||
+                          userType === "Administrador Geral") ? (
+                          <p className="text-xs text-fonte-escura mt-1">
+                            Deve ser somente números (Deixe vazio para remover o
+                            Discord ID).
+                          </p>
+                        ) : null}
+
                         <button
                           className="flex items-center gap-2 bg-[#5865F2] hover:bg-[#4752C4] text-white px-4 py-2 rounded-lg text-sm font-semibold active:scale-95 transition-colors duration-200 hover:cursor-pointer sm:text-xs sm:px-3 sm:py-1.5 w-full sm:w-auto mt-2"
                           onClick={VincularContaDiscord}

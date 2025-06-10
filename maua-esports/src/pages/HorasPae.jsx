@@ -13,14 +13,14 @@ import {
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiUserCircle } from "react-icons/hi2";
-import rank1 from '../assets/images/rank1.png';
-import rank2 from '../assets/images/rank2.png';
-import rank3 from '../assets/images/rank3.png';
-import rank4 from '../assets/images/rank4.png';
-import rank5 from '../assets/images/rank5.png';
-import rank6 from '../assets/images/rank6.png';
-import rank7 from '../assets/images/rank7.png';
-import rank8 from '../assets/images/rank8.png';
+import rank1 from "../assets/images/rank1.png";
+import rank2 from "../assets/images/rank2.png";
+import rank3 from "../assets/images/rank3.png";
+import rank4 from "../assets/images/rank4.png";
+import rank5 from "../assets/images/rank5.png";
+import rank6 from "../assets/images/rank6.png";
+import rank7 from "../assets/images/rank7.png";
+import rank8 from "../assets/images/rank8.png";
 
 function HorasPaePage() {
   const [generatingReport, setGeneratingReport] = useState(false);
@@ -42,6 +42,34 @@ function HorasPaePage() {
 
   const API_BASE_URL = "http://localhost:3000";
 
+  const RANK_STYLES = {
+    0: { tailwindClass: "bg-white", hexColor: "#FFFFFF" },
+    1: { tailwindClass: "bg-[#5D0F01]", hexColor: "#5D0F01" },
+    2: { tailwindClass: "bg-[#7A807D]", hexColor: "#7A807D" },
+    3: { tailwindClass: "bg-[#FCA610]", hexColor: "#FCA610" },
+    4: { tailwindClass: "bg-[#39A0B1]", hexColor: "#39A0B1" },
+    5: { tailwindClass: "bg-[#047C21]", hexColor: "#047C21" },
+    6: { tailwindClass: "bg-[#60409E]", hexColor: "#60409E" },
+    7: { tailwindClass: "bg-[#C10146]", hexColor: "#C10146" }, // Mestre
+    8: { tailwindClass: "bg-[#FFC87F]", hexColor: "#FFC87F" }, // Lenda
+    default: { tailwindClass: "bg-gray-700", hexColor: "#374151" }, // Um cinza para o padrão
+  };
+
+  const getRankStyleInfo = (rank) => {
+    return RANK_STYLES[rank] || RANK_STYLES.default;
+  };
+
+  // Função auxiliar para converter Hex para RGBA com alfa
+  const hexToRgba = (hex, alpha = 1) => {
+    if (!hex || typeof hex !== "string" || !hex.startsWith("#")) {
+      return `rgba(55, 65, 81, ${alpha})`; // Um cinza padrão (gray-700)
+    }
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
   const extractRAFromEmail = (email) => {
     if (!email) return "";
     const raPart = email.split("@")[0];
@@ -57,7 +85,7 @@ function HorasPaePage() {
       { id: 5, name: "Experiente", image: rank5 },
       { id: 6, name: "Veterano", image: rank6 },
       { id: 7, name: "Elite", image: rank7 },
-      { id: 8, name: "Lenda", image: rank8 }
+      { id: 8, name: "Lenda", image: rank8 },
     ];
     setRanks(localRanks);
   }, []);
@@ -67,6 +95,7 @@ function HorasPaePage() {
     const year = now.getFullYear();
     const semesterStartMonth = now.getMonth() < 7 ? 1 : 7;
     return new Date(year, semesterStartMonth, 1).getTime();
+    // PARA TESTAR AS CORES return new Date(2000, 0, 1).getTime();
   };
 
   const getCurrentSemester = () => {
@@ -729,6 +758,25 @@ function HorasPaePage() {
                 <AnimatePresence>
                   {allPlayers.map((player, index) => {
                     const currentRank = getCurrentRank(player.totalHours);
+                    const rankStyleInfo = getRankStyleInfo(currentRank); // Pega as infos de estilo
+                    // --- LÓGICA PARA OPACIDADE CONDICIONAL (INCLUINDO LENDA) ---
+                    let opacityLow = 0.05;
+                    let opacityHigh = 0.15;
+
+                    if (currentRank === 8) {
+                      // Rank Lenda (80h+)
+                      opacityLow = 0.08; // Um pouco mais visível na base
+                      opacityHigh = 0.25; // Pulso um pouco mais forte para destacar
+                    } else if (
+                      rankStyleInfo.hexColor === RANK_STYLES[0].hexColor
+                    ) {
+                      // Rank Iniciante (branco)
+                      opacityLow = 0.03;
+                      opacityHigh = 0.1;
+                    }
+                    // Para os demais ranks, permanecem os valores padrão 0.05 e 0.15
+                    // --- FIM DA LÓGICA PARA OPACIDADE CONDICIONAL ---
+
                     const fillPercentage = getFillPercentage(player.totalHours);
                     const roundedHours =
                       Math.round(player.totalHours * 10) / 10;
@@ -739,9 +787,26 @@ function HorasPaePage() {
                         key={`${player.userId || player.discordId}-${index}`}
                         layout
                         initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                          backgroundColor: [
+                            hexToRgba(rankStyleInfo.hexColor, opacityLow),
+                            hexToRgba(rankStyleInfo.hexColor, opacityHigh),
+                            hexToRgba(rankStyleInfo.hexColor, opacityLow),
+                          ],
+                        }}
                         exit={{ opacity: 0, x: -100 }}
-                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        transition={{
+                          duration: 0.3,
+                          delay: index * 0.05,
+                          backgroundColor: {
+                            // MODIFICADO AQUI
+                            duration: 2, // Duração da pulsação do fundo
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          },
+                        }}
                         className={`flex items-center mb-4 p-2 rounded-lg ${
                           isCurrentUser
                             ? "bg-gradient-to-r from-blue-900/30 to-blue-800/30 border border-blue-700/50"
@@ -815,10 +880,16 @@ function HorasPaePage() {
                                       "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)",
                                   }}
                                 >
-                                  <div
-                                    className={`absolute inset-0 ${color}`}
-                                    style={{ width: `${fill}%` }}
-                                  ></div>
+                                  <motion.div // MODIFICADO AQUI
+                                    className={`absolute inset-0 ${color}`} // 'color' é a classe da cor do rank
+                                    initial={{ width: "0%" }} // Começa com 0% de largura
+                                    animate={{ width: `${fill}%` }} // Anima para a porcentagem de preenchimento
+                                    transition={{
+                                      duration: 0.8,
+                                      ease: "easeOut",
+                                      delay: index * 0.1,
+                                    }} // Animação suave
+                                  />
                                 </div>
                                 {rankNum === 8 && (
                                   <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-white">

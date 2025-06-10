@@ -42,51 +42,51 @@ const Agendamento = ({
   return (
     <motion.div
       whileHover={{ scale: 1.01 }}
-      className="flex flex-col sm:flex-row p-4 sm:p-6 my-0 min-h-[80px] bg-gray-800 border border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
+      className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_120px] gap-4 p-4 sm:p-6 my-0 min-h-[80px] bg-gray-800 border border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 relative"
     >
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
-        {/* Horário */}
+      {/* Horário */}
+      <div className="flex flex-col items-center sm:items-start justify-center">
+        <div className="sm:hidden text-xs text-gray-400 mb-1">Horário</div>
         <div className="flex flex-col items-center sm:items-start">
-          <div className="sm:hidden text-xs text-gray-400 mb-1">Horário</div>
-          <div className="flex flex-col items-center sm:items-start">
-            <span className="text-white font-semibold text-base">
-              {inicio} - {fim}
-            </span>
-            <span className="text-blue-400 text-sm">
-              Duração: {calcularDuracao(inicio, fim)}
-            </span>
-          </div>
-        </div>
-
-        {/* Dia da Semana */}
-        <div className="flex flex-col items-center sm:items-start">
-          <div className="sm:hidden text-xs text-gray-400 mb-1">
-            Dia da Semana
-          </div>
-          <span className="text-white font-medium text-base">
-            {diasDaSemana[diaSemana]}
+          <span className="text-white font-semibold text-base">
+            {inicio} - {fim}
+          </span>
+          <span className="text-blue-400 text-sm">
+            Duração: {calcularDuracao(inicio, fim)}
           </span>
         </div>
+      </div>
 
-        {/* Time */}
-        <div className="flex flex-col items-center sm:items-start">
-          <div className="sm:hidden text-xs text-gray-400 mb-1">Time</div>
-          <p className="font-semibold text-white font-blinker text-base">
-            {time}
-          </p>
+      {/* Dia da Semana */}
+      <div className="flex flex-col items-center sm:items-start justify-center">
+        <div className="sm:hidden text-xs text-gray-400 mb-1">
+          Dia da Semana
         </div>
+        <span className="text-white font-medium text-base">
+          {diasDaSemana[diaSemana]}
+        </span>
+      </div>
+
+      {/* Time */}
+      <div className="flex flex-col items-center sm:items-start justify-center">
+        <div className="sm:hidden text-xs text-gray-400 mb-1">Time</div>
+        <p className="font-semibold text-white font-blinker text-base">
+          {time}
+        </p>
       </div>
 
       {/* Ações */}
       {userRole !== "Jogador" && (
-        <div className="flex justify-center sm:justify-end items-center mt-4 sm:mt-0 sm:ml-4 gap-2">
+        <div className="flex justify-center sm:justify-end items-center mt-4 sm:mt-0  sm:right-0 sm:bg-gray-800 sm:h-full">
           <div className="sm:hidden text-xs text-gray-400 mr-2">Ações:</div>
-          <EditarBtn onClick={onEditar} isEditing={false} />
-          <DeletarBtn
-            onDelete={onExcluir}
-            className="text-red-400 hover:text-red-500 text-2xl transition-colors duration-200"
-            aria-label="Excluir treino"
-          />
+          <div className="flex gap-2">
+            <EditarBtn onClick={onEditar} isEditing={false} />
+            <DeletarBtn
+              onDelete={onExcluir}
+              className="text-red-400 hover:text-red-500 text-2xl transition-colors duration-200"
+              aria-label="Excluir treino"
+            />
+          </div>
         </div>
       )}
     </motion.div>
@@ -985,7 +985,7 @@ const TreinosAdmin = () => {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.8 }}
-          className="w-full lg:w-[350px] lg:h-[400px] bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-lg overflow-y-auto order-first lg:order-last"
+          className="w-full lg:w-[350px] lg:h-400px] bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-lg overflow-y-auto order-first lg:order-last"
         >
           <Calendario />
         </motion.div>
@@ -995,15 +995,15 @@ const TreinosAdmin = () => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.6 }}
-          className="w-full lg:flex-1 bg-gray-800 border border-gray-700 rounded-xl overflow-y-auto shadow-lg min-h-[400px] order-last lg:order-first"
+          className="w-full lg:flex-1 bg-gray-800 border border-gray-700 rounded-xl shadow-lg min-h-[400px] order-last lg:order-first overflow-x-auto"
         >
           <div className="border-b border-gray-700 p-4 sticky top-0 bg-gray-800 z-10">
-            <div className="font-blinker text-sm sm:text-base md:text-lg text-white hidden sm:flex justify-between">
-              <span className="w-1/4">Horário</span>
-              <span className="w-1/4">Dia da Semana</span>
-              <span className="w-2/4">Time</span>
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_120px] gap-4 font-blinker text-sm sm:text-base text-white min-w-[600px] ">
+              <span className="text-center sm:text-left ml-8">Horário</span>
+              <span className="text-center sm:text-left">Dia da Semana</span>
+              <span className="text-center sm:text-left">Time</span>
               {userRole !== "Jogador" && (
-                <span className="w-1/4 text-center">Ações</span>
+                <span className="text-center sticky  bg-gray-800">Ações</span>
               )}
             </div>
             <div className="sm:hidden font-blinker text-base text-white text-center">
@@ -1011,7 +1011,7 @@ const TreinosAdmin = () => {
             </div>
           </div>
 
-          <div className="pb-6 space-y-2 px-2 sm:px-4">
+          <div className="pb-6 space-y-2 px-2 sm:px-4 min-w-[600px]">
             <AnimatePresence>
               {criandoTreino && (
                 <motion.div
@@ -1020,7 +1020,7 @@ const TreinosAdmin = () => {
                   exit={{ opacity: 0, height: 0 }}
                   className="flex flex-col p-4 gap-4 bg-gray-700 border border-gray-600 rounded-lg"
                 >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_120px] gap-4 w-full">
                     <div className="flex flex-col">
                       <label className="text-gray-300 text-xs sm:text-sm mb-1">
                         Início
@@ -1127,7 +1127,7 @@ const TreinosAdmin = () => {
                         exit={{ opacity: 0 }}
                         className="flex flex-col p-4 gap-4 bg-gray-700 border border-gray-600 rounded-lg"
                       >
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+                        <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_120px] gap-4 w-full">
                           <div className="flex flex-col">
                             <label className="text-gray-300 text-xs sm:text-sm mb-1">
                               Início
