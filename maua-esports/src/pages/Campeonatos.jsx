@@ -23,7 +23,7 @@ const Campeonatos = () => {
     inscricoes: [],
     passados: [],
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setloading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -68,7 +68,7 @@ const Campeonatos = () => {
 
   const fetchTournaments = async () => {
     try {
-      setIsLoading(true);
+      setloading(true);
       setError(null);
       setErrorMessage(null);
 
@@ -84,12 +84,10 @@ const Campeonatos = () => {
         return tournaments.map((t) => ({
           ...t,
           imageUrl: `${API_BASE_URL}/campeonatos/${t._id}/image?${Date.now()}`,
-          gameIconUrl: `${API_BASE_URL}/campeonatos/${
-            t._id
-          }/gameIcon?${Date.now()}`,
-          organizerImageUrl: `${API_BASE_URL}/campeonatos/${
-            t._id
-          }/organizerImage?${Date.now()}`,
+          gameIconUrl: `${API_BASE_URL}/campeonatos/${t._id
+            }/gameIcon?${Date.now()}`,
+          organizerImageUrl: `${API_BASE_URL}/campeonatos/${t._id
+            }/organizerImage?${Date.now()}`,
         }));
       };
 
@@ -102,7 +100,7 @@ const Campeonatos = () => {
       setError(err.message);
       setErrorMessage(err.message);
     } finally {
-      setIsLoading(false);
+      setloading(false);
     }
   };
 
@@ -222,37 +220,21 @@ const Campeonatos = () => {
     }
   };
 
-  if (!authChecked) {
+
+  if (loading || !authChecked) {
     return (
-      <div className="min-h-screen bg-[#0D1117] text-white flex items-center justify-center">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="w-full min-h-screen bg-fundo flex items-center justify-center"
+      >
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           className="rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"
         ></motion.div>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="bg-[#0D1117] min-h-screen flex flex-col">
-        <div className="bg-[#010409] h-[104px]"></div>
-        <PageBanner pageName="Campeonatos" />
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="p-5 flex justify-center items-center flex-grow"
-        >
-          <motion.div
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="text-white"
-          >
-            Carregando campeonatos...
-          </motion.div>
-        </motion.div>
-      </div>
+        <p className="text-branco ml-4">Carregando Campeonatos...</p>
+      </motion.div>
     );
   }
 

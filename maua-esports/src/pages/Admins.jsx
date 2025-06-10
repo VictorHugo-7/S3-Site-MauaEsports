@@ -15,7 +15,7 @@ const API_BASE_URL = "http://localhost:3000";
 
 const Admins = () => {
   const [admins, setAdmins] = useState([]);
-  const [carregando, setCarregando] = useState(true);
+  const [loading, setloading] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState(null);
   const [adminEditando, setAdminEditando] = useState(null);
   const [erro, setErro] = useState(null);
@@ -56,7 +56,7 @@ const Admins = () => {
 
   const carregarAdmins = async () => {
     try {
-      setCarregando(true);
+      setloading(true);
       setErroCarregamento(null);
 
       const response = await axios.get(`${API_BASE_URL}/admins`, {
@@ -85,7 +85,7 @@ const Admins = () => {
             : error.message
       );
     } finally {
-      setCarregando(false);
+      setloading(false);
     }
   };
 
@@ -241,7 +241,7 @@ const Admins = () => {
     }
   };
 
-  if (carregando) {
+  if (loading) {
     return (
       <motion.div
         initial={{ opacity: 0 }}

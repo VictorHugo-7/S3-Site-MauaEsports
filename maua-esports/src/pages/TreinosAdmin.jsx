@@ -120,6 +120,7 @@ function isHorarioValido(inicio, fim) {
 }
 
 const TreinosAdmin = () => {
+  const [loading, setLoading] = useState(true);
   const { instance } = useMsal();
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
@@ -130,7 +131,6 @@ const TreinosAdmin = () => {
   const [modalidadeSelecionada, setModalidadeSelecionada] = useState("");
   const [agendamentosOriginais, setAgendamentosOriginais] = useState([]);
   const [agendamentosFiltrados, setAgendamentosFiltrados] = useState([]);
-  const [carregando, setCarregando] = useState(true);
   const [filtroDataAtivo, setFiltroDataAtivo] = useState(false);
   const [editandoTreino, setEditandoTreino] = useState(null);
   const [criandoTreino, setCriandoTreino] = useState(false);
@@ -298,7 +298,7 @@ const TreinosAdmin = () => {
           !userModalityId
         ) {
           setModalidades({});
-          setCarregando(false);
+          setLoading(false);
           return;
         }
 
@@ -360,7 +360,7 @@ const TreinosAdmin = () => {
         console.error("Erro ao buscar dados:", error);
         setAlertaErro("Erro ao carregar dados dos treinos");
       } finally {
-        setCarregando(false);
+        setLoading(false);
       }
     };
 
@@ -796,11 +796,22 @@ const TreinosAdmin = () => {
     total: agendamentosFiltrados.length,
   };
 
-  if (carregando) {
-    return (
-      <div className="text-white text-center py-8">Carregando dados...</div>
-    );
-  }
+  if (loading) {
+      return (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="w-full min-h-screen bg-fundo flex items-center justify-center"
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"
+          ></motion.div>
+          <p className="text-branco ml-4">Carregando treinos...</p>
+        </motion.div>
+      );
+    }
 
   if (
     Object.keys(modalidades).length === 0 &&

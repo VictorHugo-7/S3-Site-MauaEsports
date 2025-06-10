@@ -16,7 +16,7 @@ const API_BASE_URL = "http://localhost:3000";
 
 const Times = () => {
   const [times, setTimes] = useState([]);
-  const [carregando, setCarregando] = useState(true);
+  const [loading, setloading] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [timeEditando, setTimeEditando] = useState(null);
@@ -67,7 +67,7 @@ const Times = () => {
 
   const carregarTimes = async () => {
     try {
-      setCarregando(true);
+      setloading(true);
       setErroCarregamento(null);
 
       const response = await axios.get(`${API_BASE_URL}/times`, {
@@ -96,7 +96,7 @@ const Times = () => {
       );
       setTimes([]);
     } finally {
-      setCarregando(false);
+      setloading(false);
     }
   };
 
@@ -246,7 +246,7 @@ const Times = () => {
     });
   };
 
-  if (carregando) {
+  if (loading) {
     return (
       <motion.div
         initial={{ opacity: 0 }}

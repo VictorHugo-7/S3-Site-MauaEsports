@@ -426,7 +426,7 @@ const AdminUsuarios = () => {
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           className="rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"
         ></motion.div>
-        <p className="text-branco ml-4">Carregando dados...</p>
+        <p className="text-branco ml-4">Carregando Usuários...</p>
       </motion.div>
     );
   }
