@@ -737,36 +737,34 @@ app.delete("/jogadores/:id", async (req, res) => {
 
 app.put("/jogadores/:id", upload.single("foto"), async (req, res) => {
   try {
-    // Extrai os dados do corpo da requisição
     const { nome, titulo, descricao, insta, twitter, twitch } = req.body;
 
-    // Verifica campos obrigatórios
     if (!nome || !titulo || !descricao) {
       return res.status(400).json({
         message: "Nome, título e descrição são obrigatórios",
       });
     }
 
-    // Prepara os dados para atualização
+    // Tratamento especial para redes sociais vazias
     const updateData = {
       nome,
       titulo,
       descricao,
-      insta: insta || undefined,
-      twitter: twitter || undefined,
-      twitch: twitch || undefined,
+      insta: insta === "" ? null : insta || undefined,
+      twitter: twitter === "" ? null : twitter || undefined,
+      twitch: twitch === "" ? null : twitch || undefined,
     };
 
-    // Se uma nova imagem foi enviada
     if (req.file) {
       updateData.foto = {
         data: req.file.buffer,
         contentType: req.file.mimetype,
         nomeOriginal: req.file.originalname,
       };
+    } else if (req.body.removeFoto === "true") {
+      updateData.foto = undefined; // Remove a foto
     }
 
-    // Atualiza no banco de dados
     const jogadorAtualizado = await Jogador.findByIdAndUpdate(
       req.params.id,
       updateData,
@@ -774,7 +772,7 @@ app.put("/jogadores/:id", upload.single("foto"), async (req, res) => {
         new: true,
         runValidators: true,
       }
-    ).select("-foto.data -__v"); // Remove dados binários da imagem e versão
+    ).select("-foto.data -__v");
 
     if (!jogadorAtualizado) {
       return res.status(404).json({
@@ -782,7 +780,6 @@ app.put("/jogadores/:id", upload.single("foto"), async (req, res) => {
       });
     }
 
-    // Resposta com os dados atualizados
     res.status(200).json({
       message: "Jogador atualizado com sucesso",
       data: jogadorAtualizado,
@@ -790,7 +787,6 @@ app.put("/jogadores/:id", upload.single("foto"), async (req, res) => {
   } catch (error) {
     console.error("Erro ao atualizar jogador:", error);
 
-    // Tratamento de erros específicos
     if (error.name === "ValidationError") {
       return res.status(400).json({
         message: "Erro de validação",
@@ -1510,54 +1506,70 @@ app.post("/admins", upload.single("foto"), async (req, res) => {
   }
 });
 
-// Rota PUT (Edição)
+// Rota PUT (Edição) para administradores
 app.put("/admins/:id", upload.single("foto"), async (req, res) => {
   try {
     const { id } = req.params;
+    const { nome, titulo, descricao, insta, twitter, twitch, removeFoto } = req.body;
+    const fotoFile = req.file;
+
+    // Validação básica
+    if (!nome || !titulo || !descricao) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Nome, título e descrição são obrigatórios" 
+      });
+    }
+
     const updateData = {
-      nome: req.body.nome?.trim(),
-      titulo: req.body.titulo?.trim(),
-      descricao: req.body.descricao?.trim(),
-      // Remova campos vazios em vez de definir como null
-      ...(req.body.insta && { insta: req.body.insta.trim() }),
-      ...(req.body.twitter && { twitter: req.body.twitter.trim() }),
-      ...(req.body.twitch && { twitch: req.body.twitch.trim() }),
+      nome: nome.trim(),
+      titulo: titulo.trim(),
+      descricao: descricao.trim(),
+      // Tratar redes sociais - enviar null se estiverem vazias
+      insta: insta?.trim() || null,
+      twitter: twitter?.trim() || null,
+      twitch: twitch?.trim() || null,
     };
 
-    if (req.file) {
+    // Tratar remoção de foto
+    if (removeFoto === "true") {
+      updateData.foto = null;
+    } else if (fotoFile) {
       updateData.foto = {
-        data: req.file.buffer,
-        contentType: req.file.mimetype,
+        data: fotoFile.buffer,
+        contentType: fotoFile.mimetype,
       };
     }
 
-    const updated = await Admin.findByIdAndUpdate(
+    const updatedAdmin = await Admin.findByIdAndUpdate(
       id,
-      { $set: updateData }, // Use $set para atualização parcial
+      updateData,
       { new: true, runValidators: true }
-    );
+    ).select("-foto.data -__v");
 
-    if (!updated) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Admin não encontrado" });
+    if (!updatedAdmin) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Admin não encontrado" 
+      });
     }
 
     res.json({
-      _id: updated._id,
-      nome: updated.nome,
-      titulo: updated.titulo,
-      descricao: updated.descricao,
-      insta: updated.insta || undefined, // Envie undefined em vez de null
-      twitter: updated.twitter || undefined,
-      twitch: updated.twitch || undefined,
-      fotoUrl: `${req.protocol}://${req.get("host")}/admins/${
-        updated._id
-      }/foto`,
+      success: true,
+      admin: {
+        ...updatedAdmin.toObject(),
+        fotoUrl: updatedAdmin.foto 
+          ? `${req.protocol}://${req.get("host")}/admins/${id}/foto?${Date.now()}` 
+          : null,
+      }
     });
   } catch (error) {
-    console.error("Erro na edição:", error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error("Erro ao atualizar admin:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Erro ao atualizar administrador",
+      error: error.message 
+    });
   }
 });
 

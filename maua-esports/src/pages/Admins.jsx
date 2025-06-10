@@ -59,39 +59,31 @@ const Admins = () => {
       setCarregando(true);
       setErroCarregamento(null);
 
-      if (!API_BASE_URL) {
-        throw new Error("URL da API não configurada");
-      }
-
       const response = await axios.get(`${API_BASE_URL}/admins`, {
         headers: { Accept: "application/json" },
-        timeout: 8000, // 8-second timeout
       });
-
-      if (!Array.isArray(response.data)) {
-        throw new Error("Formato de dados inválido do servidor");
-      }
 
       const adminsComUrls = response.data.map((admin) => ({
         ...admin,
         fotoUrl: admin.foto
           ? `${API_BASE_URL}/admins/${admin._id}/foto?${Date.now()}`
           : null,
+        // Garantir que redes sociais vazias sejam null
+        insta: admin.insta || null,
+        twitter: admin.twitter || null,
+        twitch: admin.twitch || null,
       }));
 
       setAdmins(adminsComUrls);
     } catch (error) {
       console.error("Erro ao carregar admins:", error);
       setErroCarregamento(
-        error.code === "ECONNABORTED"
-          ? "Tempo de conexão excedido. Verifique sua internet."
-          : error.response
+        error.response
           ? error.response.data.message || "Erro ao carregar administradores"
           : error.message.includes("Network Error")
-          ? "Servidor não responde. Verifique sua conexão ou tente novamente."
-          : error.message
+            ? "Servidor não responde. Verifique sua conexão ou tente novamente."
+            : error.message
       );
-      setAdmins([]);
     } finally {
       setCarregando(false);
     }
@@ -155,9 +147,8 @@ const Admins = () => {
         {
           ...response.data.admin,
           fotoUrl: response.data.admin.foto
-            ? `${API_BASE_URL}/admins/${
-                response.data.admin._id
-              }/foto?${Date.now()}`
+            ? `${API_BASE_URL}/admins/${response.data.admin._id
+            }/foto?${Date.now()}`
             : null,
         },
       ]);
@@ -185,6 +176,69 @@ const Admins = () => {
       twitter: adminToEdit.twitter || "",
       twitch: adminToEdit.twitch || "",
     });
+  };
+
+  const handleEditAdmin = async (updatedData) => {
+    try {
+      const formData = new FormData();
+      formData.append("nome", updatedData.nome);
+      formData.append("titulo", updatedData.titulo);
+      formData.append("descricao", updatedData.descricao);
+      formData.append("insta", updatedData.insta || "");
+      formData.append("twitter", updatedData.twitter || "");
+      formData.append("twitch", updatedData.twitch || "");
+
+      // Tratar a foto
+      if (updatedData.foto && updatedData.foto.startsWith("data:image")) {
+        const response = await fetch(updatedData.foto);
+        const fotoBlob = await response.blob();
+        formData.append("foto", fotoBlob, `foto-admin-${Date.now()}.jpg`);
+      } else if (updatedData.foto === null) {
+        formData.append("removeFoto", "true");
+      }
+
+      // Rest of the function remains the same...
+      const response = await axios.put(
+        `${API_BASE_URL}/admins/${updatedData._id}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      // Atualização do estado local
+      setAdmins((prev) =>
+        prev.map((admin) =>
+          admin._id === updatedData._id
+            ? {
+              ...admin,
+              nome: updatedData.nome,
+              titulo: updatedData.titulo,
+              descricao: updatedData.descricao,
+              insta: updatedData.insta || null,
+              twitter: updatedData.twitter || null,
+              twitch: updatedData.twitch || null,
+              fotoUrl:
+                updatedData.foto && updatedData.foto.startsWith("data:image")
+                  ? updatedData.foto
+                  : updatedData.foto === null
+                    ? null
+                    : `${API_BASE_URL}/admins/${updatedData._id}/foto?${Date.now()}`,
+            }
+            : admin
+        )
+      );
+
+      setSuccessMessage("Administrador atualizado com sucesso!");
+      setTimeout(() => setSuccessMessage(null), 3000);
+      setAdminEditando(null);
+    } catch (error) {
+      console.error("Erro ao atualizar admin:", error);
+      setErro(error.response?.data?.message || "Erro ao atualizar administrador");
+      setTimeout(() => setErro(null), 3000);
+    }
   };
 
   if (carregando) {
@@ -357,44 +411,7 @@ const Admins = () => {
             <ModalEditarAdmin
               admin={adminEditando}
               onClose={() => setAdminEditando(null)}
-              onSave={async (updatedData) => {
-                try {
-                  const formData = new FormData();
-                  formData.append("nome", updatedData.nome);
-                  formData.append("titulo", updatedData.titulo);
-                  formData.append("descricao", updatedData.descricao);
-                  formData.append("insta", updatedData.insta || "");
-                  formData.append("twitter", updatedData.twitter || "");
-                  formData.append("twitch", updatedData.twitch || "");
-
-                  // Handle photo upload
-                  if (updatedData.foto instanceof File) {
-                    formData.append("foto", updatedData.foto);
-                  }
-
-                  await axios.put(
-                    `${API_BASE_URL}/admins/${updatedData._id}`,
-                    formData,
-                    {
-                      headers: {
-                        "Content-Type": "multipart/form-data",
-                      },
-                    }
-                  );
-
-                  setSuccessMessage("Administrador atualizado com sucesso!");
-                  setTimeout(() => setSuccessMessage(null), 3000);
-                  carregarAdmins();
-                  setAdminEditando(null);
-                } catch (error) {
-                  console.error("Erro ao atualizar admin:", error);
-                  setErro(
-                    error.response?.data?.message ||
-                      "Erro ao atualizar administrador"
-                  );
-                  setTimeout(() => setErro(null), 3000);
-                }
-              }}
+              onSave={handleEditAdmin}
             />
           </motion.div>
         )}

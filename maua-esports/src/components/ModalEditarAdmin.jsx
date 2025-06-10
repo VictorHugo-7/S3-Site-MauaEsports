@@ -99,7 +99,7 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
           nome: formData.nome.trim(),
           titulo: formData.titulo.trim(),
           descricao: formData.descricao.trim(),
-          foto: fotoCropped || admin.fotoUrl,
+          foto: fotoCropped || (formData.foto === null ? null : admin.fotoUrl),
           insta: formData.instagram.trim() || null,
           twitter: formData.twitter.trim() || null,
           twitch: formData.twitch.trim() || null,
@@ -115,9 +115,8 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${
-        isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
-      }`}
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
     >
       {isCroppingFoto && (
         <ImageCropper
@@ -131,9 +130,8 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
       )}
 
       <div
-        className={`bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-96 relative max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
-          isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
-        }`}
+        className={`bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-96 relative max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+          }`}
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-branco">
@@ -195,14 +193,6 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
                     alt="Preview da foto"
                     className="w-full h-full rounded object-cover border border-cinza-escuro"
                   />
-                  <button
-                    type="button"
-                    onClick={handleRemoveFoto}
-                    className="absolute -top-2 -right-2 bg-vermelho-claro text-branco rounded-full w-6 h-6 flex items-center justify-center hover:bg-vermelho-escuro transition-colors"
-                    title="Remover imagem"
-                  >
-                    <RiCloseFill className="w-4 h-4" />
-                  </button>
                 </div>
               </div>
             )}
@@ -218,11 +208,10 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
               name="nome"
               value={formData.nome}
               onChange={handleChange}
-              className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
-                errors.nome
+              className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${errors.nome
                   ? "border-vermelho-claro focus:border-vermelho-claro"
                   : "border-borda focus:border-azul-claro"
-              }`}
+                }`}
             />
             {errors.nome && (
               <p className="text-vermelho-claro text-sm mt-1">{errors.nome}</p>
@@ -238,11 +227,10 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
               name="titulo"
               value={formData.titulo}
               onChange={handleChange}
-              className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
-                errors.titulo
+              className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${errors.titulo
                   ? "border-vermelho-claro focus:border-vermelho-claro"
                   : "border-borda focus:border-azul-claro"
-              }`}
+                }`}
             />
             {errors.titulo && (
               <p className="text-vermelho-claro text-sm mt-1">
@@ -259,11 +247,10 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
               name="descricao"
               value={formData.descricao}
               onChange={handleChange}
-              className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
-                errors.descricao
+              className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${errors.descricao
                   ? "border-vermelho-claro focus:border-vermelho-claro"
                   : "border-borda focus:border-azul-claro"
-              }`}
+                }`}
               rows="3"
             />
             {errors.descricao && (
@@ -287,11 +274,10 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
                 placeholder="Instagram URL"
                 value={formData.instagram}
                 onChange={handleChange}
-                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
-                  errors.instagram
+                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${errors.instagram
                     ? "border-vermelho-claro focus:border-vermelho-claro"
                     : "border-borda focus:border-azul-claro"
-                }`}
+                  }`}
               />
             </div>
             {errors.instagram && (
@@ -310,11 +296,10 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
                 placeholder="Twitter URL"
                 value={formData.twitter}
                 onChange={handleChange}
-                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
-                  errors.twitter
+                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${errors.twitter
                     ? "border-vermelho-claro focus:border-vermelho-claro"
                     : "border-borda focus:border-azul-claro"
-                }`}
+                  }`}
               />
             </div>
             {errors.twitter && (
@@ -333,11 +318,10 @@ const ModalEditarAdmin = ({ admin, onSave, onClose }) => {
                 placeholder="Twitch URL"
                 value={formData.twitch}
                 onChange={handleChange}
-                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
-                  errors.twitch
+                className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${errors.twitch
                     ? "border-vermelho-claro focus:border-vermelho-claro"
                     : "border-borda focus:border-azul-claro"
-                }`}
+                  }`}
               />
             </div>
             {errors.twitch && (

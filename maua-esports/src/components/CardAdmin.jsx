@@ -21,7 +21,9 @@ const CardAdmin = ({
 }) => {
   const [showDescTooltip, setShowDescTooltip] = useState(false);
   const [showNomeTooltip, setShowNomeTooltip] = useState(false);
-  const hasSocialMedia = instagram || twitter || twitch;
+  const hasSocialMedia = [instagram, twitter, twitch].some(
+    (social) => social !== null && social !== undefined && social !== ""
+  );
   const isAdmin = ["Administrador", "Administrador Geral"].includes(userRole);
   const defaultFoto = "/path/to/default-admin.jpg";
   const MAX_DESC_CHARS = 37;
@@ -129,7 +131,7 @@ const CardAdmin = ({
           {(hasSocialMedia || isAdmin) && (
             <div className="flex items-center my-4 text-xl w-full text-fonte-escura justify-between">
               <div className="flex space-x-4 ml-4">
-                {instagram && (
+                {instagram !== null && instagram !== "" && (
                   <a
                     href={normalizeSocialLink(instagram, "instagram")}
                     target="_blank"
@@ -138,7 +140,7 @@ const CardAdmin = ({
                     <FaInstagram className="cursor-pointer hover:scale-110 hover:text-azul-escuro transition-transform duration-300" />
                   </a>
                 )}
-                {twitter && (
+                {twitter !== null && twitter !== "" && (
                   <a
                     href={normalizeSocialLink(twitter, "twitter")}
                     target="_blank"
@@ -147,7 +149,7 @@ const CardAdmin = ({
                     <RiTwitterXFill className="cursor-pointer hover:scale-110 hover:text-azul-escuro transition-transform duration-300" />
                   </a>
                 )}
-                {twitch && (
+                {twitch !== null && twitch !== "" && (
                   <a
                     href={normalizeSocialLink(twitch, "twitch")}
                     target="_blank"

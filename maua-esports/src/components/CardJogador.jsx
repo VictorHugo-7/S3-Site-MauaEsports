@@ -22,7 +22,9 @@ const CardJogador = ({
 }) => {
   const [showDescTooltip, setShowDescTooltip] = useState(false);
   const [showNomeTooltip, setShowNomeTooltip] = useState(false);
-  const hasSocialMedia = instagram || twitter || twitch;
+  const hasSocialMedia = [instagram, twitter, twitch].some(
+    (social) => social !== null && social !== undefined && social !== ""
+  );
   const isAdmin = ["Administrador", "Administrador Geral"].includes(userRole);
   const defaultFoto = "/path/to/default-player.jpg";
   const defaultLogo = "/path/to/default-logo.png";

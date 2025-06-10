@@ -49,6 +49,10 @@ const Membros = () => {
         ...j,
         fotoUrl: `${API_BASE_URL}/jogadores/${j._id}/imagem?${Date.now()}`,
         descricao: j.descricao || "Sem descrição disponível",
+        // Garantir que redes sociais vazias sejam null
+        insta: j.insta || null,
+        twitter: j.twitter || null,
+        twitch: j.twitch || null,
       }));
 
       console.log("Jogadores carregados:", jogadoresComFallback);
@@ -59,8 +63,8 @@ const Membros = () => {
         error.response
           ? error.response.data.message || "Erro ao carregar dados"
           : error.message.includes("Network Error")
-          ? "Servidor não responde. Verifique sua conexão ou tente novamente."
-          : error.message
+            ? "Servidor não responde. Verifique sua conexão ou tente novamente."
+            : error.message
       );
     } finally {
       setCarregando(false);
@@ -153,43 +157,50 @@ const Membros = () => {
       formData.append("nome", updatedData.nome);
       formData.append("titulo", updatedData.titulo);
       formData.append("descricao", updatedData.descricao);
-      formData.append("insta", updatedData.instagram || "");
+
+      // Tratar redes sociais explicitamente
+      formData.append("insta", updatedData.instagram || ""); // Envia string vazia se for nulo
       formData.append("twitter", updatedData.twitter || "");
       formData.append("twitch", updatedData.twitch || "");
 
-      const dataURLtoBlob = (dataURL) => {
-        const arr = dataURL.split(",");
-        const mime = arr[0].match(/:(.*?);/)[1];
-        const bstr = atob(arr[1]);
-        let n = bstr.length;
-        const u8arr = new Uint8Array(n);
-        while (n--) {
-          u8arr[n] = bstr.charCodeAt(n);
-        }
-        return new Blob([u8arr], { type: mime });
-      };
-
+      // Tratar a foto
       if (updatedData.foto && updatedData.foto.startsWith("data:image")) {
-        const fotoBlob = dataURLtoBlob(updatedData.foto);
-        formData.append("foto", fotoBlob, `foto-jogador-${Date.now()}.jpg`);
+        const response = await fetch(updatedData.foto);
+        const fotoBlob = await response.blob();
+        formData.append("foto", fotoBlob, `foto-admin-${Date.now()}.jpg`);
       } else if (updatedData.foto === null) {
         formData.append("removeFoto", "true");
       }
 
       const response = await axios.put(
         `${API_BASE_URL}/jogadores/${jogadorId}`,
-        formData
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
 
+      // Atualização do estado local - garantir que redes sociais vazias sejam null
       setJogadores((prev) =>
         prev.map((jogador) =>
           jogador._id === jogadorId
             ? {
-                ...response.data.data,
-                fotoUrl: `${API_BASE_URL}/jogadores/${
-                  response.data.data._id
-                }/imagem?${Date.now()}`,
-              }
+              ...jogador,
+              nome: updatedData.nome,
+              titulo: updatedData.titulo,
+              descricao: updatedData.descricao,
+              insta: updatedData.instagram || null,
+              twitter: updatedData.twitter || null,
+              twitch: updatedData.twitch || null,
+              fotoUrl:
+                updatedData.foto && updatedData.foto.startsWith("data:image")
+                  ? updatedData.foto
+                  : updatedData.foto === null
+                    ? null
+                    : jogador.fotoUrl,
+            }
             : jogador
         )
       );
@@ -211,9 +222,16 @@ const Membros = () => {
       formData.append("descricao", novoJogador.descricao);
       formData.append("time", timeId);
 
-      if (novoJogador.insta) formData.append("insta", novoJogador.insta);
-      if (novoJogador.twitter) formData.append("twitter", novoJogador.twitter);
-      if (novoJogador.twitch) formData.append("twitch", novoJogador.twitch);
+      // Adicionar redes sociais apenas se forem válidas
+      if (novoJogador.insta && novoJogador.insta !== "null") {
+        formData.append("insta", novoJogador.insta);
+      }
+      if (novoJogador.twitter && novoJogador.twitter !== "null") {
+        formData.append("twitter", novoJogador.twitter);
+      }
+      if (novoJogador.twitch && novoJogador.twitch !== "null") {
+        formData.append("twitch", novoJogador.twitch);
+      }
 
       if (novoJogador.foto && novoJogador.foto.startsWith("data:")) {
         const response = await fetch(novoJogador.foto);
@@ -227,9 +245,7 @@ const Membros = () => {
         ...prev,
         {
           ...response.data,
-          fotoUrl: `${API_BASE_URL}/jogadores/${
-            response.data._id
-          }/imagem?${Date.now()}`,
+          fotoUrl: `${API_BASE_URL}/jogadores/${response.data._id}/imagem?${Date.now()}`,
         },
       ]);
 
