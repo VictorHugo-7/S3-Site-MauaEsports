@@ -50,19 +50,18 @@ function HorasPaePage() {
     4: { tailwindClass: "bg-[#39A0B1]", hexColor: "#39A0B1" },
     5: { tailwindClass: "bg-[#047C21]", hexColor: "#047C21" },
     6: { tailwindClass: "bg-[#60409E]", hexColor: "#60409E" },
-    7: { tailwindClass: "bg-[#C10146]", hexColor: "#C10146" }, // Mestre
-    8: { tailwindClass: "bg-[#FFC87F]", hexColor: "#FFC87F" }, // Lenda
-    default: { tailwindClass: "bg-gray-700", hexColor: "#374151" }, // Um cinza para o padrão
+    7: { tailwindClass: "bg-[#C10146]", hexColor: "#C10146" },
+    8: { tailwindClass: "bg-[#FFC87F]", hexColor: "#FFC87F" },
+    default: { tailwindClass: "bg-gray-700", hexColor: "#374151" },
   };
 
   const getRankStyleInfo = (rank) => {
     return RANK_STYLES[rank] || RANK_STYLES.default;
   };
 
-  // Função auxiliar para converter Hex para RGBA com alfa
   const hexToRgba = (hex, alpha = 1) => {
     if (!hex || typeof hex !== "string" || !hex.startsWith("#")) {
-      return `rgba(55, 65, 81, ${alpha})`; // Um cinza padrão (gray-700)
+      return `rgba(55, 65, 81, ${alpha})`;
     }
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
@@ -95,7 +94,6 @@ function HorasPaePage() {
     const year = now.getFullYear();
     const semesterStartMonth = now.getMonth() < 7 ? 1 : 7;
     return new Date(year, semesterStartMonth, 1).getTime();
-    // PARA TESTAR AS CORES return new Date(2000, 0, 1).getTime();
   };
 
   const getCurrentSemester = () => {
@@ -521,9 +519,9 @@ function HorasPaePage() {
 
   const getRankImage = (hours) => {
     const rankIndex = getCurrentRank(hours);
-    if (rankIndex <= 0) return null; // Sem rank para menos de 1h
-    if (rankIndex >= ranks.length) return ranks[ranks.length - 1]; // Se ultrapassar, pega o último
-    return ranks[rankIndex - 1]; // Retorna o rank correspondente
+    if (rankIndex <= 0) return null;
+    if (rankIndex >= ranks.length) return ranks[ranks.length - 1];
+    return ranks[rankIndex - 1];
   };
 
   const handleImageError = (userId) => {
@@ -736,7 +734,6 @@ function HorasPaePage() {
                   </motion.div>
                 ))}
 
-                {/* 40h Marker */}
                 <div
                   className="absolute bottom-0 flex flex-col items-center z-10"
                   style={{ left: get40hPosition() }}
@@ -758,24 +755,19 @@ function HorasPaePage() {
                 <AnimatePresence>
                   {allPlayers.map((player, index) => {
                     const currentRank = getCurrentRank(player.totalHours);
-                    const rankStyleInfo = getRankStyleInfo(currentRank); // Pega as infos de estilo
-                    // --- LÓGICA PARA OPACIDADE CONDICIONAL (INCLUINDO LENDA) ---
+                    const rankStyleInfo = getRankStyleInfo(currentRank);
                     let opacityLow = 0.05;
                     let opacityHigh = 0.15;
 
                     if (currentRank === 8) {
-                      // Rank Lenda (80h+)
-                      opacityLow = 0.08; // Um pouco mais visível na base
-                      opacityHigh = 0.25; // Pulso um pouco mais forte para destacar
+                      opacityLow = 0.08;
+                      opacityHigh = 0.25;
                     } else if (
                       rankStyleInfo.hexColor === RANK_STYLES[0].hexColor
                     ) {
-                      // Rank Iniciante (branco)
                       opacityLow = 0.03;
                       opacityHigh = 0.1;
                     }
-                    // Para os demais ranks, permanecem os valores padrão 0.05 e 0.15
-                    // --- FIM DA LÓGICA PARA OPACIDADE CONDICIONAL ---
 
                     const fillPercentage = getFillPercentage(player.totalHours);
                     const roundedHours =
@@ -801,8 +793,7 @@ function HorasPaePage() {
                           duration: 0.3,
                           delay: index * 0.05,
                           backgroundColor: {
-                            // MODIFICADO AQUI
-                            duration: 2, // Duração da pulsação do fundo
+                            duration: 2,
                             repeat: Infinity,
                             ease: "easeInOut",
                           },
@@ -880,15 +871,9 @@ function HorasPaePage() {
                                       "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)",
                                   }}
                                 >
-                                  <motion.div // MODIFICADO AQUI
-                                    className={`absolute inset-0 ${color}`} // 'color' é a classe da cor do rank
-                                    initial={{ width: "0%" }} // Começa com 0% de largura
-                                    animate={{ width: `${fill}%` }} // Anima para a porcentagem de preenchimento
-                                    transition={{
-                                      duration: 0.8,
-                                      ease: "easeOut",
-                                      delay: index * 0.1,
-                                    }} // Animação suave
+                                  <div
+                                    className={`absolute inset-0 ${color}`}
+                                    style={{ width: `${fill}%` }}
                                   />
                                 </div>
                                 {rankNum === 8 && (
