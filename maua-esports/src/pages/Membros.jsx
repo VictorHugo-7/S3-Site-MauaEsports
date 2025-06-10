@@ -18,7 +18,7 @@ const Membros = () => {
   const { timeId } = useParams();
   const [jogadores, setJogadores] = useState([]);
   const [time, setTime] = useState(null);
-  const [carregando, setCarregando] = useState(true);
+  const [loading, setloading] = useState(true);
   const [erro, setErro] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [userRole, setUserRole] = useState(null);
@@ -31,7 +31,7 @@ const Membros = () => {
 
   const carregarDados = async () => {
     try {
-      setCarregando(true);
+      setloading(true);
       setErro(null);
 
       const [responseTime, responseJogadores] = await Promise.all([
@@ -67,7 +67,7 @@ const Membros = () => {
             : error.message
       );
     } finally {
-      setCarregando(false);
+      setloading(false);
     }
   };
 
@@ -258,7 +258,7 @@ const Membros = () => {
     }
   };
 
-  if (carregando) {
+  if (loading) {
     return (
       <motion.div
         initial={{ opacity: 0 }}

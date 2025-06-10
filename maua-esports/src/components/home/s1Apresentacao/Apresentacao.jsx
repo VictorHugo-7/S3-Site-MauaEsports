@@ -20,7 +20,7 @@ const Apresentacao = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [erro, setErro] = useState(null);
   const [apresentacaoData, setApresentacaoData] = useState(null); // No default data
-  const [carregando, setCarregando] = useState(true); // Loading state
+  const [loading, setloading] = useState(true); // Loading state
   const { instance } = useMsal();
 
   useEffect(() => {
@@ -55,7 +55,7 @@ const Apresentacao = () => {
     // Fetch presentation data
     const fetchApresentacao = async () => {
       try {
-        setCarregando(true);
+        setloading(true);
         const response = await axios.get(`${API_BASE_URL}/api/apresentacao`);
         setApresentacaoData(response.data);
       } catch (error) {
@@ -63,7 +63,7 @@ const Apresentacao = () => {
         setErro("Erro ao carregar dados da apresentação");
         setTimeout(() => setErro(null), 3000);
       } finally {
-        setCarregando(false);
+        setloading(false);
       }
     };
 
@@ -132,7 +132,7 @@ const Apresentacao = () => {
     }
   };
 
-  if (carregando) {
+  if (loading) {
     return (
       <div
         className="w-full min-h-screen bg-[#0D1117] flex items-center justify-center"

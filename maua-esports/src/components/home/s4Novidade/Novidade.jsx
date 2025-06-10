@@ -16,7 +16,7 @@ const Novidade = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [erro, setErro] = useState(null);
   const [novidadeData, setNovidadeData] = useState(null); // No default data
-  const [carregando, setCarregando] = useState(true); // Loading state
+  const [loading, setloading] = useState(true); // Loading state
   const { instance } = useMsal();
 
   useEffect(() => {
@@ -51,7 +51,7 @@ const Novidade = () => {
     // Fetch novidade data
     const fetchNovidade = async () => {
       try {
-        setCarregando(true);
+        setloading(true);
         const response = await axios.get(`${API_BASE_URL}/api/homeNovidade`);
         setNovidadeData(response.data);
       } catch (error) {
@@ -59,7 +59,7 @@ const Novidade = () => {
         setErro("Erro ao carregar dados da novidade");
         setTimeout(() => setErro(null), 3000);
       } finally {
-        setCarregando(false);
+        setloading(false);
       }
     };
 
@@ -95,7 +95,7 @@ const Novidade = () => {
     }
   };
 
-  if (carregando) {
+  if (loading) {
     return (
       <div
         className="w-full min-h-screen bg-[#0D1117] flex items-center justify-center"
