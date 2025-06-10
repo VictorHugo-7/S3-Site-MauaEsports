@@ -29,9 +29,9 @@ const EditarJogador = ({ jogador = {}, onSave, onClose }) => {
     nome: nomeInicial,
     titulo: tituloInicial,
     descricao: descricaoInicial,
-    instagram: instagramInicial,
-    twitter: twitterInicial,
-    twitch: twitchInicial,
+    instagram: instagramInicial || "",
+    twitter: twitterInicial || "",
+    twitch: twitchInicial || "",
   });
 
   const [errors, setErrors] = useState({});
@@ -113,9 +113,13 @@ const EditarJogador = ({ jogador = {}, onSave, onClose }) => {
           id: jogadorId,
           ...formData,
           foto: fotoCropped || fotoInicial,
+          // Converter strings vazias para null
+          instagram: formData.instagram || null,
+          twitter: formData.twitter || null,
+          twitch: formData.twitch || null,
         };
 
-        await onSave(jogadorId, jogadorAtualizado); // Passa jogadorId explicitamente
+        await onSave(jogadorId, jogadorAtualizado);
         handleClose();
       } catch (error) {
         setErrors({ submit: error.message });
@@ -125,9 +129,8 @@ const EditarJogador = ({ jogador = {}, onSave, onClose }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${
-        isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
-      }`}
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
     >
       {isCroppingFoto && (
         <ImageCropper
@@ -141,9 +144,8 @@ const EditarJogador = ({ jogador = {}, onSave, onClose }) => {
       )}
 
       <div
-        className={`bg-fundo p-6 rounded-lg max-w-md w-full border shadow-sm shadow-azul-claro max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
-          isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
-        }`}
+        className={`bg-fundo p-6 rounded-lg max-w-md w-full border shadow-sm shadow-azul-claro max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+          }`}
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-branco">Editar Jogador</h2>
@@ -220,11 +222,10 @@ const EditarJogador = ({ jogador = {}, onSave, onClose }) => {
                 name="nome"
                 value={formData.nome}
                 onChange={handleChange}
-                className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
-                  errors.nome
+                className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${errors.nome
                     ? "border-vermelho-claro focus:border-vermelho-claro"
                     : "border-borda focus:border-azul-claro"
-                }`}
+                  }`}
               />
               {errors.nome && (
                 <p className="text-vermelho-claro text-sm mt-1">
@@ -242,11 +243,10 @@ const EditarJogador = ({ jogador = {}, onSave, onClose }) => {
                 name="titulo"
                 value={formData.titulo}
                 onChange={handleChange}
-                className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
-                  errors.titulo
+                className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${errors.titulo
                     ? "border-vermelho-claro focus:border-vermelho-claro"
                     : "border-borda focus:border-azul-claro"
-                }`}
+                  }`}
               />
               {errors.titulo && (
                 <p className="text-vermelho-claro text-sm mt-1">
@@ -263,11 +263,10 @@ const EditarJogador = ({ jogador = {}, onSave, onClose }) => {
                 name="descricao"
                 value={formData.descricao}
                 onChange={handleChange}
-                className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${
-                  errors.descricao
+                className={`w-full border rounded p-2 text-branco bg-preto focus:outline-none ${errors.descricao
                     ? "border-vermelho-claro focus:border-vermelho-claro"
                     : "border-borda focus:border-azul-claro"
-                }`}
+                  }`}
                 rows="3"
               />
               {errors.descricao && (
@@ -292,11 +291,10 @@ const EditarJogador = ({ jogador = {}, onSave, onClose }) => {
                   value={formData.instagram}
                   onChange={handleChange}
                   placeholder="https://instagram.com/usuario"
-                  className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
-                    errors.instagram
+                  className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${errors.instagram
                       ? "border-vermelho-claro focus:border-vermelho-claro"
                       : "border-borda focus:border-azul-claro"
-                  }`}
+                    }`}
                 />
               </div>
               {errors.instagram && (
@@ -315,11 +313,10 @@ const EditarJogador = ({ jogador = {}, onSave, onClose }) => {
                   value={formData.twitter}
                   onChange={handleChange}
                   placeholder="https://twitter.com/usuario"
-                  className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
-                    errors.twitter
+                  className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${errors.twitter
                       ? "border-vermelho-claro focus:border-vermelho-claro"
                       : "border-borda focus:border-azul-claro"
-                  }`}
+                    }`}
                 />
               </div>
               {errors.twitter && (
@@ -338,11 +335,10 @@ const EditarJogador = ({ jogador = {}, onSave, onClose }) => {
                   value={formData.twitch}
                   onChange={handleChange}
                   placeholder="https://twitch.tv/usuario"
-                  className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${
-                    errors.twitch
+                  className={`w-full border border-l-0 rounded-r-md p-2 text-branco bg-preto focus:outline-none ${errors.twitch
                       ? "border-vermelho-claro focus:border-vermelho-claro"
                       : "border-borda focus:border-azul-claro"
-                  }`}
+                    }`}
                 />
               </div>
               {errors.twitch && (
