@@ -31,6 +31,7 @@ const ContentSection = ({
 
   const htmlToBasicMarkdown = (html) => {
     let markdown = html;
+
     markdown = markdown.replace(/<div>(.*?)<\/div>/gi, "$1\n");
     markdown = markdown.replace(/<h1>(.*?)<\/h1>/gi, "# $1\n");
     markdown = markdown.replace(/<h2>(.*?)<\/h2>/gi, "## $1\n");
@@ -44,11 +45,14 @@ const ContentSection = ({
     markdown = markdown.replace(/<strike>(.*?)<\/strike>/gi, "~~$1~~");
     markdown = markdown.replace(/<a href="(.*?)">(.*?)<\/a>/gi, "[$2]($1)");
     markdown = markdown.replace(/<p>(.*?)<\/p>/gi, "$1\n\n");
+    markdown = markdown.replace(/<hr\s*\/?>/gi, "---\n\n"); // Adicionado: <hr> para ---
+
     return markdown.trim();
   };
 
   const markdownToHtml = (markdown) => {
     let html = markdown;
+
     html = html.replace(/^# (.*?)$/gm, "<h1>$1</h1>");
     html = html.replace(/^## (.*?)$/gm, "<h2>$1</h2>");
     html = html.replace(/^### (.*?)$/gm, "<h3>$1</h3>");
@@ -56,9 +60,11 @@ const ContentSection = ({
     html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
     html = html.replace(/~~(.*?)~~/g, "<s>$1</s>");
     html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>');
+    html = html.replace(/^---$/gm, "<hr>"); // Adicionado: --- para <hr>
     html = html.replace(/\n\n/g, "</p><p>");
     html = "<p>" + html + "</p>";
     html = html.replace(/<p><\/p>/g, "<p><br></p>");
+
     return html;
   };
 
@@ -292,7 +298,10 @@ const ContentSection = ({
   return (
     <div className={`${isActive ? "block" : "hidden"}`}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-b-2 border-[#3D444D] pb-3 mb-3">
-        <h2 className="text-2xl font-bold text-[#F0F6FC] text-center sm:text-left"> {title} </h2>
+        <h2 className="text-2xl font-bold text-[#F0F6FC] text-center sm:text-left">
+          {" "}
+          {title}{" "}
+        </h2>
         {isAdminMode && !isEditing ? (
           <div className="flex flex-col sm:flex-row gap-2 justify-center sm:justify-end">
             <button
