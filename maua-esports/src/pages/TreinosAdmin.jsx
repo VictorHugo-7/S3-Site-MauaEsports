@@ -1040,9 +1040,9 @@ const TreinosAdmin = () => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.6 }}
-          className="w-full lg:flex-1 bg-gray-800 border border-gray-700 rounded-xl shadow-lg min-h-[400px] order-last lg:order-first"
+          className="w-full lg:flex-1 bg-gray-800 border border-gray-700 rounded-tr-xl rounded-tl-xl shadow-lg min-h-[400px] order-last lg:order-first"
         >
-          <div className="border-b border-gray-700 p-4 sticky top-0 bg-gray-800 z-10 hidden sm:block">
+          <div className="border-b border-gray-700 p-4 sticky top-0 bg-gray-800 z-10 hidden sm:block rounded-tl-xl rounded-tr-xl">
             <div className="grid grid-cols-[1fr_1fr_1fr_120px] gap-4 font-blinker text-sm sm:text-base text-white">
               <span className="text-center sm:text-left ml-8">Horário</span>
               <span className="text-center sm:text-left">Dia da Semana</span>
