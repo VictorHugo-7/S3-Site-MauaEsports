@@ -374,41 +374,8 @@ const ContentSection = ({
                 className="markdown-editor"
                 value={markdownContent}
                 onChange={(e) => setMarkdownContent(e.target.value)}
-                placeholder="Insira conteúdo usando markdown:
-# Título 1
-## Título 2
-### Título 3
-
-**negrito**
-*itálico*
-<u>sublinhado</u>
-~~riscado~~
-[link](https://url)
-<span style='color:#Ff0000'>Texto colorido</span>
-<span style='background-color:#Ffff00'>Texto com fundo</span>"
+                placeholder="Texto"
               />
-              <div className="text-sm text-gray-400 mt-2">
-                <p>Guia rápido de markdown:</p>
-                <p># Título 1, ## Título 2, ### Título 3</p>
-                <p>
-                  **negrito**, *itálico*,{" "}
-                  <span className="code-highlight">{"<u>sublinhado</u>"}</span>,{" "}
-                  ~~riscado~~
-                </p>
-                <p>[texto do link](URL)</p>
-                <p>
-                  <span className="code-highlight">
-                    {'<span style="color:#Ff0000">Texto vermelho</span>'}
-                  </span>
-                </p>
-                <p>
-                  <span className="code-highlight">
-                    {
-                      '<span style="background-color:#Ffff00">Fundo amarelo</span>'
-                    }
-                  </span>
-                </p>
-              </div>
             </div>
           )}
         </div>
