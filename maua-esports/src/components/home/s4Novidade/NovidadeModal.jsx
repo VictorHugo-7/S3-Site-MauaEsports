@@ -140,14 +140,12 @@ const NovidadeModal = ({ isOpen, onClose, onSave, initialData, userRole }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${
-        isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
-      }`}
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-fundo/80 transition-opacity duration-300 ${isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
     >
       <div
-        className={`bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-96 relative max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${
-          isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
-        }`}
+        className={`bg-fundo p-6 rounded-lg shadow-sm shadow-azul-claro w-[800px] relative max-h-[90vh] overflow-y-auto transform transition-all duration-300 ${isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+          }`}
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-branco">Editar Novidade</h2>
@@ -246,11 +244,14 @@ const NovidadeModal = ({ isOpen, onClose, onSave, initialData, userRole }) => {
               name="descricao"
               value={formData.descricao}
               onChange={handleChange}
-              className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
+              className="w-full h-100 border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
               rows="3"
               required
               disabled={isSubmitting}
             ></textarea>
+            <p className="text-xs text-fonte-escura/50 mt-1">
+              Suporta markdown para formatação (ex.: **negrito**, *itálico*).
+            </p>
           </div>
 
           <div className="mb-4">
