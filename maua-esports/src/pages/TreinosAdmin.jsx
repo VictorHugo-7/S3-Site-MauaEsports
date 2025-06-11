@@ -1052,7 +1052,7 @@ const TreinosAdmin = () => {
               )}
             </div>
           </div>
-          <div className="sm:hidden border-b border-gray-700 p-4 sticky top-0 bg-gray-800 z-10 font-blinker text-base text-white text-center">
+          <div className="sm:hidden border-b border-gray-700 rounded-xl p-4 sticky top-0 bg-gray-800 z-10 font-blinker text-base text-white text-center">
             Lista de Treinos
           </div>
 
