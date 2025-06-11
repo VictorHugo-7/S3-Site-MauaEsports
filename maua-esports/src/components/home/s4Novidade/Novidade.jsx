@@ -122,19 +122,19 @@ const Novidade = () => {
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between text-white">
         <div
           data-aos="fade-up"
-          className="w-full lg:w-4/10 flex justify-center lg:justify-start items-center order-2 lg:order-1"
+          className="w-full lg:w-1/2 flex justify-center lg:justify-start items-center order-2 lg:order-1"
         >
           <img
             src={novidadeData.imagem}
             alt={novidadeData.titulo}
-            className="w-[300px] lg:w-[350px] rounded-[10px] hover:scale-101 transition-transform duration-300 ease-in-out"
+            className="w-[300px] lg:w-[470px] rounded-[10px] hover:scale-101 transition-transform duration-300 ease-in-out"
             loading="lazy"
           />
         </div>
 
         <div
           data-aos="fade-up"
-          className="w-full lg:w-6/10 space-y-6 text-left lg:pl-8 py-8 lg:py-0 order-1 lg:order-2"
+          className="w-full lg:w-1/2 space-y-6 text-left lg:pl-8 py-8 lg:py-0 order-1 lg:order-2"
         >
           <h4 className="text-3xl font-bold text-gray-300 mb-4">
             {novidadeData.titulo}
