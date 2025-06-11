@@ -797,21 +797,21 @@ const TreinosAdmin = () => {
   };
 
   if (loading) {
-      return (
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="w-full min-h-screen bg-fundo flex items-center justify-center"
+      >
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="w-full min-h-screen bg-fundo flex items-center justify-center"
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"
-          ></motion.div>
-          <p className="text-branco ml-4">Carregando treinos...</p>
-        </motion.div>
-      );
-    }
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="rounded-full h-12 w-12 border-t-2 border-b-2 border-azul-claro"
+        ></motion.div>
+        <p className="text-branco ml-4">Carregando treinos...</p>
+      </motion.div>
+    );
+  }
 
   if (
     Object.keys(modalidades).length === 0 &&
@@ -990,13 +990,13 @@ const TreinosAdmin = () => {
       )}
 
       {/* Container principal centralizado */}
-      <div className="flex flex-col lg:flex-row w-[90%] sm:w-3/4 lg:w-2/3 min-h-[400px] gap-6 mb-10">
+      <div className="flex flex-col lg:flex-row w-[90%] sm:w-3/4 lg:w-2/3 gap-6 mb-10">
         {/* Calendário */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.8 }}
-          className="w-full lg:w-[350px] lg:h-400px] bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-lg overflow-y-auto order-first lg:order-last"
+          className="w-full lg:w-[350px] bg-gray-800 border border-gray-700 rounded-xl p-4 shadow-lg order-first lg:order-last self-start"
         >
           <Calendario />
         </motion.div>
