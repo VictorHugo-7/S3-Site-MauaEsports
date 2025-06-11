@@ -7,6 +7,9 @@ import axios from "axios";
 import { useMsal } from "@azure/msal-react";
 import AlertaOk from "../../AlertaOk";
 import AlertaErro from "../../AlertaErro";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 const API_BASE_URL = "http://localhost:3000";
 
@@ -115,21 +118,23 @@ const Novidade = () => {
     <Margin horizontal="60px">
       {erro && <AlertaErro mensagem={erro} />}
       {successMessage && <AlertaOk mensagem={successMessage} />}
+
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between text-white">
         <div
           data-aos="fade-up"
-          className="w-full lg:w-1/2 flex justify-center lg:justify-start items-center order-2 lg:order-1"
+          className="w-full lg:w-4/10 flex justify-center lg:justify-start items-center order-2 lg:order-1"
         >
           <img
             src={novidadeData.imagem}
             alt={novidadeData.titulo}
-            className="w-[300px] lg:w-[500px] rounded-[10px] hover:scale-101 transition-transform duration-300 ease-in-out"
+            className="w-[300px] lg:w-[350px] rounded-[10px] hover:scale-101 transition-transform duration-300 ease-in-out"
             loading="lazy"
           />
         </div>
+
         <div
           data-aos="fade-up"
-          className="w-full lg:w-1/2 space-y-6 text-left lg:pl-8 py-8 lg:py-0 order-1 lg:order-2"
+          className="w-full lg:w-6/10 space-y-6 text-left lg:pl-8 py-8 lg:py-0 order-1 lg:order-2"
         >
           <h4 className="text-3xl font-bold text-gray-300 mb-4">
             {novidadeData.titulo}
@@ -140,9 +145,16 @@ const Novidade = () => {
             </p>
             <div className="border-b-4 border-gray-700 w-12 inline-block rounded-[12px]"></div>
           </div>
-          <div className="text-gray-300 space-y-3">
-            <p>{novidadeData.descricao}</p>
+
+          <div className="text-fonte-escura space-y-3">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
+            >
+              {novidadeData.descricao}
+            </ReactMarkdown>
           </div>
+
           <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mt-5">
             <a
               href={novidadeData.urlBotao}
