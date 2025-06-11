@@ -292,7 +292,7 @@ const ApresentacaoModal = ({
               <textarea
                 value={descricao1}
                 onChange={(e) => setDescricao1(e.target.value)}
-                className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
+                className="w-full h-50 border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
                 rows="3"
                 required
               ></textarea>
@@ -314,7 +314,7 @@ const ApresentacaoModal = ({
               <textarea
                 value={descricao2}
                 onChange={(e) => setDescricao2(e.target.value)}
-                className="w-full border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
+                className="w-full h-50 border border-borda text-branco bg-preto p-2 rounded focus:border-azul-claro focus:outline-none"
                 rows="3"
                 required
               ></textarea>
