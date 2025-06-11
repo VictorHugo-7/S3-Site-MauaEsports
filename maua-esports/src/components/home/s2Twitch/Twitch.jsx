@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import { Calendar, ExternalLink, Users, Heart } from "lucide-react";
 import Margin from "../../padrao/Margin";
+import AOS from "aos";
+import "aos/dist/aos.css";
 
 // Componente para exibir as tags do canal
 const ChannelTags = ({ tags }) => (
@@ -19,7 +21,11 @@ const ChannelTags = ({ tags }) => (
 
 // Componente para a seção de informações do canal
 const ChannelInfo = ({ channel, streamStats, isLoading }) => (
-  <div className="w-full md:w-1/3 p-6 bg-gray-800 flex flex-col justify-between">
+  <div
+    data-aos="fade-up"
+    data-aos-delay="200"
+    className="w-full md:w-1/3 p-6 bg-gray-800 flex flex-col justify-between"
+  >
     <div>
       <div className="flex items-center mb-4">
         <img
@@ -88,7 +94,11 @@ const TwitchEmbed = ({ channel, isLive }) => {
   const key = `twitch-player-${isLive ? "live" : "offline"}-${Date.now()}`;
 
   return (
-    <div className="w-full h-full bg-black flex items-center justify-center">
+    <div
+      data-aos="fade-up"
+      data-aos-delay="300"
+      className="w-full md:w-2/3 bg-black h-[500px] md:h-auto"
+    >
       {isLive ? (
         <iframe
           key={key}
@@ -145,6 +155,11 @@ const Twitch = () => {
   const [wsConnected, setWsConnected] = useState(false);
 
   useEffect(() => {
+    AOS.init({
+      duration: 1500,
+      once: true,
+    });
+
     let ws = null;
 
     const connectWebSocket = () => {
@@ -197,19 +212,25 @@ const Twitch = () => {
   return (
     <Margin horizontal="60px">
       <h1
-        data-aos-delay="100"
         data-aos="fade-up"
+        data-aos-delay="100"
         className="text-3xl text-center font-bold mb-15 text-azul-claro"
       >
-        Twitch{" "}
+        Twitch
       </h1>
 
       {error ? (
-        <div className="text-center text-vermelho-claro">{error}</div>
+        <div
+          data-aos="fade-up"
+          data-aos-delay="200"
+          className="text-center text-vermelho-claro"
+        >
+          {error}
+        </div>
       ) : (
         <div
-          data-aos-delay="200"
           data-aos="fade-up"
+          data-aos-delay="200"
           className="flex flex-col md:flex-row bg-fundo rounded-lg overflow-hidden"
         >
           <ChannelInfo
@@ -223,12 +244,10 @@ const Twitch = () => {
             isLoading={isLoading}
           />
 
-          <div className="w-full md:w-2/3 bg-black h-[500px] md:h-auto">
-            <TwitchEmbed
-              channel="apolityyyy"
-              isLive={streamStats?.isLive || false}
-            />
-          </div>
+          <TwitchEmbed
+            channel="apolityyyy"
+            isLive={streamStats?.isLive || false}
+          />
         </div>
       )}
     </Margin>
