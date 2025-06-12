@@ -379,6 +379,9 @@ const NavBar = () => {
       console.error("Erro ao salvar perfil:", error);
       setEditError(error.message || "Erro ao salvar alterações");
     }
+    setTimeout(() => {
+      window.location.reload();
+    }, 300); // Delay reload to allow modal animation to complete
   };
 
   const handleRemoveProfilePicture = () => {
