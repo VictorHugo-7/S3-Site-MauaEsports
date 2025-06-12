@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { RiImageAddLine, RiCloseFill } from "react-icons/ri";
@@ -24,7 +25,7 @@ const CardModal = ({
 }) => {
   const [texto, setTexto] = useState("");
   const [titulo, setTitulo] = useState("");
-  const [iconPreview, setIconPreview] = useState(iconAtual);
+  const [iconPreview, setIconPreview] = useState(null);
   const [iconFile, setIconFile] = useState(null);
   const [erroLocal, setErroLocal] = useState("");
   const [showAlertaErro, setShowAlertaErro] = useState("");
@@ -34,20 +35,24 @@ const CardModal = ({
 
   useEffect(() => {
     if (isOpen) {
-      setTexto(textoAtual);
-      setTitulo(tituloAtual);
-      setIconPreview(iconAtual);
+      setTexto(textoAtual || "");
+      setTitulo(tituloAtual || "");
+      setIconPreview(iconAtual || null);
+      setIconFile(null);
       setErroLocal("");
       setShowAlertaErro("");
       setIsVisible(true);
     }
+  }, [isOpen, textoAtual, tituloAtual, iconAtual]);
+
+  useEffect(() => {
     return () => {
       if (iconPreview && iconPreview.startsWith("blob:")) {
         console.log("Revoking blob URL:", iconPreview);
         URL.revokeObjectURL(iconPreview);
       }
     };
-  }, [isOpen, textoAtual, tituloAtual, iconAtual, iconPreview]);
+  }, [iconPreview]);
 
   const handleClose = () => {
     console.log("handleClose called, setting isVisible to false");
@@ -79,15 +84,14 @@ const CardModal = ({
         setErroLocal("A imagem deve ter no máximo 5MB");
         return;
       }
-      if (iconPreview && iconPreview.startsWith("blob:")) {
-        console.log("Revoking previous blob URL:", iconPreview);
-        URL.revokeObjectURL(iconPreview);
-      }
       setErroLocal("");
       setIconFile(file);
       const previewURL = URL.createObjectURL(file);
       console.log("New icon preview URL:", previewURL);
       setIconPreview(previewURL);
+    } else {
+      console.log("No file selected");
+      setErroLocal("Nenhuma imagem selecionada.");
     }
   };
 
@@ -97,7 +101,7 @@ const CardModal = ({
       console.log("Revoking blob URL:", iconPreview);
       URL.revokeObjectURL(iconPreview);
     }
-    setIconPreview("");
+    setIconPreview(null);
     setIconFile(null);
   };
 
@@ -175,7 +179,7 @@ const CardModal = ({
             tokenResponse.accessToken ? "Success" : "No token"
           );
         } else {
-          throw silentError; // Rethrow other errors
+          throw silentError;
         }
       }
 
@@ -184,11 +188,17 @@ const CardModal = ({
       formData.append("descricao", texto);
       if (iconFile) {
         formData.append("icone", iconFile);
+      } else if (!iconPreview) {
+        formData.append("icone", "");
       }
       console.log("FormData prepared:", {
         titulo,
         descricao: texto,
-        icone: iconFile ? iconFile.name : "No icon",
+        icone: iconFile
+          ? iconFile.name
+          : iconPreview
+          ? "Existing icon"
+          : "No icon",
       });
 
       console.time("axiosPut");
@@ -213,9 +223,7 @@ const CardModal = ({
         const saveData = {
           texto,
           titulo,
-          icon:
-            response.data.iconUrl ||
-            (iconFile ? URL.createObjectURL(iconFile) : iconPreview),
+          icon: response.data.iconUrl || iconPreview || "",
           showAlert: true,
         };
         console.log("Calling onSave with:", saveData);
@@ -224,8 +232,11 @@ const CardModal = ({
           console.log("Calling onCardSave");
           onCardSave();
         }
-        console.log("Initiating modal closure");
+        console.log("Initiating modal closure and page reload");
         handleClose();
+        setTimeout(() => {
+          window.location.reload();
+        }, 300); // Delay reload to allow modal animation to complete
       }
     } catch (error) {
       const errorMessage =
@@ -259,6 +270,7 @@ const CardModal = ({
     loading,
     erroLocal,
     showAlertaErro,
+    iconPreview,
   });
 
   return createPortal(
@@ -305,7 +317,7 @@ const CardModal = ({
             </div>
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/jpg,image/png"
               onChange={handleIconChange}
               className="hidden"
               disabled={loading}
