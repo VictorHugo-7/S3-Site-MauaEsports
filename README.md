@@ -47,7 +47,7 @@ Administrador:
 
 <!--PROTÓTIPO-->
 ## Protótipo
-[![](https://img.shields.io/badge/Figma--5C5C5C?logo=figma&logoColor=white)](https://www.figma.com/design/Anznmw8O10TzOWMxKswnEU/S3-Site-MauaEsports?node-id=0-1&t=zy6X66r343wkCWWC-1)
+[![](https://img.shields.io/badge/Figma--5C5C5C?logo=figma&logoColor=white)](https://www.figma.com/design/LuwuqQ4VbyyILJQK0vf7Oo/S3-Site-MauaEsports?t=5KAcwSvzdnTQoeoP-1)
 
 
 <!--PARTICIPANTES-->
