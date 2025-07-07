@@ -4,7 +4,7 @@
 
 <!--DESCRIÇÃO-->
 > Site desenvolvido para a entidade Mauá Esports.<br/>
-> O site consiste em centralizar e facilitar a administração das atividades esportivas, incluindo a gestão dos horários de treino, das horas PAE dos alunos e das informações sobre os times e campeonatos."
+> O site consiste em centralizar e facilitar a administração das atividades esportivas, incluindo a gestão dos horários de treino, das horas PAE dos alunos e das informações sobre os times e campeonatos.
 
 
 <!--STATUS-->
