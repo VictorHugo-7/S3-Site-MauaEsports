@@ -15,7 +15,7 @@
 <!--FUNCIONALIDADES-->
 ## Funcionalidades 
 ````
-Usuário (Sem Login)
+Usuário (Sem Login):
     . Fazer Login (Microsoft)
     . Visualizar Informações (Mauá Esports)
     . Visualizar Twitch
@@ -25,13 +25,13 @@ Usuário (Sem Login)
     . Visualizar Termos e Políticas
     . Enviar Mensagem para Mauá Esports
 
-Usuário (Com Login)
+Usuário (Com Login):
     . Todas as funções disponíveis para o usuário
     . Visualizar Treinos
     . Visualizar Horas PAEs
     . Editar Perfil
 
-Administrador
+Administrador:
     . Todas as funções disponíveis para o usuário
     . Administrar Site
     . Editar Site
