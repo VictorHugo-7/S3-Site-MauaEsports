@@ -63,7 +63,7 @@ Administrador:
 
 
 <!--DEPENDÊNCIAS-->
-## Dependência
+## Dependências
 ````
 @azure/msal-browser       | versão ^4.11.1      | Biblioteca para autenticação Microsoft Azure AD no navegador.
 @azure/msal-react         | versão ^3.0.11      | Componentes React para integração com Microsoft Authentication Library.
